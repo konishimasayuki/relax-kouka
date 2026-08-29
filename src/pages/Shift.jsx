@@ -137,6 +137,7 @@ export default function Shift() {
   });
 
   return (
+    <>
     <div className="shift-page">
       <div className="page-head">
         <h2>シフト</h2>
@@ -242,6 +243,7 @@ export default function Shift() {
           })}
         </div>
       </div>
+    </div>
 
       {form && (
         <div className="modal-overlay" onClick={() => setForm(null)}>
@@ -313,6 +315,6 @@ export default function Shift() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

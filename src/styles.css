@@ -1327,6 +1327,11 @@ table.grid th.num {
 
 /* 印刷時は請求書だけを表示する */
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
   .topbar,
   .drawer,
   .drawer-overlay,
@@ -1348,5 +1353,26 @@ table.grid th.num {
     box-shadow: none !important;
     padding: 0 !important;
     overflow: visible !important;
+  }
+
+  /* 給料タブの請求書はA4縦1枚に収まるようコンパクトにする */
+  .payroll-sheet .sheet {
+    min-width: 0 !important;
+    width: 100% !important;
+    font-size: 10px;
+  }
+
+  .payroll-table th,
+  .payroll-table td {
+    padding: 2px 3px !important;
+    font-size: 9px !important;
+  }
+
+  .payroll-table .rate-input {
+    width: 30px;
+  }
+
+  .sheet-head {
+    font-size: 10.5px !important;
   }
 }

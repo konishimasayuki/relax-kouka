@@ -169,7 +169,7 @@ export default function Payroll() {
             ))}
           </select>
         )}
-        <button className="btn sm ghost desktop-only" onClick={() => window.print()}>
+        <button className="btn sm ghost" onClick={() => window.print()}>
           🖨️ 印刷
         </button>
       </div>
@@ -182,19 +182,19 @@ export default function Payroll() {
             <div className="sheet-head">
               <span className="sheet-title">請求書</span>
               <span>
-                <span className="ink-red">{selectedStore?.billingCompany || "（未設定）"}</span>{" "}
+                <span>{selectedStore?.billingCompany || "（未設定）"}</span>{" "}
                 御中
               </span>
               <span>{m}月分</span>
               <span>
-                令和 <span className="ink-red">{reiwaYear}</span> 年{" "}
-                <span className="ink-red">{m}</span> 月 <span className="ink-red">{lastDay}</span>{" "}
+                令和 <span>{reiwaYear}</span> 年{" "}
+                <span>{m}</span> 月 <span>{lastDay}</span>{" "}
                 日
               </span>
             </div>
             <div className="sheet-head" style={{ paddingTop: 0 }}>
               <span>
-                氏名 <span className="ink-red">{selectedStaff?.name || "（未選択）"}</span>
+                氏名 <span>{selectedStaff?.name || "（未選択）"}</span>
               </span>
               <span>
                 業務遂行地（住所）：{selectedStore?.billingAddress || "（未設定）"}
@@ -250,14 +250,14 @@ export default function Payroll() {
                       {r.count || r.cumTaxIn ? r.cumTaxIn.toLocaleString("ja-JP") : ""}
                     </td>
                     <td className="c-amount">{r.taxIn ? r.taxEx.toLocaleString("ja-JP") : ""}</td>
-                    <td className="c-amount ink-red">
+                    <td className="c-amount">
                       {r.taxIn ? r.commission.toLocaleString("ja-JP") : ""}
                     </td>
                     <td className="c-center">{r.nominateCount ? `${r.nominateCount}件` : "件"}</td>
                     <td className="c-amount">
                       {r.nominateFee ? r.nominateFee.toLocaleString("ja-JP") : ""}
                     </td>
-                    <td className="c-amount ink-red">
+                    <td className="c-amount">
                       {r.taxIn ? r.total.toLocaleString("ja-JP") : ""}
                     </td>
                   </tr>
@@ -272,19 +272,15 @@ export default function Payroll() {
                   <td className="c-amount">{totals.taxIn.toLocaleString("ja-JP")}円</td>
                   <td />
                   <td className="c-amount">{totals.taxEx.toLocaleString("ja-JP")}円</td>
-                  <td className="c-amount ink-red">
+                  <td className="c-amount">
                     {totals.commission.toLocaleString("ja-JP")}円
                   </td>
                   <td />
                   <td className="c-amount">{totals.nominateFee.toLocaleString("ja-JP")}円</td>
-                  <td className="c-amount ink-red">{totals.total.toLocaleString("ja-JP")}円</td>
+                  <td className="c-amount">{totals.total.toLocaleString("ja-JP")}円</td>
                 </tr>
               </tfoot>
             </table>
-
-            <div className="muted" style={{ fontSize: 12, marginTop: 10 }}>
-              ※ 税抜売上＝税込売上÷1.1（四捨五入）／歩合金額＝税抜売上×歩合率／税抜金額(5%)＝指名分の税込金額×5%／売上合計(税抜)＝歩合金額＋税抜金額(5%)
-            </div>
           </div>
         </div>
       )}
