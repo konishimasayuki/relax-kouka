@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "../App.jsx";
-import { PAYMENTS, api, courseLabel, todayStr } from "../api.js";
+import { PAYMENTS, api, todayStr } from "../api.js";
+import NewReceptionModal from "../components/NewReceptionModal.jsx";
 import SignaturePad from "../components/SignaturePad.jsx";
 
 function emptyRecord(storeId, date) {
@@ -56,6 +57,7 @@ export default function ReceptionList() {
   const [loading, setLoading] = useState(false);
   const [signOpen, setSignOpen] = useState(false);
   const [freeTextRows, setFreeTextRows] = useState(new Set());
+  const [newOpen, setNewOpen] = useState(false);
   // 削除中のIDを即時マーク（confirm()によるblur連鎖で誤って保存が走るのを防ぐ）
   const deletingIdsRef = useRef(new Set());
 
@@ -180,8 +182,11 @@ export default function ReceptionList() {
 
       <div className="toolbar">
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        <button className="btn sm" onClick={() => setNewOpen(true)}>
+          ＋ 新規受付
+        </button>
         <span className="muted" style={{ fontSize: 12 }}>
-          セルをクリックしてそのまま編集／行を右クリックで削除
+          セルをクリックしてそのまま編集／行の削除ボタンで削除
         </span>
         <button className="btn sm ghost" onClick={() => window.print()}>
           🖨️ 印刷
@@ -263,6 +268,7 @@ export default function ReceptionList() {
                     <br />
                     受領担当
                   </th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
@@ -416,7 +422,7 @@ export default function ReceptionList() {
                             <option value="">未選択</option>
                             {menusFor(r).map((m) => (
                               <option key={m.id} value={m.id}>
-                                {m.name}（{m.minutes}分）
+                                {m.name}
                               </option>
                             ))}
                             <option value="__free__">自由記述</option>
@@ -463,6 +469,7 @@ export default function ReceptionList() {
                       <td className="c-center">
                         <input
                           type="time"
+                          step="600"
                           className="cell-input c-narrow"
                           value={r?.startTime || ""}
                           onChange={(e) => updateRecord(r, { startTime: e.target.value })}
@@ -540,6 +547,17 @@ export default function ReceptionList() {
                           defaultValue={r?.cashNote || ""}
                           onBlur={(e) => updateRecord(r, { cashNote: e.target.value })}
                         />
+                      </td>
+                      <td className="c-center">
+                        {r && (
+                          <button
+                            className="row-del-btn"
+                            title="この行を削除"
+                            onClick={() => del(r.id, r.date)}
+                          >
+                            ✕
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -622,6 +640,21 @@ export default function ReceptionList() {
           onSave={(dataUrl) => {
             updateMeta({ signature: dataUrl });
             setSignOpen(false);
+          }}
+        />
+      )}
+
+      {newOpen && (
+        <NewReceptionModal
+          date={date}
+          stores={stores}
+          staff={staff}
+          menus={menus}
+          workingStaffIds={workingStaffIds}
+          onClose={() => setNewOpen(false)}
+          onSaved={(saved) => {
+            if (saved.date === date) setRecords((prev) => [...prev, saved]);
+            setNewOpen(false);
           }}
         />
       )}

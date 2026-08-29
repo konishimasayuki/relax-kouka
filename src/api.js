@@ -44,6 +44,10 @@ export const api = {
   saveShift: (s) => req("shifts", { method: "POST", body: JSON.stringify(s) }),
   deleteShift: (id) => req(`shifts?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
 
+  breaks: () => req("breaks"),
+  saveBreak: (b) => req("breaks", { method: "POST", body: JSON.stringify(b) }),
+  deleteBreak: (id) => req(`breaks?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
+
   menus: () => req("menus"),
   saveMenu: (m) => req("menus", { method: "POST", body: JSON.stringify(m) }),
   deleteMenu: (id) => req(`menus?id=${encodeURIComponent(id)}`, { method: "DELETE" }),

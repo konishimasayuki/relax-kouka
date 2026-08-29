@@ -278,6 +278,7 @@ export default function Shift() {
                 <label>開始</label>
                 <input
                   type="time"
+                  step="600"
                   value={form.start}
                   onChange={(e) => setForm({ ...form, start: e.target.value })}
                 />
@@ -286,6 +287,7 @@ export default function Shift() {
                 <label>終了</label>
                 <input
                   type="time"
+                  step="600"
                   value={form.end}
                   onChange={(e) => setForm({ ...form, end: e.target.value })}
                 />

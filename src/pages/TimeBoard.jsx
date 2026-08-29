@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
 import { PAYMENTS, api, todayStr } from "../api.js";
+import BreakModal from "../components/BreakModal.jsx";
+import NewReceptionModal from "../components/NewReceptionModal.jsx";
 import TimeBoardGrid from "../components/TimeBoardGrid.jsx";
 
 export default function TimeBoard() {
@@ -8,16 +10,24 @@ export default function TimeBoard() {
   const [date, setDate] = useState(todayStr());
   const [records, setRecords] = useState([]);
   const [shifts, setShifts] = useState([]);
+  const [breaks, setBreaks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [sel, setSel] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [newOpen, setNewOpen] = useState(false);
+  const [breakModal, setBreakModal] = useState(null); // { editing } | null
 
   const load = async () => {
     setLoading(true);
     try {
-      const [rec, sh] = await Promise.all([api.reception(date), api.shifts()]);
+      const [rec, sh, br] = await Promise.all([
+        api.reception(date),
+        api.shifts(),
+        api.breaks(),
+      ]);
       setRecords(rec);
       setShifts(sh);
+      setBreaks(br);
     } finally {
       setLoading(false);
     }
@@ -78,6 +88,20 @@ export default function TimeBoard() {
     }
   };
 
+  const del = async () => {
+    if (!confirm("この予約を削除しますか？")) return;
+    setBusy(true);
+    try {
+      await api.deleteReception(sel.id, sel.date || date);
+      setRecords((prev) => prev.filter((x) => x.id !== sel.id));
+      setSel(null);
+    } catch (e) {
+      alert(`削除失敗: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div>
       <div className="page-head">
@@ -86,6 +110,12 @@ export default function TimeBoard() {
 
       <div className="toolbar">
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        <button className="btn sm" onClick={() => setNewOpen(true)}>
+          ＋ 新規受付
+        </button>
+        <button className="btn sm ghost" onClick={() => setBreakModal({ editing: null })}>
+          ☕ 休憩
+        </button>
         <button className="btn sm ghost desktop-only" onClick={openBoardWindow}>
           🖥️ 別ウィンドウで表示
         </button>
@@ -102,8 +132,10 @@ export default function TimeBoard() {
           staff={staff}
           records={records}
           shifts={shifts}
+          breaks={breaks}
           date={date}
           onSelect={setSel}
+          onSelectBreak={(b) => setBreakModal({ editing: b })}
           hourWidth={80}
         />
       )}
@@ -122,7 +154,7 @@ export default function TimeBoard() {
                 <option value="">未選択</option>
                 {menusFor(sel).map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.name}（{m.minutes}分）
+                    {m.name}
                   </option>
                 ))}
               </select>
@@ -147,6 +179,7 @@ export default function TimeBoard() {
                 <label>開始</label>
                 <input
                   type="time"
+                  step="600"
                   value={sel.startTime || ""}
                   onChange={(e) => updateSel({ startTime: e.target.value })}
                 />
@@ -177,13 +210,23 @@ export default function TimeBoard() {
               </div>
             </div>
 
-            <div className="muted" style={{ fontSize: 13 }}>
-              部屋/TEL：{sel.room || sel.phone || "—"}
+            <div className="row">
+              <div className="field">
+                <label>部屋番号</label>
+                <input value={sel.room || ""} onChange={(e) => updateSel({ room: e.target.value })} />
+              </div>
+              <div className="field">
+                <label>携帯番号</label>
+                <input value={sel.phone || ""} onChange={(e) => updateSel({ phone: e.target.value })} />
+              </div>
             </div>
 
             <div className="modal-actions">
               <button className="btn gray" onClick={() => setSel(null)}>
                 キャンセル
+              </button>
+              <button className="btn danger" onClick={del} disabled={busy}>
+                削除
               </button>
               <button className="btn" onClick={save} disabled={busy}>
                 保存
@@ -191,6 +234,42 @@ export default function TimeBoard() {
             </div>
           </div>
         </div>
+      )}
+
+      {newOpen && (
+        <NewReceptionModal
+          date={date}
+          stores={stores}
+          staff={staff}
+          menus={menus}
+          workingStaffIds={workingStaffIds}
+          onClose={() => setNewOpen(false)}
+          onSaved={(saved) => {
+            if (saved.date === date) setRecords((prev) => [...prev, saved]);
+            setNewOpen(false);
+          }}
+        />
+      )}
+
+      {breakModal && (
+        <BreakModal
+          date={date}
+          staff={staff}
+          assignableStaffIds={workingStaffIds}
+          editing={breakModal.editing}
+          onClose={() => setBreakModal(null)}
+          onSaved={(saved) => {
+            setBreaks((prev) => {
+              const exists = prev.some((x) => x.id === saved.id);
+              return exists ? prev.map((x) => (x.id === saved.id ? saved : x)) : [...prev, saved];
+            });
+            setBreakModal(null);
+          }}
+          onDeleted={(id) => {
+            setBreaks((prev) => prev.filter((x) => x.id !== id));
+            setBreakModal(null);
+          }}
+        />
       )}
     </div>
   );

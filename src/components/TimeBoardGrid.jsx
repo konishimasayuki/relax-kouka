@@ -46,8 +46,10 @@ export default function TimeBoardGrid({
   staff,
   records,
   shifts,
+  breaks = [],
   date,
   onSelect,
+  onSelectBreak,
   hourWidth = 56,
 }) {
   const HOUR_W = hourWidth;
@@ -66,6 +68,7 @@ export default function TimeBoardGrid({
   }, [stores]);
 
   const todaysShifts = useMemo(() => shifts.filter((s) => s.date === date), [shifts, date]);
+  const todaysBreaks = useMemo(() => breaks.filter((b) => b.date === date), [breaks, date]);
 
   // 出勤するスタッフ = 本日シフトのあるスタッフ ∪ 本日予約が入っているスタッフ（早い順）
   const staffIdsToday = useMemo(() => {
@@ -137,11 +140,15 @@ export default function TimeBoardGrid({
         .map((s) => ({ start: toMin(s.start), end: toMin(s.end) }));
       const offDuty = computeOffDuty(ranges, dayStart, dayEnd);
 
-      out[staffId] = { apps, travels, offDuty };
+      const staffBreaks = todaysBreaks
+        .filter((b) => b.staffId === staffId)
+        .sort((a, b) => toMin(a.start) - toMin(b.start));
+
+      out[staffId] = { apps, travels, offDuty, breaks: staffBreaks };
     }
     return out;
     // eslint-disable-next-line
-  }, [staffIdsToday, records, todaysShifts, homeBuilding, stores]);
+  }, [staffIdsToday, records, todaysShifts, todaysBreaks, homeBuilding, stores]);
 
   // 担当未定の予約（タイムボード最下段に表示）
   const unassignedApps = useMemo(
@@ -193,10 +200,11 @@ export default function TimeBoardGrid({
         </div>
 
         {staffIdsToday.map((staffId) => {
-          const { apps, travels, offDuty } = dataByStaff[staffId] || {
+          const { apps, travels, offDuty, breaks: staffBreaks } = dataByStaff[staffId] || {
             apps: [],
             travels: [],
             offDuty: [],
+            breaks: [],
           };
           return (
             <div className="tb-row" key={staffId}>
@@ -224,6 +232,17 @@ export default function TimeBoardGrid({
                     style={blockStyle(t.start, t.end - t.start, undefined)}
                   >
                     移動
+                  </div>
+                ))}
+
+                {staffBreaks.map((b) => (
+                  <div
+                    className="tb-block break"
+                    key={b.id}
+                    style={blockStyle(toMin(b.start), toMin(b.end) - toMin(b.start), undefined)}
+                    onClick={() => onSelectBreak?.(b)}
+                  >
+                    休憩
                   </div>
                 ))}
 
