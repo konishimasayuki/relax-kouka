@@ -1,0 +1,101 @@
+// API 呼び出しヘルパー
+async function req(path, opts = {}) {
+  const res = await fetch(`/api/${path}`, {
+    headers: { "Content-Type": "application/json" },
+    ...opts,
+  });
+  if (!res.ok) {
+    const t = await res.text().catch(() => "");
+    throw new Error(t || `HTTP ${res.status}`);
+  }
+  return res.status === 204 ? null : res.json();
+}
+
+export const api = {
+  seed: (date) =>
+    req("seed", { method: "POST", body: JSON.stringify({ date: date || todayStr() }) }),
+  login: (loginId, password) =>
+    req("auth", { method: "POST", body: JSON.stringify({ loginId, password }) }),
+
+  stores: () => req("stores"),
+  saveStore: (s) => req("stores", { method: "POST", body: JSON.stringify(s) }),
+  deleteStore: (id) => req(`stores?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  staff: () => req("staff"),
+  saveStaff: (s) => req("staff", { method: "POST", body: JSON.stringify(s) }),
+  deleteStaff: (id) => req(`staff?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  customers: () => req("customers"),
+  saveCustomer: (c) => req("customers", { method: "POST", body: JSON.stringify(c) }),
+  deleteCustomer: (id) => req(`customers?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  reception: (date) => req(`reception?date=${encodeURIComponent(date)}`),
+  saveReception: (r) => req("reception", { method: "POST", body: JSON.stringify(r) }),
+  deleteReception: (id, date) =>
+    req(`reception?id=${encodeURIComponent(id)}&date=${encodeURIComponent(date)}`, {
+      method: "DELETE",
+    }),
+};
+
+// ---- コース定義 ----
+// 部位: ほ=ほぐし 足=フット ハ=ハンド ヘ=ヘッド F=フェイシャル
+export const COURSE_PARTS = [
+  { key: "ho", label: "ほ" },
+  { key: "foot", label: "足" },
+  { key: "hand", label: "ハ" },
+  { key: "head", label: "ヘ" },
+  { key: "facial", label: "F" },
+];
+
+export const COURSE_TYPES = [
+  { code: "B", label: "ボディ" },
+  { code: "F", label: "フェイシャル" },
+  { code: "H", label: "ヘッド" },
+  { code: "組", label: "組み合わせ" },
+  { code: "シルバー", label: "シルバー" },
+];
+
+export const DURATIONS = [10, 20, 30, 40, 60, 70, 90, 100, 120];
+
+export const PAYMENTS = ["現", "部", "クレ"];
+
+export function courseLabel(course) {
+  if (!course) return "";
+  const parts = (course.parts || [])
+    .map((p) => COURSE_PARTS.find((x) => x.key === p)?.label)
+    .filter(Boolean)
+    .join("");
+  const base = `${course.code || ""}${course.minutes || ""}`;
+  return parts ? `${base}(${parts})` : base;
+}
+
+// ---- 日付ユーティリティ ----
+export function todayStr() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+export function yen(n) {
+  return `¥${Number(n || 0).toLocaleString("ja-JP")}`;
+}
+
+// 施術者ごとの色（タイムボード用）
+const STAFF_COLORS = [
+  "#1f6feb",
+  "#e5484d",
+  "#2fa84f",
+  "#d99a00",
+  "#8b5cf6",
+  "#0ea5b7",
+  "#e0699f",
+  "#5b6b7b",
+];
+
+export function staffColor(staffId, staffList) {
+  const idx = staffList.findIndex((s) => s.id === staffId);
+  if (idx < 0) return "#5b6b7b";
+  return STAFF_COLORS[idx % STAFF_COLORS.length];
+}
