@@ -1008,3 +1008,207 @@ table.grid th.num {
   border-color: var(--blue);
   color: var(--blue);
 }
+
+/* ---------- 受付一覧表（紙の受付表の再現） ---------- */
+.sheet-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 10px 12px;
+  box-shadow: var(--shadow);
+}
+
+.sheet {
+  min-width: 1080px;
+  color: #1c1c1c;
+  font-size: 12px;
+}
+
+.sheet-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  padding: 2px 2px 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.sheet-title {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+/* 手書き部分（赤ペン） */
+.ink-red {
+  color: #c22b2b;
+  font-weight: 700;
+}
+
+/* 記入欄の空白（下線） */
+.fill-blank {
+  display: inline-block;
+  width: 26px;
+  border-bottom: 1px solid #999;
+  margin: 0 3px;
+}
+
+.fill-blank.w {
+  width: 58px;
+}
+
+.sheet-table {
+  border-collapse: collapse;
+  width: 100%;
+  border: 1.5px solid #333;
+  white-space: nowrap;
+}
+
+.sheet-table th {
+  border: 1px solid #555;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 5px;
+  text-align: center;
+  line-height: 1.25;
+  background: #fff;
+}
+
+.sheet-table td {
+  border-left: 1px solid #888;
+  border-right: 1px solid #888;
+  border-bottom: 1px dashed #b5b5b5;
+  padding: 3px 6px;
+  height: 31px;
+  cursor: pointer;
+}
+
+.sheet-table tr:last-child td {
+  border-bottom: none;
+}
+
+.sheet-table .c-center {
+  text-align: center;
+}
+
+.sheet-table .c-no {
+  font-weight: 700;
+}
+
+.sheet-table .c-name {
+  min-width: 120px;
+}
+
+.sheet-table .c-name .cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.sheet-table .c-name .nm {
+  font-weight: 600;
+}
+
+.sheet-table .c-course {
+  min-width: 150px;
+}
+
+.sheet-table .c-amount {
+  text-align: right;
+  min-width: 70px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 印字部分（様・男・女・現・部・クレなど）は薄めの黒 */
+.sheet-table .printed {
+  color: #555;
+  font-size: 10.5px;
+}
+
+/* 該当項目を囲む丸印（赤ペン） */
+.sheet-table .circled {
+  display: inline-block;
+  border: 1.5px solid #c22b2b;
+  border-radius: 999px;
+  padding: 0 3px;
+  color: #1c1c1c;
+  font-weight: 700;
+}
+
+.sheet-table .pay-extra {
+  margin-left: 3px;
+}
+
+/* ---- 集計フッター ---- */
+.sheet-foot {
+  display: flex;
+  border: 1.5px solid #333;
+  border-top: none;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.sheet-foot > div {
+  padding: 5px 8px;
+}
+
+.sf-left {
+  flex: 1.5;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 3px;
+}
+
+.sf-sign {
+  flex: 0 0 72px;
+  border-left: 1px solid #555;
+  border-right: 1px solid #555;
+  display: grid;
+  place-items: start center;
+  font-weight: 600;
+}
+
+.sf-check {
+  flex: 1;
+  border-right: 1px solid #555;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sf-check-head {
+  font-weight: 700;
+  border-bottom: 1px solid #999;
+  padding-bottom: 2px;
+}
+
+.sf-check div:not(.sf-check-head) {
+  border-bottom: 1px dashed #bbb;
+  color: #555;
+}
+
+.sf-total {
+  flex: 1.3;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 3px;
+}
+
+.sf-total > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px dashed #bbb;
+  padding-bottom: 2px;
+}
+
+.sf-total > div:last-child {
+  border-bottom: none;
+  font-weight: 700;
+}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
-import { PAYMENTS, api, courseLabel, yen } from "../api.js";
+import { PAYMENTS, api, courseLabel } from "../api.js";
 
 function emptyRecord(storeId, date) {
   return {
@@ -102,13 +102,13 @@ export default function ReceptionList() {
   };
 
   const del = async (id, recordDate) => {
-    if (!confirm("この受付を削除しますか？")) return;
+    if (!confirm("この受付を削除しますか？")) return false;
     await api.deleteReception(id, recordDate || date);
     await load();
+    return true;
   };
 
-  const staffName = (id) => staff.find((s) => s.id === id)?.name || "—";
-  const storeName = (id) => stores.find((s) => s.id === id)?.name || "—";
+  const staffName = (id) => staff.find((s) => s.id === id)?.name || "";
   const storeMenus = useMemo(
     () => menus.filter((m) => m.storeId === form?.storeId),
     [menus, form?.storeId],
@@ -161,6 +161,33 @@ export default function ReceptionList() {
     });
   };
 
+  // ---- 紙の受付表の再現用 ----
+  const [yy, mm, dd] = date.split("-").map(Number);
+  const reiwaYear = yy - 2018;
+  const youbi = "日月火水木金土"[new Date(yy, mm - 1, dd).getDay()];
+  const sheetRows = Math.max(20, view.length);
+  const cashList = view.filter((r) => r.payment === "現金");
+  const roomList = view.filter((r) => r.payment === "部屋付け");
+  const sumOf = (list) => list.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const num = (n) => Number(n || 0).toLocaleString("ja-JP");
+
+  const genderCell = (g) => (
+    <>
+      <span className={g === "男" ? "circled" : ""}>男</span>・
+      <span className={g === "女" ? "circled" : ""}>女</span>
+    </>
+  );
+
+  const payCell = (r) => (
+    <>
+      <span className={r.payment === "現金" ? "circled" : ""}>現</span>・
+      <span className={r.payment === "部屋付け" ? "circled" : ""}>部</span>・
+      <span className={r.payment === "クレジット" ? "circled" : ""}>クレ</span>
+      {r.payment === "QR" && <span className="circled pay-extra">QR</span>}
+      {r.payment === "その他" && <span className="circled pay-extra">{r.paymentNote || "他"}</span>}
+    </>
+  );
+
   return (
     <div>
       <div className="page-head">
@@ -174,88 +201,174 @@ export default function ReceptionList() {
         </button>
       </div>
 
-      <div className="stat-grid" style={{ marginBottom: 14 }}>
-        <div className="stat">
-          <div className="label">客数（全店舗）</div>
-          <div className="value">{view.length}</div>
-        </div>
-        <div className="stat">
-          <div className="label">売上合計（全店舗）</div>
-          <div className="value">{yen(total)}</div>
-        </div>
-      </div>
-
       {loading ? (
         <div className="empty">読み込み中…</div>
-      ) : view.length === 0 ? (
-        <div className="empty">受付がありません</div>
       ) : (
-        <div className="table-wrap">
-          <table className="grid">
-            <thead>
-              <tr>
-                <th>店舗</th>
-                <th>Bed</th>
-                <th>お客様名</th>
-                <th>性別</th>
-                <th>コース</th>
-                <th>指名</th>
-                <th>担当</th>
-                <th>開始</th>
-                <th>支払</th>
-                <th>部屋/携帯</th>
-                <th className="num">金額</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {view.map((r) => (
-                <tr
-                  key={r.id}
-                  style={{ cursor: "pointer" }}
-                  onClick={() => setForm({ ...normalizeRecord(r), _originalDate: r.date })}
-                >
-                  <td>{storeName(r.storeId)}</td>
-                  <td>{r.bed}</td>
-                  <td>{r.customerName}</td>
-                  <td>{r.gender}</td>
-                  <td>
-                    {courseLabel(r.course)}
-                    {r.pregnancy && <span className="pill green" style={{ marginLeft: 4 }}>妊</span>}
-                  </td>
-                  <td>{r.nominate ? "○" : ""}</td>
-                  <td>{staffName(r.staffId)}</td>
-                  <td>{r.startTime}</td>
-                  <td>
-                    {r.payment}
-                    {r.payment === "その他" && r.paymentNote ? `（${r.paymentNote}）` : ""}
-                  </td>
-                  <td>{r.room || r.phone || ""}</td>
-                  <td className="num">{Number(r.amount || 0).toLocaleString("ja-JP")}</td>
-                  <td>
-                    <button
-                      className="btn sm ghost"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setForm({ ...normalizeRecord(r), _originalDate: r.date });
-                      }}
-                    >
-                      編集
-                    </button>{" "}
-                    <button
-                      className="btn sm danger"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        del(r.id, r.date);
-                      }}
-                    >
-                      削除
-                    </button>
-                  </td>
+        <div className="sheet-scroll">
+          <div className="sheet">
+            <div className="sheet-head">
+              <span className="sheet-title">Body Recess　受付表</span>
+              <span>
+                客数 <span className="ink-red">{view.length}</span> 名（内子供
+                <span className="fill-blank" /> 名）　インバウンド
+                <span className="fill-blank" /> 名
+              </span>
+              <span>
+                令和 <span className="ink-red">{reiwaYear}</span> 年{" "}
+                <span className="ink-red">{mm}</span> 月 <span className="ink-red">{dd}</span> 日（
+                <span className="ink-red">{youbi}</span>）　NO. <span className="ink-red">1</span>
+              </span>
+            </div>
+
+            <table className="sheet-table">
+              <thead>
+                <tr>
+                  <th>
+                    終了
+                    <br />
+                    チェック
+                  </th>
+                  <th>日付</th>
+                  <th>NO</th>
+                  <th>
+                    ベッド
+                    <br />
+                    NO
+                  </th>
+                  <th>氏名</th>
+                  <th>性別</th>
+                  <th>コース</th>
+                  <th>
+                    クーポン
+                    <br />
+                    チェック
+                  </th>
+                  <th>指名</th>
+                  <th>キャッチ</th>
+                  <th>担当</th>
+                  <th>開始時間</th>
+                  <th>支払方法</th>
+                  <th>受付者</th>
+                  <th>部屋番号</th>
+                  <th>電話番号</th>
+                  <th>金額</th>
+                  <th>
+                    現金金額／釣銭
+                    <br />
+                    受領担当
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {Array.from({ length: sheetRows }, (_, i) => {
+                  const r = view[i];
+                  return (
+                    <tr
+                      key={r ? r.id : `empty-${i}`}
+                      onClick={() =>
+                        setForm(
+                          r
+                            ? { ...normalizeRecord(r), _originalDate: r.date }
+                            : emptyRecord(stores[0]?.id, date),
+                        )
+                      }
+                    >
+                      <td className="c-center" />
+                      <td className="c-center ink-red">{i === 0 ? `${mm}/${dd}` : ""}</td>
+                      <td className="c-center c-no">{i + 1}</td>
+                      <td className="c-center">{r?.bed || ""}</td>
+                      <td className="c-name">
+                        <div className="cell">
+                          <span className="nm">{r?.customerName || ""}</span>
+                          <span className="printed">様</span>
+                        </div>
+                      </td>
+                      <td className="c-center printed">{genderCell(r?.gender || "")}</td>
+                      <td className="c-course">
+                        {r ? courseLabel(r.course) : ""}
+                        {r?.pregnancy && <span className="printed">（妊）</span>}
+                      </td>
+                      <td className="c-center" />
+                      <td className="c-center">{r?.nominate ? "○" : ""}</td>
+                      <td className="c-center" />
+                      <td className="c-center">{r ? staffName(r.staffId) : ""}</td>
+                      <td className="c-center">
+                        {r?.startTime || <span className="printed">：</span>}
+                      </td>
+                      <td className="c-center printed">{payCell(r || { payment: "" })}</td>
+                      <td className="c-center">{r?.receptionist || ""}</td>
+                      <td className="c-center">{r?.room || ""}</td>
+                      <td className="c-center">{r?.phone || ""}</td>
+                      <td className="c-amount ink-red">{r?.amount ? num(r.amount) : ""}</td>
+                      <td className="c-center" />
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            <div className="sheet-foot">
+              <div className="sf-left">
+                <div>
+                  青伝③（<span className="fill-blank" />）枚　合計（
+                  <span className="fill-blank w" />）円
+                </div>
+                <div>
+                  宙店（<span className="fill-blank" />）名　合計（
+                  <span className="fill-blank w" />）円
+                </div>
+                <div>
+                  レジ金５万チェック（<span className="fill-blank" />）Ｗチェック（
+                  <span className="fill-blank" />）
+                </div>
+                <div>
+                  通帳入金チェック（<span className="fill-blank" />）日　計　表（
+                  <span className="fill-blank" />）
+                </div>
+                <div>
+                  中間の現金チェック（<span className="fill-blank" />）時（
+                  <span className="fill-blank" />）分
+                </div>
+              </div>
+              <div className="sf-sign">サイン</div>
+              <div className="sf-check">
+                <div className="sf-check-head">リスト（磁石）確認</div>
+                <div>時　担当</div>
+                <div>時　担当</div>
+                <div>時　担当</div>
+                <div>時　担当</div>
+              </div>
+              <div className="sf-total">
+                <div>
+                  <span>現金</span>
+                  <span>
+                    <span className="ink-red">{cashList.length}</span> 件
+                  </span>
+                  <span>
+                    <span className="ink-red">{num(sumOf(cashList))}</span> 円
+                  </span>
+                </div>
+                <div>
+                  <span>部屋掛け</span>
+                  <span>
+                    <span className="ink-red">{roomList.length}</span> 件
+                  </span>
+                  <span>
+                    <span className="ink-red">{num(sumOf(roomList))}</span> 円
+                  </span>
+                </div>
+                <div>
+                  <span>合計</span>
+                  <span>
+                    <span className="ink-red">{view.length}</span> 件
+                  </span>
+                  <span>
+                    <span className="ink-red">{num(total)}</span> 円
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -468,6 +581,17 @@ export default function ReceptionList() {
               <button className="btn gray" onClick={() => setForm(null)}>
                 キャンセル
               </button>
+              {form.id && (
+                <button
+                  className="btn danger"
+                  disabled={busy}
+                  onClick={async () => {
+                    if (await del(form.id, form._originalDate || form.date)) setForm(null);
+                  }}
+                >
+                  削除
+                </button>
+              )}
               <button className="btn" onClick={save} disabled={busy}>
                 保存
               </button>
