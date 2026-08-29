@@ -13,7 +13,7 @@ export default function Login({ onLogin }) {
     try {
       const r = await api.login(loginId.trim(), password.trim());
       if (r?.role) {
-        onLogin(r.role);
+        onLogin(r);
       } else {
         setErr("IDまたはパスワードが違います");
       }
