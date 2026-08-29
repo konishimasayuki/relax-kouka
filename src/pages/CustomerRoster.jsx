@@ -116,7 +116,7 @@ export default function CustomerRoster() {
                     <button className="btn sm ghost" onClick={() => setForm({ ...c })}>
                       編集
                     </button>{" "}
-                    {role === "debug" && (
+                    {(role === "admin" || role === "debug") && (
                       <button className="btn sm danger" onClick={() => del(c.id)}>
                         削除
                       </button>
