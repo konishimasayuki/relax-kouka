@@ -652,6 +652,63 @@ table.grid th.num {
   flex: 1;
 }
 
+/* ---------- シフト月間カレンダー ---------- */
+.shift-cal-head {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+.shift-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-left: 1px solid var(--border);
+}
+
+.shift-cal-cell {
+  min-height: 62px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 3px 3px 2px;
+  font-size: 10px;
+  overflow: hidden;
+}
+
+.shift-cal-cell.out {
+  background: var(--bg-soft);
+  color: var(--muted);
+}
+
+.shift-cal-cell.today {
+  background: var(--blue-light);
+}
+
+.shift-cal-cell .cal-date {
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.shift-cal-cell .cal-shift {
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shift-cal-cell .cal-more {
+  font-size: 9px;
+  color: var(--muted);
+}
+
 /* ---------- レスポンシブ ---------- */
 @media (min-width: 720px) {
   .stat-grid {
