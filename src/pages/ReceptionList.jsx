@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
 import { PAYMENTS, api, courseLabel, todayStr, yen } from "../api.js";
+import SignaturePad from "../components/SignaturePad.jsx";
 
 function emptyRecord(storeId, date) {
   return {
@@ -20,6 +21,7 @@ function emptyRecord(storeId, date) {
     },
     pregnancy: false,
     nominate: false,
+    done: false,
     staffId: "",
     startTime: "",
     payment: "現金",
@@ -38,19 +40,25 @@ function normalizeRecord(r) {
   return { ...base, ...r, course: { ...base.course, ...(r.course || {}) } };
 }
 
+function emptyMeta(date) {
+  return { date, guestCount: "", childCount: "", inbound: "", signature: "" };
+}
+
 export default function ReceptionList() {
   const { stores, staff, menus, ready } = useApp();
   const [date, setDate] = useState(todayStr());
   const [records, setRecords] = useState([]);
   const [shifts, setShifts] = useState([]);
-  const [form, setForm] = useState(null);
-  const [busy, setBusy] = useState(false);
+  const [meta, setMeta] = useState(emptyMeta(todayStr()));
   const [loading, setLoading] = useState(false);
+  const [signOpen, setSignOpen] = useState(false);
 
   const load = async () => {
     setLoading(true);
     try {
-      setRecords(await api.reception(date));
+      const [rec, mt] = await Promise.all([api.reception(date), api.receptionMeta(date)]);
+      setRecords(rec);
+      setMeta(mt);
     } finally {
       setLoading(false);
     }
@@ -77,117 +85,62 @@ export default function ReceptionList() {
     [records],
   );
 
-  const total = useMemo(
-    () => view.reduce((s, r) => s + Number(r.amount || 0), 0),
-    [view],
-  );
+  const total = useMemo(() => view.reduce((s, r) => s + Number(r.amount || 0), 0), [view]);
 
-  const save = async () => {
-    if (!form.customerName.trim()) return alert("お客様名を入力してください");
-    if (!form.date) return alert("施術日を入力してください");
-    setBusy(true);
+  // レコードの一部を更新して即保存（新規行なら作成）
+  const updateRecord = async (r, patch) => {
+    const base = r ? normalizeRecord(r) : emptyRecord(stores[0]?.id, date);
+    const payload = { ...base, ...patch };
     try {
-      const { _originalDate, ...payload } = form;
-      await api.saveReception(payload);
-      // 編集で施術日を変更した場合は、元の日付側のデータを削除して移動させる
-      if (form.id && _originalDate && _originalDate !== form.date) {
-        await api.deleteReception(form.id, _originalDate);
-      }
-      await load();
-      setForm(null);
+      const saved = await api.saveReception(payload);
+      setRecords((prev) => {
+        const exists = prev.some((x) => x.id === saved.id);
+        return exists ? prev.map((x) => (x.id === saved.id ? saved : x)) : [...prev, saved];
+      });
     } catch (e) {
       alert(`保存失敗: ${e.message}`);
-    } finally {
-      setBusy(false);
     }
   };
 
   const del = async (id, recordDate) => {
-    if (!confirm("この受付を削除しますか？")) return false;
+    if (!confirm("この受付を削除しますか？")) return;
     await api.deleteReception(id, recordDate || date);
-    await load();
-    return true;
+    setRecords((prev) => prev.filter((x) => x.id !== id));
+  };
+
+  const updateMeta = async (patch) => {
+    const payload = { ...meta, ...patch, date };
+    setMeta(payload);
+    try {
+      await api.saveReceptionMeta(payload);
+    } catch (e) {
+      alert(`保存失敗: ${e.message}`);
+    }
   };
 
   const staffName = (id) => staff.find((s) => s.id === id)?.name || "";
-  const storeMenus = useMemo(
-    () => menus.filter((m) => m.storeId === form?.storeId),
-    [menus, form?.storeId],
+  const storeName = (id) => stores.find((s) => s.id === id)?.name || "";
+
+  // その日にシフト登録されているスタッフのみ担当に選べるようにする
+  const workingStaffIds = useMemo(
+    () => new Set(shifts.filter((s) => s.date === date).map((s) => s.staffId)),
+    [shifts, date],
   );
+  const assignableStaff = (r) =>
+    staff.filter((s) => s.active && (workingStaffIds.has(s.id) || s.id === r?.staffId));
 
-  // 施術日にシフト登録されているスタッフのみ担当に選べるようにする
-  const workingStaffIds = useMemo(() => {
-    if (!form?.date) return [];
-    return [...new Set(shifts.filter((s) => s.date === form.date).map((s) => s.staffId))];
-  }, [shifts, form?.date]);
-
-  const assignableStaff = useMemo(
-    () =>
-      staff.filter(
-        (s) => s.active && (workingStaffIds.includes(s.id) || s.id === form?.staffId),
-      ),
-    [staff, workingStaffIds, form?.staffId],
-  );
-
-  // 店舗を変更したら、その店舗のメニューに合わせてコース選択をリセット
-  const changeStore = (storeId) => {
-    setForm({
-      ...form,
-      storeId,
-      course: { ...form.course, menuId: "", name: "", displayName: "", minutes: "", color: "" },
-    });
-  };
-
-  // メニューを選んだら、コース名・表示名・時間・色・金額を自動反映（金額は後から編集・消去可）
-  const selectMenu = (menuId) => {
-    const m = menus.find((x) => x.id === menuId);
-    if (!m) {
-      setForm({
-        ...form,
-        course: { ...form.course, menuId: "", name: "", displayName: "", minutes: "", color: "" },
-      });
-      return;
-    }
-    setForm({
-      ...form,
-      course: {
-        ...form.course,
-        menuId: m.id,
-        name: m.name,
-        displayName: m.displayName,
-        minutes: m.minutes,
-        color: m.color,
-      },
-      amount: m.price,
-    });
-  };
+  const menusFor = (r) => menus.filter((m) => m.storeId === (r?.storeId || stores[0]?.id));
 
   // ---- 紙の受付表の再現用 ----
   const [yy, mm, dd] = date.split("-").map(Number);
-  const reiwaYear = yy - 2018;
   const youbi = "日月火水木金土"[new Date(yy, mm - 1, dd).getDay()];
   const sheetRows = Math.max(20, view.length);
   const cashList = view.filter((r) => r.payment === "現金");
   const roomList = view.filter((r) => r.payment === "部屋付け");
+  const creditList = view.filter((r) => r.payment === "クレジット");
+  const qrList = view.filter((r) => r.payment === "QR");
   const sumOf = (list) => list.reduce((s, r) => s + Number(r.amount || 0), 0);
   const num = (n) => Number(n || 0).toLocaleString("ja-JP");
-
-  const genderCell = (g) => (
-    <>
-      <span className={g === "男" ? "circled" : ""}>男</span>・
-      <span className={g === "女" ? "circled" : ""}>女</span>
-    </>
-  );
-
-  const payCell = (r) => (
-    <>
-      <span className={r.payment === "現金" ? "circled" : ""}>現</span>・
-      <span className={r.payment === "部屋付け" ? "circled" : ""}>部</span>・
-      <span className={r.payment === "クレジット" ? "circled" : ""}>クレ</span>
-      {r.payment === "QR" && <span className="circled pay-extra">QR</span>}
-      {r.payment === "その他" && <span className="circled pay-extra">{r.paymentNote || "他"}</span>}
-    </>
-  );
 
   return (
     <div>
@@ -197,27 +150,44 @@ export default function ReceptionList() {
 
       <div className="toolbar">
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        <button className="btn sm" onClick={() => setForm(emptyRecord(stores[0]?.id, date))}>
-          ＋ 受付追加
-        </button>
+        <span className="muted" style={{ fontSize: 12 }}>
+          セルをクリックしてそのまま編集／行を右クリックで削除
+        </span>
       </div>
 
       {loading ? (
         <div className="empty">読み込み中…</div>
       ) : (
-        <div className="sheet-scroll">
+        <div className="sheet-scroll payroll-sheet">
           <div className="sheet">
             <div className="sheet-head">
               <span className="sheet-title">Body Recess　受付表</span>
               <span>
-                客数 <span className="ink-red">{view.length}</span> 名（内子供
-                <span className="fill-blank" /> 名）　インバウンド
-                <span className="fill-blank" /> 名
+                客数{" "}
+                <input
+                  type="number"
+                  className="meta-input"
+                  defaultValue={meta.guestCount}
+                  onBlur={(e) => updateMeta({ guestCount: e.target.value })}
+                />{" "}
+                名（内子供
+                <input
+                  type="number"
+                  className="meta-input"
+                  defaultValue={meta.childCount}
+                  onBlur={(e) => updateMeta({ childCount: e.target.value })}
+                />
+                名）　インバウンド
+                <input
+                  type="number"
+                  className="meta-input"
+                  defaultValue={meta.inbound}
+                  onBlur={(e) => updateMeta({ inbound: e.target.value })}
+                />
+                名
               </span>
               <span>
-                令和 <span className="ink-red">{reiwaYear}</span> 年{" "}
-                <span className="ink-red">{mm}</span> 月 <span className="ink-red">{dd}</span> 日（
-                <span className="ink-red">{youbi}</span>）　NO. <span className="ink-red">1</span>
+                令和 {yy - 2018} 年 {mm} 月 {dd} 日（{youbi}）　NO. 1
               </span>
             </div>
 
@@ -231,6 +201,7 @@ export default function ReceptionList() {
                   </th>
                   <th>日付</th>
                   <th>NO</th>
+                  <th>店舗</th>
                   <th>
                     ベッド
                     <br />
@@ -263,44 +234,231 @@ export default function ReceptionList() {
               <tbody>
                 {Array.from({ length: sheetRows }, (_, i) => {
                   const r = view[i];
+                  const rowKey = r ? r.id : `empty-${i}`;
                   return (
                     <tr
-                      key={r ? r.id : `empty-${i}`}
-                      onClick={() =>
-                        setForm(
-                          r
-                            ? { ...normalizeRecord(r), _originalDate: r.date }
-                            : emptyRecord(stores[0]?.id, date),
-                        )
-                      }
+                      key={rowKey}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        if (r) del(r.id, r.date);
+                      }}
                     >
-                      <td className="c-center" />
-                      <td className="c-center ink-red">{i === 0 ? `${mm}/${dd}` : ""}</td>
+                      <td className="c-center">
+                        <input
+                          type="checkbox"
+                          checked={!!r?.done}
+                          disabled={!r}
+                          onChange={(e) => updateRecord(r, { done: e.target.checked })}
+                        />
+                      </td>
+                      <td className="c-center">{i === 0 ? `${mm}/${dd}` : ""}</td>
                       <td className="c-center c-no">{i + 1}</td>
-                      <td className="c-center">{r?.bed || ""}</td>
+                      <td className="c-center">
+                        <select
+                          className="cell-select"
+                          value={r?.storeId || stores[0]?.id || ""}
+                          onChange={(e) =>
+                            updateRecord(r, {
+                              storeId: e.target.value,
+                              course: {
+                                menuId: "",
+                                name: "",
+                                displayName: "",
+                                minutes: "",
+                                color: "",
+                                freeText: r?.course?.freeText || "",
+                              },
+                            })
+                          }
+                        >
+                          {stores.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="c-center">
+                        <input
+                          className="cell-input c-narrow"
+                          key={`${rowKey}-bed`}
+                          defaultValue={r?.bed || ""}
+                          onBlur={(e) => updateRecord(r, { bed: e.target.value })}
+                        />
+                      </td>
                       <td className="c-name">
                         <div className="cell">
-                          <span className="nm">{r?.customerName || ""}</span>
+                          <input
+                            className="cell-input"
+                            key={`${rowKey}-name`}
+                            defaultValue={r?.customerName || ""}
+                            onBlur={(e) => updateRecord(r, { customerName: e.target.value })}
+                          />
                           <span className="printed">様</span>
                         </div>
                       </td>
-                      <td className="c-center printed">{genderCell(r?.gender || "")}</td>
+                      <td className="c-center printed">
+                        <span
+                          className={r?.gender === "男" ? "circled clickable" : "clickable"}
+                          onClick={() => updateRecord(r, { gender: "男" })}
+                        >
+                          男
+                        </span>
+                        ・
+                        <span
+                          className={r?.gender === "女" ? "circled clickable" : "clickable"}
+                          onClick={() => updateRecord(r, { gender: "女" })}
+                        >
+                          女
+                        </span>
+                      </td>
                       <td className="c-course">
-                        {r ? courseLabel(r.course) : ""}
+                        <select
+                          className="cell-select"
+                          value={r?.course?.menuId || ""}
+                          onChange={(e) => {
+                            const m = menusFor(r).find((x) => x.id === e.target.value);
+                            if (!m) {
+                              updateRecord(r, {
+                                course: {
+                                  ...(r?.course || {}),
+                                  menuId: "",
+                                  name: "",
+                                  displayName: "",
+                                  minutes: "",
+                                  color: "",
+                                },
+                              });
+                              return;
+                            }
+                            updateRecord(r, {
+                              course: {
+                                ...(r?.course || {}),
+                                menuId: m.id,
+                                name: m.name,
+                                displayName: m.displayName,
+                                minutes: m.minutes,
+                                color: m.color,
+                              },
+                              amount: m.price,
+                            });
+                          }}
+                        >
+                          <option value="">未選択</option>
+                          {menusFor(r).map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.name}（{m.minutes}分）
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          className="cell-input course-free"
+                          key={`${rowKey}-free`}
+                          defaultValue={r?.course?.freeText || ""}
+                          placeholder="自由記述"
+                          onBlur={(e) =>
+                            updateRecord(r, {
+                              course: { ...(r?.course || {}), freeText: e.target.value },
+                            })
+                          }
+                        />
                         {r?.pregnancy && <span className="printed">（妊）</span>}
                       </td>
                       <td className="c-center" />
-                      <td className="c-center">{r?.nominate ? "○" : ""}</td>
-                      <td className="c-center" />
-                      <td className="c-center">{r ? staffName(r.staffId) : ""}</td>
-                      <td className="c-center">
-                        {r?.startTime || <span className="printed">：</span>}
+                      <td
+                        className="c-center clickable"
+                        onClick={() => updateRecord(r, { nominate: !r?.nominate })}
+                      >
+                        {r?.nominate ? "○" : ""}
                       </td>
-                      <td className="c-center printed">{payCell(r || { payment: "" })}</td>
-                      <td className="c-center">{r?.receptionist || ""}</td>
-                      <td className="c-center">{r?.room || ""}</td>
-                      <td className="c-center">{r?.phone || ""}</td>
-                      <td className="c-amount ink-red">{r?.amount ? num(r.amount) : ""}</td>
+                      <td className="c-center" />
+                      <td className="c-center">
+                        <select
+                          className="cell-select"
+                          value={r?.staffId || ""}
+                          onChange={(e) => updateRecord(r, { staffId: e.target.value })}
+                        >
+                          <option value="">未定</option>
+                          {assignableStaff(r).map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="c-center">
+                        <input
+                          type="time"
+                          className="cell-input c-narrow"
+                          value={r?.startTime || ""}
+                          onChange={(e) => updateRecord(r, { startTime: e.target.value })}
+                        />
+                      </td>
+                      <td className="c-center printed pay-cell">
+                        {PAYMENTS.filter((p) => p !== "その他").map((p, idx, arr) => (
+                          <span key={p}>
+                            <span
+                              className={r?.payment === p ? "circled clickable" : "clickable"}
+                              onClick={() => updateRecord(r, { payment: p, paymentNote: "" })}
+                            >
+                              {p === "現金" ? "現" : p === "部屋付け" ? "部" : p === "クレジット" ? "クレ" : p}
+                            </span>
+                            {idx < arr.length - 1 ? "・" : ""}
+                          </span>
+                        ))}
+                        ・
+                        {r?.payment === "その他" ? (
+                          <input
+                            className="cell-input c-narrow"
+                            key={`${rowKey}-paynote`}
+                            defaultValue={r?.paymentNote || ""}
+                            placeholder="他"
+                            onBlur={(e) =>
+                              updateRecord(r, { payment: "その他", paymentNote: e.target.value })
+                            }
+                          />
+                        ) : (
+                          <span
+                            className="clickable"
+                            onClick={() => updateRecord(r, { payment: "その他" })}
+                          >
+                            他
+                          </span>
+                        )}
+                      </td>
+                      <td className="c-center">
+                        <input
+                          className="cell-input c-narrow"
+                          key={`${rowKey}-recept`}
+                          defaultValue={r?.receptionist || ""}
+                          onBlur={(e) => updateRecord(r, { receptionist: e.target.value })}
+                        />
+                      </td>
+                      <td className="c-center">
+                        <input
+                          className="cell-input c-narrow"
+                          key={`${rowKey}-room`}
+                          defaultValue={r?.room || ""}
+                          onBlur={(e) => updateRecord(r, { room: e.target.value })}
+                        />
+                      </td>
+                      <td className="c-center">
+                        <input
+                          className="cell-input c-narrow"
+                          key={`${rowKey}-phone`}
+                          defaultValue={r?.phone || ""}
+                          onBlur={(e) => updateRecord(r, { phone: e.target.value })}
+                        />
+                      </td>
+                      <td className="c-amount">
+                        <input
+                          type="number"
+                          className="cell-input c-narrow amount-input"
+                          key={`${rowKey}-amount`}
+                          defaultValue={r?.amount || ""}
+                          onBlur={(e) => updateRecord(r, { amount: Number(e.target.value) || 0 })}
+                        />
+                      </td>
                       <td className="c-center" />
                     </tr>
                   );
@@ -311,8 +469,7 @@ export default function ReceptionList() {
             <div className="sheet-foot">
               <div className="sf-left">
                 <div>
-                  青伝③（<span className="fill-blank" />）枚　合計（
-                  <span className="fill-blank w" />）円
+                  青伝③（{roomList.length}）枚　合計（{num(sumOf(roomList))}）円
                 </div>
                 <div>
                   宙店（<span className="fill-blank" />）名　合計（
@@ -331,7 +488,13 @@ export default function ReceptionList() {
                   <span className="fill-blank" />）分
                 </div>
               </div>
-              <div className="sf-sign">サイン</div>
+              <div className="sf-sign clickable" onClick={() => setSignOpen(true)}>
+                {meta.signature ? (
+                  <img src={meta.signature} alt="サイン" className="sf-sign-img" />
+                ) : (
+                  "サイン"
+                )}
+              </div>
               <div className="sf-check">
                 <div className="sf-check-head">リスト（磁石）確認</div>
                 <div>時　担当</div>
@@ -342,30 +505,28 @@ export default function ReceptionList() {
               <div className="sf-total">
                 <div>
                   <span>現金</span>
-                  <span>
-                    <span className="ink-red">{cashList.length}</span> 件
-                  </span>
-                  <span>
-                    <span className="ink-red">{num(sumOf(cashList))}</span> 円
-                  </span>
+                  <span>{cashList.length} 件</span>
+                  <span>{num(sumOf(cashList))} 円</span>
                 </div>
                 <div>
                   <span>部屋掛け</span>
-                  <span>
-                    <span className="ink-red">{roomList.length}</span> 件
-                  </span>
-                  <span>
-                    <span className="ink-red">{num(sumOf(roomList))}</span> 円
-                  </span>
+                  <span>{roomList.length} 件</span>
+                  <span>{num(sumOf(roomList))} 円</span>
+                </div>
+                <div>
+                  <span>クレジット</span>
+                  <span>{creditList.length} 件</span>
+                  <span>{num(sumOf(creditList))} 円</span>
+                </div>
+                <div>
+                  <span>QR</span>
+                  <span>{qrList.length} 件</span>
+                  <span>{num(sumOf(qrList))} 円</span>
                 </div>
                 <div>
                   <span>合計</span>
-                  <span>
-                    <span className="ink-red">{view.length}</span> 件
-                  </span>
-                  <span>
-                    <span className="ink-red">{num(total)}</span> 円
-                  </span>
+                  <span>{view.length} 件</span>
+                  <span>{num(total)} 円</span>
                 </div>
               </div>
             </div>
@@ -373,232 +534,15 @@ export default function ReceptionList() {
         </div>
       )}
 
-      {form && (
-        <div className="modal-overlay" onClick={() => setForm(null)}>
-          <div className="modal reception-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-head">
-              <h3>{form.id ? "受付を編集" : "受付を追加"}</h3>
-              <button type="button" className="modal-close" onClick={() => setForm(null)} aria-label="閉じる">
-                ✕
-              </button>
-            </div>
-
-            <div className="row">
-              <div className="field">
-                <label>施術日</label>
-                <input
-                  type="date"
-                  value={form.date}
-                  onChange={(e) => setForm({ ...form, date: e.target.value })}
-                />
-              </div>
-              <div className="field">
-                <label>開始時間</label>
-                <input
-                  type="time"
-                  value={form.startTime}
-                  onChange={(e) => setForm({ ...form, startTime: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="row">
-              <div className="field">
-                <label>店舗</label>
-                <select value={form.storeId} onChange={(e) => changeStore(e.target.value)}>
-                  {stores.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <label>ベッド</label>
-                <input
-                  value={form.bed}
-                  onChange={(e) => setForm({ ...form, bed: e.target.value })}
-                  placeholder="例：1 / オイルベッド"
-                />
-              </div>
-            </div>
-
-            <div className="row">
-              <div className="field">
-                <label>お客様名</label>
-                <input
-                  value={form.customerName}
-                  onChange={(e) => setForm({ ...form, customerName: e.target.value })}
-                />
-              </div>
-              <div className="field">
-                <label>性別</label>
-                <select
-                  value={form.gender}
-                  onChange={(e) => setForm({ ...form, gender: e.target.value })}
-                >
-                  <option value="女">女</option>
-                  <option value="男">男</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="field">
-              <label>コース</label>
-              {storeMenus.length === 0 ? (
-                <div className="muted" style={{ fontSize: 13, marginBottom: 8 }}>
-                  この店舗のコースがまだ登録されていません（料金タブで登録してください）
-                </div>
-              ) : (
-                <select value={form.course.menuId} onChange={(e) => selectMenu(e.target.value)}>
-                  <option value="">選択してください</option>
-                  {storeMenus.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}（{m.minutes}分・{yen(m.price)}）
-                    </option>
-                  ))}
-                </select>
-              )}
-              <input
-                style={{ marginTop: 8 }}
-                value={form.course.freeText}
-                onChange={(e) =>
-                  setForm({ ...form, course: { ...form.course, freeText: e.target.value } })
-                }
-                placeholder="コース自由記述（入力するとこちらが優先表示されます）"
-              />
-            </div>
-
-            <div className="field">
-              <div className="checks">
-                <label className="check">
-                  <input
-                    type="checkbox"
-                    checked={form.nominate}
-                    onChange={(e) => setForm({ ...form, nominate: e.target.checked })}
-                  />
-                  指名
-                </label>
-                <label className="check">
-                  <input
-                    type="checkbox"
-                    checked={form.pregnancy}
-                    onChange={(e) => setForm({ ...form, pregnancy: e.target.checked })}
-                  />
-                  妊婦
-                </label>
-              </div>
-            </div>
-
-            <div className="row">
-              <div className="field">
-                <label>担当スタッフ</label>
-                <select
-                  value={form.staffId}
-                  onChange={(e) => setForm({ ...form, staffId: e.target.value })}
-                >
-                  <option value="">未定</option>
-                  {assignableStaff.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-                {form.date && workingStaffIds.length === 0 && (
-                  <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-                    この日のシフト登録がありません（シフトタブで登録してください）
-                  </div>
-                )}
-              </div>
-              <div className="field">
-                <label>金額</label>
-                <input
-                  type="number"
-                  value={form.amount}
-                  onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })}
-                />
-              </div>
-            </div>
-
-            <div className="row">
-              <div className="field">
-                <label>支払方法</label>
-                <select
-                  value={form.payment}
-                  onChange={(e) => setForm({ ...form, payment: e.target.value })}
-                >
-                  {PAYMENTS.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {form.payment === "その他" && (
-                <div className="field">
-                  <label>支払方法（自由記述）</label>
-                  <input
-                    value={form.paymentNote}
-                    onChange={(e) => setForm({ ...form, paymentNote: e.target.value })}
-                    placeholder="例：PayPay"
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="row">
-              <div className="field">
-                <label>部屋番号</label>
-                <input
-                  value={form.room}
-                  onChange={(e) => setForm({ ...form, room: e.target.value })}
-                />
-              </div>
-              <div className="field">
-                <label>携帯番号</label>
-                <input
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="field">
-              <label>受付者 / メモ</label>
-              <input
-                value={form.receptionist}
-                onChange={(e) => setForm({ ...form, receptionist: e.target.value })}
-                placeholder="受付者"
-                style={{ marginBottom: 8 }}
-              />
-              <input
-                value={form.note}
-                onChange={(e) => setForm({ ...form, note: e.target.value })}
-                placeholder="メモ"
-              />
-            </div>
-
-            <div className="modal-actions">
-              <button className="btn gray" onClick={() => setForm(null)}>
-                キャンセル
-              </button>
-              {form.id && (
-                <button
-                  className="btn danger"
-                  disabled={busy}
-                  onClick={async () => {
-                    if (await del(form.id, form._originalDate || form.date)) setForm(null);
-                  }}
-                >
-                  削除
-                </button>
-              )}
-              <button className="btn" onClick={save} disabled={busy}>
-                保存
-              </button>
-            </div>
-          </div>
-        </div>
+      {signOpen && (
+        <SignaturePad
+          initialValue={meta.signature}
+          onClose={() => setSignOpen(false)}
+          onSave={(dataUrl) => {
+            updateMeta({ signature: dataUrl });
+            setSignOpen(false);
+          }}
+        />
       )}
     </div>
   );

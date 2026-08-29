@@ -1139,14 +1139,82 @@ table.grid th.num {
   font-size: 10.5px;
 }
 
-/* 該当項目を囲む丸印（赤ペン） */
+/* 該当項目を囲む丸印（黒） */
 .sheet-table .circled {
   display: inline-block;
-  border: 1.5px solid #c22b2b;
+  border: 1.5px solid #1c1c1c;
   border-radius: 999px;
   padding: 0 3px;
   color: #1c1c1c;
   font-weight: 700;
+}
+
+/* クリックして直接選択・切替できる項目 */
+.sheet-table .clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sheet-table .clickable:hover {
+  background: var(--blue-light);
+  border-radius: 4px;
+}
+
+.sheet-table .pay-cell {
+  white-space: nowrap;
+}
+
+/* セル内で直接編集できる入力欄（印刷物の記入欄のように見せる） */
+.cell-input,
+.cell-select {
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: #1c1c1c;
+  width: 100%;
+  padding: 1px 2px;
+  border-radius: 3px;
+}
+
+.cell-input:focus,
+.cell-select:focus {
+  outline: none;
+  background: var(--blue-light);
+}
+
+.cell-input.c-narrow {
+  width: 56px;
+}
+
+.cell-select {
+  min-width: 64px;
+}
+
+.course-free {
+  display: block;
+  font-size: 10px;
+  color: #555;
+  margin-top: 2px;
+}
+
+.amount-input {
+  text-align: right;
+  width: 64px;
+}
+
+.meta-input {
+  width: 44px;
+  border: none;
+  border-bottom: 1px solid #999;
+  background: transparent;
+  font: inherit;
+  text-align: center;
+  color: #1c1c1c;
+}
+
+.meta-input:focus {
+  outline: none;
+  border-bottom-color: var(--blue);
 }
 
 .sheet-table .pay-extra {
@@ -1179,8 +1247,26 @@ table.grid th.num {
   border-left: 1px solid #555;
   border-right: 1px solid #555;
   display: grid;
-  place-items: start center;
+  place-items: center;
   font-weight: 600;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.sf-sign-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.signature-canvas {
+  width: 100%;
+  max-width: 600px;
+  height: 260px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  touch-action: none;
+  background: #fff;
 }
 
 .sf-check {

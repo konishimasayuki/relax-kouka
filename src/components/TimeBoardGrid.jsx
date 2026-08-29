@@ -226,7 +226,6 @@ export default function TimeBoardGrid({
                       onClick={() => onSelect?.(r)}
                     >
                       <div className="bl-course">{label}</div>
-                      <div className="bl-name">{r.customerName}</div>
                     </div>
                   );
                 })}
@@ -262,7 +261,6 @@ export default function TimeBoardGrid({
                     onClick={() => onSelect?.(r)}
                   >
                     <div className="bl-course">{label}</div>
-                    <div className="bl-name">{r.customerName}</div>
                   </div>
                 );
               })}

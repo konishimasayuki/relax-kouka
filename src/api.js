@@ -37,6 +37,9 @@ export const api = {
       method: "DELETE",
     }),
 
+  receptionMeta: (date) => req(`receptionMeta?date=${encodeURIComponent(date)}`),
+  saveReceptionMeta: (m) => req("receptionMeta", { method: "POST", body: JSON.stringify(m) }),
+
   shifts: () => req("shifts"),
   saveShift: (s) => req("shifts", { method: "POST", body: JSON.stringify(s) }),
   deleteShift: (id) => req(`shifts?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
