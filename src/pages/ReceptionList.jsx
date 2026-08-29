@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
-import { PAYMENTS, api, courseLabel } from "../api.js";
+import { PAYMENTS, api, courseLabel, yen } from "../api.js";
 
 function emptyRecord(storeId, date) {
   return {
