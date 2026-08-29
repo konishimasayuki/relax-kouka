@@ -6,6 +6,7 @@ const HOUR_START = 11;
 const HOUR_END = 24; // 表示ラベルは 11〜23
 const HOUR_W = 60;
 const MIN_W = HOUR_W / 60;
+const NOTE_W = 200;
 const WEEK_LABEL = ["日", "月", "火", "水", "木", "金", "土"];
 
 function toMin(hhmm) {
@@ -155,7 +156,7 @@ export default function Shift() {
           <div className="empty">本日のシフト登録がありません</div>
         ) : (
           <div className="tb-scroll">
-            <div className="tb" style={{ minWidth: BED_W + laneW }}>
+            <div className="tb" style={{ minWidth: BED_W + laneW + NOTE_W }}>
               <div className="tb-hours">
                 <div className="tb-bedcol" style={{ width: BED_W, height: 33 }} />
                 {hours.map((h) => (
@@ -163,6 +164,9 @@ export default function Shift() {
                     {h}
                   </div>
                 ))}
+                <div className="tb-hour" style={{ width: NOTE_W }}>
+                  メモ
+                </div>
               </div>
               {todays.map((s) => (
                 <div className="tb-row" key={s.id}>
@@ -185,8 +189,10 @@ export default function Shift() {
                       <div className="bl-course">
                         {s.start}-{s.end}
                       </div>
-                      {s.note && <div className="bl-name">{s.note}</div>}
                     </div>
+                  </div>
+                  <div className="tb-note" style={{ width: NOTE_W }}>
+                    {s.note}
                   </div>
                 </div>
               ))}
