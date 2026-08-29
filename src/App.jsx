@@ -5,6 +5,7 @@ import CustomerRoster from "./pages/CustomerRoster.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import IndividualDaily from "./pages/IndividualDaily.jsx";
 import Login from "./pages/Login.jsx";
+import Pricing from "./pages/Pricing.jsx";
 import ReceptionList from "./pages/ReceptionList.jsx";
 import Settings from "./pages/Settings.jsx";
 import Shift from "./pages/Shift.jsx";
@@ -21,6 +22,7 @@ const PAGES = {
   reception: ReceptionList,
   daily: IndividualDaily,
   customers: CustomerRoster,
+  pricing: Pricing,
   settings: Settings,
 };
 
@@ -35,12 +37,14 @@ export default function App() {
   const [date, setDate] = useState(todayStr());
   const [stores, setStores] = useState([]);
   const [staff, setStaff] = useState([]);
+  const [menus, setMenus] = useState([]);
   const [ready, setReady] = useState(false);
 
   const refreshMaster = useCallback(async () => {
-    const [st, sf] = await Promise.all([api.stores(), api.staff()]);
+    const [st, sf, mn] = await Promise.all([api.stores(), api.staff(), api.menus()]);
     setStores(st);
     setStaff(sf);
+    setMenus(mn);
   }, []);
 
   useEffect(() => {
@@ -88,6 +92,7 @@ export default function App() {
     setDate,
     stores,
     staff,
+    menus,
     refreshMaster,
     ready,
   };

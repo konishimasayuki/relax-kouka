@@ -71,42 +71,70 @@ export default async function handler(req, res) {
     ];
     for (const c of custs) await saveItem("customer", c);
 
+    const menuDefs = [
+      { storeId: savedStores[0].id, name: "ボディオイル", minutes: 60, price: 5500, color: "blue" },
+      { storeId: savedStores[0].id, name: "ボディオイル", minutes: 90, price: 8000, color: "blue" },
+      { storeId: savedStores[0].id, name: "フェイシャル", minutes: 40, price: 4400, color: "green" },
+      { storeId: savedStores[1].id, name: "組み合わせ", minutes: 90, price: 9460, color: "purple" },
+      { storeId: savedStores[2].id, name: "フェイシャル", minutes: 40, price: 4400, color: "green" },
+    ];
+    const savedMenus = [];
+    for (const m of menuDefs) savedMenus.push(await saveItem("menu", m));
+
     const ns = `rec:${date}`;
     const recs = [
       {
         storeId: savedStores[0].id,
-        bed: 1,
+        bed: "1",
         customerName: "TEST山田",
         gender: "男",
-        course: { code: "B", minutes: 60, parts: ["ho"] },
+        course: {
+          menuId: savedMenus[0].id,
+          name: savedMenus[0].name,
+          minutes: savedMenus[0].minutes,
+          color: savedMenus[0].color,
+          parts: ["ho"],
+        },
         staffId: savedStaff[0].id,
         startTime: "15:00",
         payment: "現金",
-        amount: 5500,
+        amount: savedMenus[0].price,
         nominate: true,
       },
       {
         storeId: savedStores[2].id,
-        bed: 1,
+        bed: "1",
         customerName: "TEST鈴木",
         gender: "女",
-        course: { code: "F", minutes: 40, parts: ["facial"] },
+        course: {
+          menuId: savedMenus[4].id,
+          name: savedMenus[4].name,
+          minutes: savedMenus[4].minutes,
+          color: savedMenus[4].color,
+          parts: ["facial"],
+        },
         staffId: savedStaff[0].id,
         startTime: "16:30",
         payment: "部屋付け",
-        amount: 4400,
+        amount: savedMenus[4].price,
         room: "1014",
       },
       {
         storeId: savedStores[1].id,
-        bed: 1,
+        bed: "1",
         customerName: "TESTチャン",
         gender: "男",
-        course: { code: "組", minutes: 90, parts: ["ho", "foot"] },
+        course: {
+          menuId: savedMenus[3].id,
+          name: savedMenus[3].name,
+          minutes: savedMenus[3].minutes,
+          color: savedMenus[3].color,
+          parts: ["ho", "foot"],
+        },
         staffId: savedStaff[1].id,
         startTime: "17:00",
         payment: "クレジット",
-        amount: 9460,
+        amount: savedMenus[3].price,
       },
     ];
     for (const r of recs) await saveItem(ns, { ...r, date });

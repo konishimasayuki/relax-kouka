@@ -39,6 +39,10 @@ export const api = {
   shifts: () => req("shifts"),
   saveShift: (s) => req("shifts", { method: "POST", body: JSON.stringify(s) }),
   deleteShift: (id) => req(`shifts?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  menus: () => req("menus"),
+  saveMenu: (m) => req("menus", { method: "POST", body: JSON.stringify(m) }),
+  deleteMenu: (id) => req(`menus?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
 };
 
 // ---- コース定義 ----
@@ -51,17 +55,20 @@ export const COURSE_PARTS = [
   { key: "facial", label: "F" },
 ];
 
-export const COURSE_TYPES = [
-  { code: "B", label: "ボディ" },
-  { code: "F", label: "フェイシャル" },
-  { code: "H", label: "ヘッド" },
-  { code: "組", label: "組み合わせ" },
-  { code: "シルバー", label: "シルバー" },
+export const PAYMENTS = ["現金", "部屋付け", "クレジット", "QR", "その他"];
+
+// 料金タブで各コースに設定する表示色（タイムボードのブロック色に使用）
+export const COURSE_COLORS = [
+  { key: "yellow", label: "黄", hex: "#d99a00" },
+  { key: "green", label: "緑", hex: "#2fa84f" },
+  { key: "red", label: "赤", hex: "#e5484d" },
+  { key: "blue", label: "青", hex: "#1f6feb" },
+  { key: "purple", label: "紫", hex: "#8b5cf6" },
 ];
 
-export const DURATIONS = [10, 20, 30, 40, 60, 70, 90, 100, 120];
-
-export const PAYMENTS = ["現金", "部屋付け", "クレジット", "QR", "その他"];
+export function courseColorHex(key) {
+  return COURSE_COLORS.find((c) => c.key === key)?.hex || null;
+}
 
 export function courseLabel(course) {
   if (!course) return "";
@@ -70,7 +77,7 @@ export function courseLabel(course) {
     .map((p) => COURSE_PARTS.find((x) => x.key === p)?.label)
     .filter(Boolean)
     .join("");
-  const base = `${course.code || ""}${course.minutes || ""}`;
+  const base = `${course.name || ""}${course.minutes || ""}`;
   return parts ? `${base}(${parts})` : base;
 }
 

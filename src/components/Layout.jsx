@@ -7,6 +7,7 @@ const MENU = [
   { key: "reception", label: "受付一覧表", ico: "📋" },
   { key: "daily", label: "個人別日計表", ico: "🧾" },
   { key: "customers", label: "顧客名簿", ico: "👥" },
+  { key: "pricing", label: "料金", ico: "💰" },
   { key: "settings", label: "設定", ico: "⚙️" },
 ];
 

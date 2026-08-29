@@ -1,0 +1,203 @@
+import { useEffect, useState } from "react";
+import { useApp } from "../App.jsx";
+import { COURSE_COLORS, api, yen } from "../api.js";
+
+function emptyMenu(storeId) {
+  return { id: "", storeId: storeId || "", name: "", minutes: 60, price: 0, color: "blue" };
+}
+
+export default function Pricing() {
+  const { stores, menus, refreshMaster, role } = useApp();
+  const [storeId, setStoreId] = useState("");
+  const [form, setForm] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (stores.length && !storeId) setStoreId(stores[0].id);
+  }, [stores, storeId]);
+
+  const list = menus
+    .filter((m) => m.storeId === storeId)
+    .sort((a, b) => (a.minutes || 0) - (b.minutes || 0));
+
+  const save = async () => {
+    if (!form.name.trim()) return alert("コース名を入力してください");
+    setBusy(true);
+    try {
+      await api.saveMenu(form);
+      await refreshMaster();
+      setForm(null);
+    } catch (e) {
+      alert(`保存失敗: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const del = async (id) => {
+    if (!confirm("このコースを削除しますか？")) return;
+    await api.deleteMenu(id);
+    await refreshMaster();
+  };
+
+  const colorOf = (key) => COURSE_COLORS.find((c) => c.key === key);
+
+  return (
+    <div>
+      <div className="page-head">
+        <h2>料金</h2>
+      </div>
+
+      <div className="toolbar">
+        <select value={storeId} onChange={(e) => setStoreId(e.target.value)}>
+          {stores.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+        <button className="btn sm" onClick={() => setForm(emptyMenu(storeId))}>
+          ＋ コース追加
+        </button>
+      </div>
+
+      {list.length === 0 ? (
+        <div className="empty">この店舗のコースがまだ登録されていません</div>
+      ) : (
+        <div className="table-wrap">
+          <table className="grid">
+            <thead>
+              <tr>
+                <th>色</th>
+                <th>コース名</th>
+                <th className="num">時間</th>
+                <th className="num">料金</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((m) => (
+                <tr key={m.id}>
+                  <td>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        width: 14,
+                        height: 14,
+                        borderRadius: 4,
+                        background: colorOf(m.color)?.hex || "#999",
+                      }}
+                    />
+                  </td>
+                  <td>{m.name}</td>
+                  <td className="num">{m.minutes}分</td>
+                  <td className="num">{yen(m.price)}</td>
+                  <td>
+                    <button className="btn sm ghost" onClick={() => setForm({ ...m })}>
+                      編集
+                    </button>{" "}
+                    {(role === "admin" || role === "debug") && (
+                      <button className="btn sm danger" onClick={() => del(m.id)}>
+                        削除
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {form && (
+        <div className="modal-overlay" onClick={() => setForm(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>{form.id ? "コースを編集" : "コースを追加"}</h3>
+            <div className="field">
+              <label>店舗</label>
+              <select
+                value={form.storeId}
+                onChange={(e) => setForm({ ...form, storeId: e.target.value })}
+              >
+                {stores.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label>コース名</label>
+              <input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="例：オイルリンパ"
+              />
+            </div>
+            <div className="row">
+              <div className="field">
+                <label>時間（分）</label>
+                <input
+                  type="number"
+                  value={form.minutes}
+                  onChange={(e) => setForm({ ...form, minutes: Number(e.target.value) })}
+                />
+              </div>
+              <div className="field">
+                <label>料金</label>
+                <input
+                  type="number"
+                  value={form.price}
+                  onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+                />
+              </div>
+            </div>
+            <div className="field">
+              <label>色（タイムボードの表示色）</label>
+              <div className="checks">
+                {COURSE_COLORS.map((c) => (
+                  <label
+                    className="check"
+                    key={c.key}
+                    style={{
+                      border:
+                        form.color === c.key ? `2px solid ${c.hex}` : "1px solid var(--border)",
+                      borderRadius: 8,
+                      padding: "4px 10px",
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="course-color"
+                      checked={form.color === c.key}
+                      onChange={() => setForm({ ...form, color: c.key })}
+                    />
+                    <span
+                      style={{
+                        display: "inline-block",
+                        width: 12,
+                        height: 12,
+                        borderRadius: 3,
+                        background: c.hex,
+                        marginRight: 2,
+                      }}
+                    />
+                    {c.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="btn gray" onClick={() => setForm(null)}>
+                キャンセル
+              </button>
+              <button className="btn" onClick={save} disabled={busy}>
+                保存
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

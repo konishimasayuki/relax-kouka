@@ -1,24 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
-import {
-  COURSE_PARTS,
-  COURSE_TYPES,
-  DURATIONS,
-  PAYMENTS,
-  api,
-  courseLabel,
-  yen,
-} from "../api.js";
+import { COURSE_PARTS, PAYMENTS, api, courseLabel, yen } from "../api.js";
 
 function emptyRecord(storeId, date) {
   return {
     id: "",
     date: date || "",
     storeId: storeId || "",
-    bed: 1,
+    bed: "",
     customerName: "",
     gender: "女",
-    course: { code: "B", minutes: 60, parts: [], freeText: "" },
+    course: { menuId: "", name: "", minutes: "", color: "", parts: [], freeText: "" },
     pregnancy: false,
     nominate: false,
     catch: false,
@@ -42,7 +34,7 @@ function normalizeRecord(r) {
 }
 
 export default function ReceptionList() {
-  const { stores, staff, date, setDate, ready } = useApp();
+  const { stores, staff, menus, date, setDate, ready } = useApp();
   const [records, setRecords] = useState([]);
   const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -106,13 +98,35 @@ export default function ReceptionList() {
 
   const staffName = (id) => staff.find((s) => s.id === id)?.name || "—";
   const storeName = (id) => stores.find((s) => s.id === id)?.name || "—";
-  const beds = stores.find((s) => s.id === form?.storeId)?.beds || 8;
+  const storeMenus = useMemo(
+    () => menus.filter((m) => m.storeId === form?.storeId),
+    [menus, form?.storeId],
+  );
 
   const togglePart = (key) => {
     const parts = form.course.parts.includes(key)
       ? form.course.parts.filter((p) => p !== key)
       : [...form.course.parts, key];
     setForm({ ...form, course: { ...form.course, parts } });
+  };
+
+  // 店舗を変更したら、その店舗のメニューに合わせてコース選択をリセット
+  const changeStore = (storeId) => {
+    setForm({ ...form, storeId, course: { ...form.course, menuId: "", name: "", minutes: "", color: "" } });
+  };
+
+  // メニューを選んだら、コース名・時間・色・金額を自動反映（金額は後から編集・消去可）
+  const selectMenu = (menuId) => {
+    const m = menus.find((x) => x.id === menuId);
+    if (!m) {
+      setForm({ ...form, course: { ...form.course, menuId: "", name: "", minutes: "", color: "" } });
+      return;
+    }
+    setForm({
+      ...form,
+      course: { ...form.course, menuId: m.id, name: m.name, minutes: m.minutes, color: m.color },
+      amount: m.price,
+    });
   };
 
   return (
@@ -227,10 +241,7 @@ export default function ReceptionList() {
             <div className="row">
               <div className="field">
                 <label>店舗</label>
-                <select
-                  value={form.storeId}
-                  onChange={(e) => setForm({ ...form, storeId: e.target.value })}
-                >
+                <select value={form.storeId} onChange={(e) => changeStore(e.target.value)}>
                   {stores.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}
@@ -240,16 +251,11 @@ export default function ReceptionList() {
               </div>
               <div className="field">
                 <label>ベッド</label>
-                <select
+                <input
                   value={form.bed}
-                  onChange={(e) => setForm({ ...form, bed: Number(e.target.value) })}
-                >
-                  {Array.from({ length: beds }, (_, i) => i + 1).map((b) => (
-                    <option key={b} value={b}>
-                      {b}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(e) => setForm({ ...form, bed: e.target.value })}
+                  placeholder="例：1 / オイルベッド"
+                />
               </div>
             </div>
 
@@ -275,35 +281,20 @@ export default function ReceptionList() {
 
             <div className="field">
               <label>コース</label>
-              <div className="row">
-                <select
-                  value={form.course.code}
-                  onChange={(e) =>
-                    setForm({ ...form, course: { ...form.course, code: e.target.value } })
-                  }
-                >
-                  {COURSE_TYPES.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.code} {c.label}
+              {storeMenus.length === 0 ? (
+                <div className="muted" style={{ fontSize: 13, marginBottom: 8 }}>
+                  この店舗のコースがまだ登録されていません（料金タブで登録してください）
+                </div>
+              ) : (
+                <select value={form.course.menuId} onChange={(e) => selectMenu(e.target.value)}>
+                  <option value="">選択してください</option>
+                  {storeMenus.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}（{m.minutes}分・{yen(m.price)}）
                     </option>
                   ))}
                 </select>
-                <select
-                  value={form.course.minutes}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      course: { ...form.course, minutes: Number(e.target.value) },
-                    })
-                  }
-                >
-                  {DURATIONS.map((d) => (
-                    <option key={d} value={d}>
-                      {d}分
-                    </option>
-                  ))}
-                </select>
-              </div>
+              )}
               <div className="checks" style={{ marginTop: 8 }}>
                 {COURSE_PARTS.map((p) => (
                   <label className="check" key={p.key}>
@@ -368,11 +359,7 @@ export default function ReceptionList() {
                     .map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.name}
-                        {form.course.facial || form.course.parts.includes("facial")
-                          ? s.facial
-                            ? ""
-                            : "（F不可）"
-                          : ""}
+                        {form.course.parts.includes("facial") ? (s.facial ? "" : "（F不可）") : ""}
                       </option>
                     ))}
                 </select>

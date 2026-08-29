@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { courseLabel, staffColor } from "../api.js";
+import { courseColorHex, courseLabel, staffColor } from "../api.js";
 
 const START_HOUR = 11;
 const END_HOUR = 24; // 表示ラベルは 11〜23
@@ -213,7 +213,7 @@ export default function TimeBoardGrid({
                 {apps.map((r) => {
                   const start = toMin(r.startTime);
                   const mins = r.course?.minutes || 60;
-                  const color = staffColor(r.staffId, staff);
+                  const color = courseColorHex(r.course?.color) || staffColor(r.staffId, staff);
                   return (
                     <div
                       className="tb-block"
