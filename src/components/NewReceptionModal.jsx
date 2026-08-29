@@ -101,7 +101,7 @@ export default function NewReceptionModal({ date, stores, staff, menus, workingS
         </div>
 
         <div className="row">
-          <div className="field">
+          <div className="field" style={{ flex: 7 }}>
             <label>店舗</label>
             <select value={form.storeId} onChange={(e) => changeStore(e.target.value)}>
               {stores.map((s) => (
@@ -111,7 +111,7 @@ export default function NewReceptionModal({ date, stores, staff, menus, workingS
               ))}
             </select>
           </div>
-          <div className="field">
+          <div className="field" style={{ flex: 3 }}>
             <label>ベッド</label>
             <input
               value={form.bed}
