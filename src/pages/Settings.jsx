@@ -105,7 +105,7 @@ export default function Settings() {
                 <button className="btn sm ghost" onClick={() => setStoreForm({ ...s })}>
                   編集
                 </button>
-                {role === "debug" && (
+                {(role === "admin" || role === "debug") && (
                   <button className="btn sm danger" onClick={() => delStore(s.id)}>
                     削除
                   </button>
@@ -139,7 +139,7 @@ export default function Settings() {
                 <button className="btn sm ghost" onClick={() => setStaffForm({ ...s })}>
                   編集
                 </button>
-                {role === "debug" && (
+                {(role === "admin" || role === "debug") && (
                   <button className="btn sm danger" onClick={() => delStaff(s.id)}>
                     削除
                   </button>
