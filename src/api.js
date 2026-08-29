@@ -2,6 +2,7 @@
 async function req(path, opts = {}) {
   const res = await fetch(`/api/${path}`, {
     headers: { "Content-Type": "application/json" },
+    cache: "no-store",
     ...opts,
   });
   if (!res.ok) {

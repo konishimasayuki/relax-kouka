@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
-import { api, staffColor } from "../api.js";
+import { api, staffColor, todayStr } from "../api.js";
 
 const HOUR_START = 11;
 const HOUR_END = 24; // 表示ラベルは 11〜23
@@ -49,7 +49,8 @@ function emptyShift(date) {
 }
 
 export default function Shift() {
-  const { staff, date, setDate } = useApp();
+  const { staff } = useApp();
+  const [date, setDate] = useState(todayStr());
   const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [month, setMonth] = useState(() => date.slice(0, 7));

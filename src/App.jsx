@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { api, todayStr } from "./api.js";
+import { api } from "./api.js";
 import Layout from "./components/Layout.jsx";
 import CustomerRoster from "./pages/CustomerRoster.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
@@ -31,14 +31,20 @@ export default function App() {
   const [role, setRole] = useState(() => loadSession()?.role || null);
   const [staffSession, setStaffSession] = useState(() => {
     const s = loadSession();
-    return s?.role === "staff" ? { id: s.staffId, name: s.staffName } : null;
+    return s?.role === "staff" ? { id: s.staffId, name: s.staffName, isAdmin: !!s.isAdmin } : null;
   });
-  const [page, setPage] = useState("dashboard");
-  const [date, setDate] = useState(todayStr());
+  const [page, setPage] = useState(() => {
+    const s = loadSession();
+    if (s?.role === "staff" && !s?.isAdmin) return "timeboard";
+    return "dashboard";
+  });
   const [stores, setStores] = useState([]);
   const [staff, setStaff] = useState([]);
   const [menus, setMenus] = useState([]);
   const [ready, setReady] = useState(false);
+
+  // 管理者相当（管理者/デバッグ、または管理者権限ありのスタッフ）かどうか
+  const isAdminUser = role === "admin" || role === "debug" || (role === "staff" && !!staffSession?.isAdmin);
 
   const refreshMaster = useCallback(async () => {
     const [st, sf, mn] = await Promise.all([api.stores(), api.staff(), api.menus()]);
@@ -60,17 +66,26 @@ export default function App() {
     };
   }, [role, refreshMaster]);
 
-  // スタッフログインは設定画面に入れない（管理者・デバッグのみ）
+  // 管理者権限のないスタッフは、ダッシュボード／料金／顧客名簿／設定に入れない
+  const RESTRICTED_PAGES = ["dashboard", "pricing", "customers", "settings"];
   useEffect(() => {
-    if (role === "staff" && page === "settings") setPage("dashboard");
-  }, [role, page]);
+    if (role === "staff" && !isAdminUser && RESTRICTED_PAGES.includes(page)) setPage("timeboard");
+    // eslint-disable-next-line
+  }, [role, isAdminUser, page]);
 
   const handleLogin = (result) => {
     setRole(result.role);
     setStaffSession(
-      result.role === "staff" ? { id: result.staffId, name: result.staffName } : null,
+      result.role === "staff"
+        ? { id: result.staffId, name: result.staffName, isAdmin: !!result.isAdmin }
+        : null,
     );
     saveSession(result);
+    if (result.role === "staff" && !result.isAdmin) {
+      setPage("timeboard");
+    } else {
+      setPage("dashboard");
+    }
   };
 
   const logout = () => {
@@ -88,8 +103,7 @@ export default function App() {
   const ctx = {
     role,
     staffSession,
-    date,
-    setDate,
+    isAdminUser,
     stores,
     staff,
     menus,
@@ -99,7 +113,14 @@ export default function App() {
 
   return (
     <AppCtx.Provider value={ctx}>
-      <Layout page={page} setPage={setPage} role={role} staffSession={staffSession} onLogout={logout}>
+      <Layout
+        page={page}
+        setPage={setPage}
+        role={role}
+        staffSession={staffSession}
+        isAdminUser={isAdminUser}
+        onLogout={logout}
+      >
         {ready ? <PageComp /> : <div className="empty">読み込み中…</div>}
       </Layout>
     </AppCtx.Provider>

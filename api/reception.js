@@ -1,6 +1,7 @@
 import { deleteItem, listAll, saveItem } from "./_redis.js";
 
 export default async function handler(req, res) {
+  res.setHeader("Cache-Control", "no-store");
   try {
     const date = req.query.date || (req.body && req.body.date);
     if (!date) return res.status(400).json({ error: "date required" });

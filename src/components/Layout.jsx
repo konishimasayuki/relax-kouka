@@ -11,9 +11,11 @@ const MENU = [
   { key: "settings", label: "設定", ico: "⚙️" },
 ];
 
-export default function Layout({ page, setPage, role, staffSession, onLogout, children }) {
+export default function Layout({ page, setPage, role, staffSession, isAdminUser, onLogout, children }) {
   const [open, setOpen] = useState(false);
-  const menu = role === "staff" ? MENU.filter((m) => m.key !== "settings") : MENU;
+  const RESTRICTED = ["dashboard", "pricing", "customers", "settings"];
+  const menu =
+    role === "staff" && !isAdminUser ? MENU.filter((m) => !RESTRICTED.includes(m.key)) : MENU;
   const current = menu.find((m) => m.key === page);
 
   const go = (key) => {

@@ -14,7 +14,7 @@ const empty = {
 };
 
 export default function CustomerRoster() {
-  const { role, ready } = useApp();
+  const { isAdminUser, ready } = useApp();
   const [list, setList] = useState([]);
   const [q, setQ] = useState("");
   const [form, setForm] = useState(null);
@@ -116,7 +116,7 @@ export default function CustomerRoster() {
                     <button className="btn sm ghost" onClick={() => setForm({ ...c })}>
                       編集
                     </button>{" "}
-                    {(role === "admin" || role === "debug") && (
+                    {isAdminUser && (
                       <button className="btn sm danger" onClick={() => del(c.id)}>
                         削除
                       </button>

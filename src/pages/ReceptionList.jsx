@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
-import { PAYMENTS, api, courseLabel, yen } from "../api.js";
+import { PAYMENTS, api, courseLabel, todayStr, yen } from "../api.js";
 
 function emptyRecord(storeId, date) {
   return {
@@ -39,7 +39,8 @@ function normalizeRecord(r) {
 }
 
 export default function ReceptionList() {
-  const { stores, staff, menus, date, setDate, ready } = useApp();
+  const { stores, staff, menus, ready } = useApp();
+  const [date, setDate] = useState(todayStr());
   const [records, setRecords] = useState([]);
   const [shifts, setShifts] = useState([]);
   const [form, setForm] = useState(null);

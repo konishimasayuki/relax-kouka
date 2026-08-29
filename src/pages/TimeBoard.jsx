@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useApp } from "../App.jsx";
-import { api, courseLabel } from "../api.js";
+import { api, courseLabel, todayStr } from "../api.js";
 import TimeBoardGrid from "../components/TimeBoardGrid.jsx";
 
 export default function TimeBoard() {
-  const { stores, staff, date, setDate, ready } = useApp();
+  const { stores, staff, ready } = useApp();
+  const [date, setDate] = useState(todayStr());
   const [records, setRecords] = useState([]);
   const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -38,10 +39,10 @@ export default function TimeBoard() {
 
       <div className="toolbar">
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        <button className="btn sm ghost" onClick={openBoardWindow}>
+        <button className="btn sm ghost desktop-only" onClick={openBoardWindow}>
           🖥️ 別ウィンドウで表示
         </button>
-        <span className="muted" style={{ fontSize: 12 }}>
+        <span className="muted desktop-only" style={{ fontSize: 12 }}>
           10分刻み／斜線＝移動（20分・本店パレス2F基準）／灰色＝シフト外
         </span>
       </div>

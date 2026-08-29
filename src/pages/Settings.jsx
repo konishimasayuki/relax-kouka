@@ -20,11 +20,12 @@ const emptyStaff = {
   birthday: "",
   facial: false,
   pregnancy: false,
+  isAdmin: false,
   active: true,
 };
 
 export default function Settings() {
-  const { stores, staff, refreshMaster, role } = useApp();
+  const { stores, staff, refreshMaster, isAdminUser } = useApp();
   const [tab, setTab] = useState("store");
   const [storeForm, setStoreForm] = useState(null);
   const [staffForm, setStaffForm] = useState(null);
@@ -122,7 +123,7 @@ export default function Settings() {
                 <button className="btn sm ghost" onClick={() => setStoreForm({ ...s })}>
                   編集
                 </button>
-                {(role === "admin" || role === "debug") && (
+                {isAdminUser && (
                   <button className="btn sm danger" onClick={() => delStore(s.id)}>
                     削除
                   </button>
@@ -147,6 +148,7 @@ export default function Settings() {
                 <div style={{ flex: 1 }}>
                   <strong>{s.name}</strong>{" "}
                   <span className="pill gray">{s.gender}</span>{" "}
+                  {s.isAdmin && <span className="pill">管理者</span>}{" "}
                   {s.facial && <span className="pill">F可</span>}{" "}
                   {s.pregnancy && <span className="pill green">妊婦可</span>}
                   <div className="muted" style={{ fontSize: 13 }}>
@@ -156,7 +158,7 @@ export default function Settings() {
                 <button className="btn sm ghost" onClick={() => setStaffForm({ ...s })}>
                   編集
                 </button>
-                {(role === "admin" || role === "debug") && (
+                {isAdminUser && (
                   <button className="btn sm danger" onClick={() => delStaff(s.id)}>
                     削除
                   </button>
@@ -292,6 +294,19 @@ export default function Settings() {
                   value={staffForm.birthday}
                   onChange={(e) => setStaffForm({ ...staffForm, birthday: e.target.value })}
                 />
+              </div>
+            </div>
+            <div className="field">
+              <label>権限</label>
+              <div className="checks">
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={staffForm.isAdmin}
+                    onChange={(e) => setStaffForm({ ...staffForm, isAdmin: e.target.checked })}
+                  />
+                  管理者権限（ダッシュボード・料金・顧客名簿・設定が閲覧可能）
+                </label>
               </div>
             </div>
             <div className="field">

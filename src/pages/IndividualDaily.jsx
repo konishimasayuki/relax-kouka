@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
-import { api, courseLabel, yen } from "../api.js";
+import { api, courseLabel, todayStr, yen } from "../api.js";
 
 export default function IndividualDaily() {
-  const { staff, date, setDate, ready } = useApp();
+  const { staff, role, staffSession, isAdminUser, ready } = useApp();
+  const [date, setDate] = useState(todayStr());
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [openStaff, setOpenStaff] = useState(null);
@@ -35,15 +36,19 @@ export default function IndividualDaily() {
     return map;
   }, [records]);
 
+  // 管理者権限がなければ、自分自身の分のみ表示する
   const rows = useMemo(() => {
-    const arr = staff
+    let arr = staff
       .map((s) => ({ staff: s, ...(summary[s.id] || { count: 0, amount: 0, nominate: 0 }) }))
       .filter((r) => r.count > 0);
     if (summary.__none__) {
       arr.push({ staff: { id: "__none__", name: "未割当" }, ...summary.__none__ });
     }
+    if (role === "staff" && !isAdminUser) {
+      arr = arr.filter((r) => r.staff.id === staffSession?.id);
+    }
     return arr.sort((a, b) => b.amount - a.amount);
-  }, [staff, summary]);
+  }, [staff, summary, role, isAdminUser, staffSession]);
 
   const totalAmount = rows.reduce((s, r) => s + r.amount, 0);
   const totalCount = rows.reduce((s, r) => s + r.count, 0);

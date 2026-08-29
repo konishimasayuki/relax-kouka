@@ -15,7 +15,7 @@ function emptyMenu(storeId) {
 }
 
 export default function Pricing() {
-  const { stores, menus, refreshMaster, role } = useApp();
+  const { stores, menus, refreshMaster, isAdminUser } = useApp();
   const [storeId, setStoreId] = useState("");
   const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -106,7 +106,7 @@ export default function Pricing() {
                     <button className="btn sm ghost" onClick={() => setForm({ ...m })}>
                       編集
                     </button>{" "}
-                    {(role === "admin" || role === "debug") && (
+                    {isAdminUser && (
                       <button className="btn sm danger" onClick={() => del(m.id)}>
                         削除
                       </button>

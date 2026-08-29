@@ -1,6 +1,7 @@
 import { listAll } from "./_redis.js";
 
 export default async function handler(req, res) {
+  res.setHeader("Cache-Control", "no-store");
   if (req.method !== "POST") return res.status(405).end();
   const { loginId, password } = req.body || {};
   if (loginId === "z" && password === "z") return res.json({ role: "admin" });
@@ -12,7 +13,12 @@ export default async function handler(req, res) {
       (s) => s.loginId === loginId && s.password === password && s.active !== false,
     );
     if (found) {
-      return res.json({ role: "staff", staffId: found.id, staffName: found.name });
+      return res.json({
+        role: "staff",
+        staffId: found.id,
+        staffName: found.name,
+        isAdmin: !!found.isAdmin,
+      });
     }
   } catch (e) {
     return res.status(500).json({ error: String(e?.message || e) });

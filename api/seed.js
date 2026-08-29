@@ -1,6 +1,7 @@
 import { redis, saveItem } from "./_redis.js";
 
 export default async function handler(req, res) {
+  res.setHeader("Cache-Control", "no-store");
   try {
     if (req.method !== "POST") return res.status(405).end();
     const done = await redis.get("seed:done");

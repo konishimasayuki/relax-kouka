@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
-import { PAYMENTS, api, yen } from "../api.js";
+import { PAYMENTS, api, todayStr, yen } from "../api.js";
 
 export default function Dashboard() {
-  const { stores, date, setDate, ready } = useApp();
+  const { stores, ready } = useApp();
+  const [date, setDate] = useState(todayStr());
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -60,10 +61,6 @@ export default function Dashboard() {
             <div className="stat">
               <div className="label">客単価</div>
               <div className="value dark">{yen(stats.avg)}</div>
-            </div>
-            <div className="stat">
-              <div className="label">店舗数</div>
-              <div className="value dark">{stores.length}</div>
             </div>
           </div>
 

@@ -538,6 +538,7 @@ table.grid th.num {
   border-left: none;
   position: sticky;
   left: 0;
+  z-index: 4;
   background: var(--blue-lighter);
   z-index: 3;
 }
@@ -555,7 +556,7 @@ table.grid th.num {
   position: sticky;
   left: 0;
   background: #fff;
-  z-index: 2;
+  z-index: 3;
   border-right: 2px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -760,6 +761,11 @@ table.grid th.num {
   }
 }
 
+/* スマホでは非表示、PC幅（900px以上）でのみ表示する要素 */
+.desktop-only {
+  display: none;
+}
+
 /* PC幅：左メニューを常時表示のサイドバーにする */
 @media (min-width: 900px) {
   .hamburger {
@@ -785,6 +791,10 @@ table.grid th.num {
   .content {
     flex: 1;
     max-width: none;
+  }
+
+  .desktop-only {
+    display: inline-flex;
   }
 }
 

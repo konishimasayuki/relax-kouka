@@ -1,6 +1,7 @@
 import { deleteItem, listAll, saveItem } from "./_redis.js";
 
 export default async function handler(req, res) {
+  res.setHeader("Cache-Control", "no-store");
   try {
     if (req.method === "GET") return res.json(await listAll("menu"));
     if (req.method === "POST") return res.json(await saveItem("menu", req.body || {}));
