@@ -41,6 +41,7 @@ function normalizeRecord(r) {
 export default function ReceptionList() {
   const { stores, staff, menus, date, setDate, ready } = useApp();
   const [records, setRecords] = useState([]);
+  const [shifts, setShifts] = useState([]);
   const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -58,6 +59,11 @@ export default function ReceptionList() {
   useEffect(() => {
     if (ready) load();
   }, [date, ready]);
+
+  // シフト（出勤スタッフ判定用）は全体を一括取得
+  useEffect(() => {
+    if (ready) api.shifts().then(setShifts).catch(() => {});
+  }, [ready]);
 
   // 全店舗まとめて、開始時間順で1枚のシートに
   const view = useMemo(
@@ -106,6 +112,20 @@ export default function ReceptionList() {
   const storeMenus = useMemo(
     () => menus.filter((m) => m.storeId === form?.storeId),
     [menus, form?.storeId],
+  );
+
+  // 施術日にシフト登録されているスタッフのみ担当に選べるようにする
+  const workingStaffIds = useMemo(() => {
+    if (!form?.date) return [];
+    return [...new Set(shifts.filter((s) => s.date === form.date).map((s) => s.staffId))];
+  }, [shifts, form?.date]);
+
+  const assignableStaff = useMemo(
+    () =>
+      staff.filter(
+        (s) => s.active && (workingStaffIds.includes(s.id) || s.id === form?.staffId),
+      ),
+    [staff, workingStaffIds, form?.staffId],
   );
 
   // 店舗を変更したら、その店舗のメニューに合わせてコース選択をリセット
@@ -359,14 +379,17 @@ export default function ReceptionList() {
                   onChange={(e) => setForm({ ...form, staffId: e.target.value })}
                 >
                   <option value="">未定</option>
-                  {staff
-                    .filter((s) => s.active)
-                    .map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
+                  {assignableStaff.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
                 </select>
+                {form.date && workingStaffIds.length === 0 && (
+                  <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                    この日のシフト登録がありません（シフトタブで登録してください）
+                  </div>
+                )}
               </div>
               <div className="field">
                 <label>金額</label>

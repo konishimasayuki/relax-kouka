@@ -63,14 +63,6 @@ export default function TimeBoardGrid({
     // eslint-disable-next-line
   }, [stores]);
 
-  const storeAbbr = (storeId) => {
-    const bld = buildingOf(storeId);
-    if (bld.includes("パレス")) return "P";
-    if (bld.includes("宙")) return "宙";
-    if (bld.toLowerCase().includes("ceada")) return "C";
-    return bld ? bld[0] : "";
-  };
-
   const todaysShifts = useMemo(() => shifts.filter((s) => s.date === date), [shifts, date]);
 
   // 出勤するスタッフ = 本日シフトのあるスタッフ ∪ 本日予約が入っているスタッフ（早い順）
@@ -135,6 +127,15 @@ export default function TimeBoardGrid({
     // eslint-disable-next-line
   }, [staffIdsToday, records, todaysShifts, homeBuilding, stores]);
 
+  // 担当未定の予約（タイムボード最下段に表示）
+  const unassignedApps = useMemo(
+    () =>
+      records
+        .filter((r) => !r.staffId && r.startTime)
+        .sort((a, b) => toMin(a.startTime) - toMin(b.startTime)),
+    [records],
+  );
+
   const hours = [];
   for (let h = START_HOUR; h < END_HOUR; h++) hours.push(h);
   const totalMin = (END_HOUR - START_HOUR) * 60;
@@ -157,7 +158,7 @@ export default function TimeBoardGrid({
     width: Math.max((endMin - startMin) * MIN_W, 0),
   });
 
-  if (staffIdsToday.length === 0) {
+  if (staffIdsToday.length === 0 && unassignedApps.length === 0) {
     return (
       <div className="empty">本日出勤予定のスタッフがいません（シフトタブで登録してください）</div>
     );
@@ -222,9 +223,7 @@ export default function TimeBoardGrid({
                       style={blockStyle(start, mins, color)}
                       onClick={() => onSelect?.(r)}
                     >
-                      <div className="bl-course">
-                        {label}・{storeAbbr(r.storeId)}
-                      </div>
+                      <div className="bl-course">{label}</div>
                       <div className="bl-name">{r.customerName}</div>
                     </div>
                   );
@@ -233,6 +232,41 @@ export default function TimeBoardGrid({
             </div>
           );
         })}
+
+        {unassignedApps.length > 0 && (
+          <div className="tb-row">
+            <div className="tb-bed" style={{ width: STAFF_COL_W }}>
+              <span className="b-name muted">未定</span>
+            </div>
+            <div className="tb-lane" style={{ width: laneW }}>
+              {gridMarks.map((g, i) => (
+                <div
+                  className={g.major ? "tb-gridline" : "tb-gridline-minor"}
+                  key={i}
+                  style={{ left: g.pos }}
+                />
+              ))}
+
+              {unassignedApps.map((r) => {
+                const start = toMin(r.startTime);
+                const mins = r.course?.minutes || 60;
+                const color = courseColorHex(r.course?.color) || staffColor(r.staffId, staff);
+                const label = r.course?.displayName?.trim() || courseLabel(r.course);
+                return (
+                  <div
+                    className="tb-block"
+                    key={r.id}
+                    style={blockStyle(start, mins, color)}
+                    onClick={() => onSelect?.(r)}
+                  >
+                    <div className="bl-course">{label}</div>
+                    <div className="bl-name">{r.customerName}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
