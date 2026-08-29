@@ -2,7 +2,15 @@ import { useState } from "react";
 import { useApp } from "../App.jsx";
 import { api } from "../api.js";
 
-const emptyStore = { id: "", name: "", building: "", floor: "", beds: 3, active: true };
+const emptyStore = {
+  id: "",
+  name: "",
+  building: "",
+  floor: "",
+  beds: 3,
+  active: true,
+  isHome: false,
+};
 const emptyStaff = {
   id: "",
   name: "",
@@ -27,6 +35,14 @@ export default function Settings() {
     setBusy(true);
     try {
       await api.saveStore(storeForm);
+      // 本店は常に1店舗のみ。ONにした場合は他店舗のフラグを解除する
+      if (storeForm.isHome) {
+        for (const s of stores) {
+          if (s.id !== storeForm.id && s.isHome) {
+            await api.saveStore({ ...s, isHome: false });
+          }
+        }
+      }
       await refreshMaster();
       setStoreForm(null);
     } catch (e) {
@@ -96,7 +112,8 @@ export default function Settings() {
             <div className="card" key={s.id}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ flex: 1 }}>
-                  <strong>{s.name}</strong>
+                  <strong>{s.name}</strong>{" "}
+                  {s.isHome && <span className="pill">本店</span>}
                   <div className="muted" style={{ fontSize: 13 }}>
                     {s.building} {s.floor} ／ ベッド {s.beds}台
                     {!s.active && <span className="pill gray" style={{ marginLeft: 6 }}>停止中</span>}
@@ -204,8 +221,18 @@ export default function Settings() {
                 </select>
               </div>
             </div>
+            <div className="field">
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={storeForm.isHome}
+                  onChange={(e) => setStoreForm({ ...storeForm, isHome: e.target.checked })}
+                />
+                本店にする（スタッフは基本この店舗にいる想定で移動時間を計算）
+              </label>
+            </div>
             <div className="muted" style={{ fontSize: 12, marginBottom: 12 }}>
-              ※ 異なる建物間の移動は前後20分を移動時間として自動確保します。
+              ※ 本店以外の建物への移動は前後20分を自動確保します（同じ建物が連続する場合、間の移動は不要）。
             </div>
             <div className="modal-actions">
               <button className="btn gray" onClick={() => setStoreForm(null)}>
