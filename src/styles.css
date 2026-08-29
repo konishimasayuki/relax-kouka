@@ -247,6 +247,12 @@ textarea {
   margin: 0 auto;
 }
 
+.body-row {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
 /* ---------- 共通UI ---------- */
 .page-head {
   display: flex;
@@ -580,6 +586,14 @@ table.grid th.num {
   background: var(--border);
 }
 
+.tb-gridline-minor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #eef2f7;
+}
+
 .tb-block {
   position: absolute;
   top: 4px;
@@ -721,5 +735,33 @@ table.grid th.num {
 
   .modal {
     border-radius: 16px;
+  }
+}
+
+/* PC幅：左メニューを常時表示のサイドバーにする */
+@media (min-width: 900px) {
+  .hamburger {
+    display: none;
+  }
+
+  .drawer-overlay {
+    display: none;
+  }
+
+  .drawer {
+    position: sticky;
+    top: 54px;
+    left: auto;
+    bottom: auto;
+    transform: none;
+    height: calc(100vh - 54px);
+    flex: 0 0 240px;
+    box-shadow: none;
+    border-right: 1px solid var(--border);
+  }
+
+  .content {
+    flex: 1;
+    max-width: none;
   }
 }

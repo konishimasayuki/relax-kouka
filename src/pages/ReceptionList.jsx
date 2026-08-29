@@ -34,15 +34,10 @@ function emptyRecord(storeId) {
 
 export default function ReceptionList() {
   const { stores, staff, date, setDate, ready } = useApp();
-  const [storeId, setStoreId] = useState("");
   const [records, setRecords] = useState([]);
   const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (stores.length && !storeId) setStoreId(stores[0].id);
-  }, [stores, storeId]);
 
   const load = async () => {
     setLoading(true);
@@ -58,9 +53,15 @@ export default function ReceptionList() {
     if (ready) load();
   }, [date, ready]);
 
+  // 全店舗まとめて、開始時間順で1枚のシートに
   const view = useMemo(
-    () => records.filter((r) => !storeId || r.storeId === storeId),
-    [records, storeId],
+    () =>
+      [...records].sort((a, b) => {
+        if (!a.startTime) return 1;
+        if (!b.startTime) return -1;
+        return a.startTime.localeCompare(b.startTime);
+      }),
+    [records],
   );
 
   const total = useMemo(
@@ -89,7 +90,8 @@ export default function ReceptionList() {
   };
 
   const staffName = (id) => staff.find((s) => s.id === id)?.name || "—";
-  const beds = stores.find((s) => s.id === storeId)?.beds || 8;
+  const storeName = (id) => stores.find((s) => s.id === id)?.name || "—";
+  const beds = stores.find((s) => s.id === form?.storeId)?.beds || 8;
 
   const togglePart = (key) => {
     const parts = form.course.parts.includes(key)
@@ -106,25 +108,18 @@ export default function ReceptionList() {
 
       <div className="toolbar">
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        <select value={storeId} onChange={(e) => setStoreId(e.target.value)}>
-          {stores.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
-        <button className="btn sm" onClick={() => setForm(emptyRecord(storeId))}>
+        <button className="btn sm" onClick={() => setForm(emptyRecord(stores[0]?.id))}>
           ＋ 受付追加
         </button>
       </div>
 
       <div className="stat-grid" style={{ marginBottom: 14 }}>
         <div className="stat">
-          <div className="label">客数</div>
+          <div className="label">客数（全店舗）</div>
           <div className="value">{view.length}</div>
         </div>
         <div className="stat">
-          <div className="label">売上合計</div>
+          <div className="label">売上合計（全店舗）</div>
           <div className="value">{yen(total)}</div>
         </div>
       </div>
@@ -138,6 +133,7 @@ export default function ReceptionList() {
           <table className="grid">
             <thead>
               <tr>
+                <th>店舗</th>
                 <th>Bed</th>
                 <th>氏名</th>
                 <th>性別</th>
@@ -154,6 +150,7 @@ export default function ReceptionList() {
             <tbody>
               {view.map((r) => (
                 <tr key={r.id}>
+                  <td>{storeName(r.storeId)}</td>
                   <td>{r.bed}</td>
                   <td>{r.customerName}</td>
                   <td>{r.gender}</td>

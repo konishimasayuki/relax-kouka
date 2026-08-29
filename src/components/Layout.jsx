@@ -35,33 +35,35 @@ export default function Layout({ page, setPage, role, staffSession, onLogout, ch
       </header>
 
       {open && <div className="drawer-overlay" onClick={() => setOpen(false)} />}
-      <nav className={`drawer ${open ? "open" : ""}`}>
-        <div className="drawer-head">
-          <div className="brand">
-            リラク業務管理
-            <small>Relax Management</small>
+      <div className="body-row">
+        <nav className={`drawer ${open ? "open" : ""}`}>
+          <div className="drawer-head">
+            <div className="brand">
+              リラク業務管理
+              <small>Relax Management</small>
+            </div>
           </div>
-        </div>
-        <div className="nav">
-          {menu.map((m) => (
-            <button
-              key={m.key}
-              className={page === m.key ? "active" : ""}
-              onClick={() => go(m.key)}
-            >
-              <span className="ico">{m.ico}</span>
-              {m.label}
+          <div className="nav">
+            {menu.map((m) => (
+              <button
+                key={m.key}
+                className={page === m.key ? "active" : ""}
+                onClick={() => go(m.key)}
+              >
+                <span className="ico">{m.ico}</span>
+                {m.label}
+              </button>
+            ))}
+          </div>
+          <div className="drawer-foot">
+            <button className="btn gray" style={{ width: "100%" }} onClick={onLogout}>
+              ログアウト
             </button>
-          ))}
-        </div>
-        <div className="drawer-foot">
-          <button className="btn gray" style={{ width: "100%" }} onClick={onLogout}>
-            ログアウト
-          </button>
-        </div>
-      </nav>
+          </div>
+        </nav>
 
-      <main className="content">{children}</main>
+        <main className="content">{children}</main>
+      </div>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import ReceptionList from "./pages/ReceptionList.jsx";
 import Settings from "./pages/Settings.jsx";
 import Shift from "./pages/Shift.jsx";
 import TimeBoard from "./pages/TimeBoard.jsx";
+import { clearSession, loadSession, saveSession } from "./session.js";
 
 const AppCtx = createContext(null);
 export const useApp = () => useContext(AppCtx);
@@ -24,8 +25,12 @@ const PAGES = {
 };
 
 export default function App() {
-  const [role, setRole] = useState(null); // "admin" | "debug" | "staff" | null
-  const [staffSession, setStaffSession] = useState(null); // {id, name} ログイン中スタッフ
+  // ログアウトするまで保持されるセッション（Cookie）を初期状態として読み込む
+  const [role, setRole] = useState(() => loadSession()?.role || null);
+  const [staffSession, setStaffSession] = useState(() => {
+    const s = loadSession();
+    return s?.role === "staff" ? { id: s.staffId, name: s.staffName } : null;
+  });
   const [page, setPage] = useState("dashboard");
   const [date, setDate] = useState(todayStr());
   const [stores, setStores] = useState([]);
@@ -61,9 +66,11 @@ export default function App() {
     setStaffSession(
       result.role === "staff" ? { id: result.staffId, name: result.staffName } : null,
     );
+    saveSession(result);
   };
 
   const logout = () => {
+    clearSession();
     setRole(null);
     setStaffSession(null);
     setReady(false);
