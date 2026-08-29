@@ -1559,13 +1559,16 @@ table.grid th.num {
   cursor: pointer;
 }
 
-/* ---------- モーダル内の時間・日付入力欄をほかの入力欄とサイズを揃える ---------- */
-.field input[type="time"],
+/* ---------- モーダル内の日付入力欄をほかの入力欄とサイズを揃える ---------- */
 .field input[type="date"] {
-  height: 40px;
-  box-sizing: border-box;
-  font-size: 15px;
-  line-height: 1.4;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 40px !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
+  padding: 10px 12px !important;
+  font-size: 15px !important;
+  line-height: 1.2 !important;
 }
 
 /* ---------- 10分刻み時間入力（時・分セレクト） ---------- */
@@ -1576,9 +1579,11 @@ table.grid th.num {
 }
 
 .time10 select {
+  height: 40px;
+  box-sizing: border-box;
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 6px 2px;
+  padding: 6px 4px;
   font-size: 14px;
   background: #fff;
   color: var(--text);
