@@ -136,7 +136,7 @@ export default function Shift() {
   });
 
   return (
-    <div>
+    <div className="shift-page">
       <div className="page-head">
         <h2>シフト</h2>
       </div>
@@ -203,7 +203,7 @@ export default function Shift() {
 
       {/* ---- 月間シフト ---- */}
       <div className="card">
-        <div className="toolbar">
+        <div className="toolbar cal-toolbar">
           <button className="btn sm ghost" onClick={() => shiftMonth(-1)}>
             ◀
           </button>

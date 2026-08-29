@@ -823,3 +823,98 @@ table.grid th.num {
   overflow: auto;
   padding: 8px 10px;
 }
+
+/* ---------- シフト画面（スマホ表示調整） ---------- */
+/* 本日のシフト：スタッフ名列を横スクロール中も左に固定し、バーが名前に被らないようにする */
+.shift-page .tb-hours {
+  z-index: 7;
+}
+
+.shift-page .tb-bedcol {
+  z-index: 8;
+  border-right: 2px solid var(--border);
+}
+
+.shift-page .tb-bed {
+  z-index: 6;
+  box-shadow: 2px 0 4px rgba(20, 40, 80, 0.08);
+}
+
+/* バー左端が画面外に出ても時刻ラベルが名前列の右に残るようにする */
+.shift-page .tb-block .bl-course {
+  position: sticky;
+  left: 92px;
+  display: inline-block;
+  max-width: 100%;
+}
+
+/* 月間シフト：月送りを中央寄せして見出しを強調 */
+.shift-page .cal-toolbar {
+  justify-content: center;
+  gap: 14px;
+}
+
+.shift-page .cal-toolbar strong {
+  font-size: 17px;
+  letter-spacing: 0.5px;
+}
+
+/* 月間カレンダーの可読性向上 */
+.shift-page .shift-cal-head {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 0;
+}
+
+.shift-page .shift-cal-head div:first-child {
+  color: var(--red);
+}
+
+.shift-page .shift-cal-head div:last-child {
+  color: var(--blue);
+}
+
+.shift-page .shift-cal-cell {
+  min-height: 76px;
+  padding: 4px 4px 3px;
+}
+
+.shift-page .shift-cal-cell .cal-date {
+  font-size: 12px;
+  margin-bottom: 3px;
+}
+
+/* 日曜列は赤、土曜列は青（月外セルは薄色のまま） */
+.shift-page .shift-cal-cell:nth-child(7n + 1) .cal-date {
+  color: var(--red);
+}
+
+.shift-page .shift-cal-cell:nth-child(7n) .cal-date {
+  color: var(--blue);
+}
+
+.shift-page .shift-cal-cell.out .cal-date {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.shift-page .shift-cal-cell .cal-shift {
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+
+.shift-page .shift-cal-cell .cal-more {
+  font-size: 10px;
+  font-weight: 600;
+  margin-top: 1px;
+}
+
+/* 選択中の日付を枠で強調 */
+.shift-page .shift-cal-cell.today {
+  box-shadow: inset 0 0 0 2px var(--blue);
+  border-radius: 2px;
+}
+
+.shift-page .shift-cal-cell.today .cal-date {
+  color: var(--blue);
+}
