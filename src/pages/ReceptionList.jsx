@@ -10,26 +10,35 @@ import {
   yen,
 } from "../api.js";
 
-function emptyRecord(storeId) {
+function emptyRecord(storeId, date) {
   return {
     id: "",
+    date: date || "",
     storeId: storeId || "",
     bed: 1,
     customerName: "",
     gender: "女",
-    course: { code: "B", minutes: 60, parts: [], facial: false },
+    course: { code: "B", minutes: 60, parts: [], freeText: "" },
     pregnancy: false,
     nominate: false,
     catch: false,
     staffId: "",
     startTime: "",
-    payment: "現",
+    payment: "現金",
+    paymentNote: "",
+    location: "",
     receptionist: "",
     room: "",
     phone: "",
     amount: 0,
     note: "",
   };
+}
+
+// 新フィールド追加前の古いレコードを開いてもundefinedにならないようマージする
+function normalizeRecord(r) {
+  const base = emptyRecord(r.storeId, r.date);
+  return { ...base, ...r, course: { ...base.course, ...(r.course || {}) } };
 }
 
 export default function ReceptionList() {
@@ -70,10 +79,16 @@ export default function ReceptionList() {
   );
 
   const save = async () => {
-    if (!form.customerName.trim()) return alert("氏名を入力してください");
+    if (!form.customerName.trim()) return alert("お客様名を入力してください");
+    if (!form.date) return alert("施術日を入力してください");
     setBusy(true);
     try {
-      await api.saveReception({ ...form, date });
+      const { _originalDate, ...payload } = form;
+      await api.saveReception(payload);
+      // 編集で施術日を変更した場合は、元の日付側のデータを削除して移動させる
+      if (form.id && _originalDate && _originalDate !== form.date) {
+        await api.deleteReception(form.id, _originalDate);
+      }
       await load();
       setForm(null);
     } catch (e) {
@@ -83,9 +98,9 @@ export default function ReceptionList() {
     }
   };
 
-  const del = async (id) => {
+  const del = async (id, recordDate) => {
     if (!confirm("この受付を削除しますか？")) return;
-    await api.deleteReception(id, date);
+    await api.deleteReception(id, recordDate || date);
     await load();
   };
 
@@ -108,7 +123,7 @@ export default function ReceptionList() {
 
       <div className="toolbar">
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        <button className="btn sm" onClick={() => setForm(emptyRecord(stores[0]?.id))}>
+        <button className="btn sm" onClick={() => setForm(emptyRecord(stores[0]?.id, date))}>
           ＋ 受付追加
         </button>
       </div>
@@ -135,14 +150,14 @@ export default function ReceptionList() {
               <tr>
                 <th>店舗</th>
                 <th>Bed</th>
-                <th>氏名</th>
+                <th>お客様名</th>
                 <th>性別</th>
                 <th>コース</th>
                 <th>指名</th>
                 <th>担当</th>
                 <th>開始</th>
                 <th>支払</th>
-                <th>部屋/TEL</th>
+                <th>部屋/携帯</th>
                 <th className="num">金額</th>
                 <th />
               </tr>
@@ -161,14 +176,20 @@ export default function ReceptionList() {
                   <td>{r.nominate ? "○" : ""}</td>
                   <td>{staffName(r.staffId)}</td>
                   <td>{r.startTime}</td>
-                  <td>{r.payment}</td>
+                  <td>
+                    {r.payment}
+                    {r.payment === "その他" && r.paymentNote ? `（${r.paymentNote}）` : ""}
+                  </td>
                   <td>{r.room || r.phone || ""}</td>
                   <td className="num">{Number(r.amount || 0).toLocaleString("ja-JP")}</td>
                   <td>
-                    <button className="btn sm ghost" onClick={() => setForm({ ...r })}>
+                    <button
+                      className="btn sm ghost"
+                      onClick={() => setForm({ ...normalizeRecord(r), _originalDate: r.date })}
+                    >
                       編集
                     </button>{" "}
-                    <button className="btn sm danger" onClick={() => del(r.id)}>
+                    <button className="btn sm danger" onClick={() => del(r.id, r.date)}>
                       削除
                     </button>
                   </td>
@@ -183,6 +204,25 @@ export default function ReceptionList() {
         <div className="modal-overlay" onClick={() => setForm(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>{form.id ? "受付を編集" : "受付を追加"}</h3>
+
+            <div className="row">
+              <div className="field">
+                <label>施術日</label>
+                <input
+                  type="date"
+                  value={form.date}
+                  onChange={(e) => setForm({ ...form, date: e.target.value })}
+                />
+              </div>
+              <div className="field">
+                <label>開始時間</label>
+                <input
+                  type="time"
+                  value={form.startTime}
+                  onChange={(e) => setForm({ ...form, startTime: e.target.value })}
+                />
+              </div>
+            </div>
 
             <div className="row">
               <div className="field">
@@ -215,7 +255,7 @@ export default function ReceptionList() {
 
             <div className="row">
               <div className="field">
-                <label>氏名</label>
+                <label>お客様名</label>
                 <input
                   value={form.customerName}
                   onChange={(e) => setForm({ ...form, customerName: e.target.value })}
@@ -276,6 +316,14 @@ export default function ReceptionList() {
                   </label>
                 ))}
               </div>
+              <input
+                style={{ marginTop: 8 }}
+                value={form.course.freeText}
+                onChange={(e) =>
+                  setForm({ ...form, course: { ...form.course, freeText: e.target.value } })
+                }
+                placeholder="コース自由記述（入力するとこちらが優先表示されます）"
+              />
             </div>
 
             <div className="field">
@@ -330,11 +378,11 @@ export default function ReceptionList() {
                 </select>
               </div>
               <div className="field">
-                <label>開始時間</label>
+                <label>金額</label>
                 <input
-                  type="time"
-                  value={form.startTime}
-                  onChange={(e) => setForm({ ...form, startTime: e.target.value })}
+                  type="number"
+                  value={form.amount}
+                  onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })}
                 />
               </div>
             </div>
@@ -348,19 +396,21 @@ export default function ReceptionList() {
                 >
                   {PAYMENTS.map((p) => (
                     <option key={p} value={p}>
-                      {p === "現" ? "現金" : p === "部" ? "部屋掛け" : "クレジット"}
+                      {p}
                     </option>
                   ))}
                 </select>
               </div>
-              <div className="field">
-                <label>金額</label>
-                <input
-                  type="number"
-                  value={form.amount}
-                  onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })}
-                />
-              </div>
+              {form.payment === "その他" && (
+                <div className="field">
+                  <label>支払方法（自由記述）</label>
+                  <input
+                    value={form.paymentNote}
+                    onChange={(e) => setForm({ ...form, paymentNote: e.target.value })}
+                    placeholder="例：PayPay"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="row">
@@ -372,10 +422,18 @@ export default function ReceptionList() {
                 />
               </div>
               <div className="field">
-                <label>電話番号</label>
+                <label>携帯番号</label>
                 <input
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                />
+              </div>
+              <div className="field">
+                <label>施術場所</label>
+                <input
+                  value={form.location}
+                  onChange={(e) => setForm({ ...form, location: e.target.value })}
+                  placeholder="例：来店 / ○○ホテル1014号室"
                 />
               </div>
             </div>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
-import { api, yen } from "../api.js";
+import { PAYMENTS, api, yen } from "../api.js";
 
 export default function Dashboard() {
   const { stores, date, setDate, ready } = useApp();
@@ -24,10 +24,11 @@ export default function Dashboard() {
   const stats = useMemo(() => {
     const total = records.reduce((s, r) => s + Number(r.amount || 0), 0);
     const byStore = {};
-    const byPay = { 現: 0, 部: 0, クレ: 0 };
+    const byPay = Object.fromEntries(PAYMENTS.map((p) => [p, 0]));
     for (const r of records) {
       byStore[r.storeId] = (byStore[r.storeId] || 0) + Number(r.amount || 0);
-      if (byPay[r.payment] !== undefined) byPay[r.payment] += Number(r.amount || 0);
+      if (byPay[r.payment] === undefined) byPay[r.payment] = 0;
+      byPay[r.payment] += Number(r.amount || 0);
     }
     const avg = records.length ? Math.round(total / records.length) : 0;
     return { total, count: records.length, avg, byStore, byPay };
@@ -101,18 +102,12 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>現金</td>
-                    <td className="num">{stats.byPay["現"].toLocaleString("ja-JP")}</td>
-                  </tr>
-                  <tr>
-                    <td>部屋掛け</td>
-                    <td className="num">{stats.byPay["部"].toLocaleString("ja-JP")}</td>
-                  </tr>
-                  <tr>
-                    <td>クレジット</td>
-                    <td className="num">{stats.byPay["クレ"].toLocaleString("ja-JP")}</td>
-                  </tr>
+                  {Object.entries(stats.byPay).map(([p, v]) => (
+                    <tr key={p}>
+                      <td>{p}</td>
+                      <td className="num">{Number(v).toLocaleString("ja-JP")}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

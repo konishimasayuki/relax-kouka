@@ -61,10 +61,11 @@ export const COURSE_TYPES = [
 
 export const DURATIONS = [10, 20, 30, 40, 60, 70, 90, 100, 120];
 
-export const PAYMENTS = ["現", "部", "クレ"];
+export const PAYMENTS = ["現金", "部屋付け", "クレジット", "QR", "その他"];
 
 export function courseLabel(course) {
   if (!course) return "";
+  if (course.freeText?.trim()) return course.freeText.trim();
   const parts = (course.parts || [])
     .map((p) => COURSE_PARTS.find((x) => x.key === p)?.label)
     .filter(Boolean)
