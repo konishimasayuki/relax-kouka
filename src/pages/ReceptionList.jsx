@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
-import { COURSE_PARTS, PAYMENTS, api, courseLabel, yen } from "../api.js";
+import { PAYMENTS, api, courseLabel, yen } from "../api.js";
 
 function emptyRecord(storeId, date) {
   return {
@@ -16,17 +16,14 @@ function emptyRecord(storeId, date) {
       displayName: "",
       minutes: "",
       color: "",
-      parts: [],
       freeText: "",
     },
     pregnancy: false,
     nominate: false,
-    catch: false,
     staffId: "",
     startTime: "",
     payment: "現金",
     paymentNote: "",
-    location: "",
     receptionist: "",
     room: "",
     phone: "",
@@ -111,13 +108,6 @@ export default function ReceptionList() {
     [menus, form?.storeId],
   );
 
-  const togglePart = (key) => {
-    const parts = form.course.parts.includes(key)
-      ? form.course.parts.filter((p) => p !== key)
-      : [...form.course.parts, key];
-    setForm({ ...form, course: { ...form.course, parts } });
-  };
-
   // 店舗を変更したら、その店舗のメニューに合わせてコース選択をリセット
   const changeStore = (storeId) => {
     setForm({
@@ -200,7 +190,11 @@ export default function ReceptionList() {
             </thead>
             <tbody>
               {view.map((r) => (
-                <tr key={r.id}>
+                <tr
+                  key={r.id}
+                  style={{ cursor: "pointer" }}
+                  onClick={() => setForm({ ...normalizeRecord(r), _originalDate: r.date })}
+                >
                   <td>{storeName(r.storeId)}</td>
                   <td>{r.bed}</td>
                   <td>{r.customerName}</td>
@@ -221,11 +215,20 @@ export default function ReceptionList() {
                   <td>
                     <button
                       className="btn sm ghost"
-                      onClick={() => setForm({ ...normalizeRecord(r), _originalDate: r.date })}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setForm({ ...normalizeRecord(r), _originalDate: r.date });
+                      }}
                     >
                       編集
                     </button>{" "}
-                    <button className="btn sm danger" onClick={() => del(r.id, r.date)}>
+                    <button
+                      className="btn sm danger"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        del(r.id, r.date);
+                      }}
+                    >
                       削除
                     </button>
                   </td>
@@ -317,18 +320,6 @@ export default function ReceptionList() {
                   ))}
                 </select>
               )}
-              <div className="checks" style={{ marginTop: 8 }}>
-                {COURSE_PARTS.map((p) => (
-                  <label className="check" key={p.key}>
-                    <input
-                      type="checkbox"
-                      checked={form.course.parts.includes(p.key)}
-                      onChange={() => togglePart(p.key)}
-                    />
-                    {p.label}
-                  </label>
-                ))}
-              </div>
               <input
                 style={{ marginTop: 8 }}
                 value={form.course.freeText}
@@ -348,14 +339,6 @@ export default function ReceptionList() {
                     onChange={(e) => setForm({ ...form, nominate: e.target.checked })}
                   />
                   指名
-                </label>
-                <label className="check">
-                  <input
-                    type="checkbox"
-                    checked={form.catch}
-                    onChange={(e) => setForm({ ...form, catch: e.target.checked })}
-                  />
-                  キャッチ
                 </label>
                 <label className="check">
                   <input
@@ -381,7 +364,6 @@ export default function ReceptionList() {
                     .map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.name}
-                        {form.course.parts.includes("facial") ? (s.facial ? "" : "（F不可）") : ""}
                       </option>
                     ))}
                 </select>
@@ -435,14 +417,6 @@ export default function ReceptionList() {
                 <input
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                />
-              </div>
-              <div className="field">
-                <label>施術場所</label>
-                <input
-                  value={form.location}
-                  onChange={(e) => setForm({ ...form, location: e.target.value })}
-                  placeholder="例：来店 / ○○ホテル1014号室"
                 />
               </div>
             </div>
