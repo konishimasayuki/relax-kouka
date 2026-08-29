@@ -17,9 +17,27 @@ export default async function handler(req, res) {
         beds: 7,
         active: true,
         isHome: true,
+        billingCompany: "株式会社 康佳",
+        billingAddress: "大分県別府市海観寺1杉乃井ホテル内　康楽美ボディリセ",
       },
-      { name: "BODY RECESS（宙館13階）", building: "宙館", floor: "13F", beds: 2, active: true },
-      { name: "Spa the Ceada", building: "Ceada", floor: "", beds: 5, active: true },
+      {
+        name: "BODY RECESS（宙館13階）",
+        building: "宙館",
+        floor: "13F",
+        beds: 2,
+        active: true,
+        billingCompany: "株式会社 康佳",
+        billingAddress: "大分県別府市海観寺1杉乃井ホテル内　康楽美ボディリセ",
+      },
+      {
+        name: "Spa the Ceada",
+        building: "Ceada",
+        floor: "",
+        beds: 5,
+        active: true,
+        billingCompany: "株式会社 スパザシーダ",
+        billingAddress: "大分県別府市海観寺1杉乃井ホテル内　康楽美ボディリセ",
+      },
     ];
     const savedStores = [];
     for (const s of stores) savedStores.push(await saveItem("store", s));
@@ -33,6 +51,8 @@ export default async function handler(req, res) {
         birthday: "1995-04-01",
         facial: true,
         pregnancy: true,
+        isAdmin: true,
+        commissionRate: 45,
         active: true,
       },
       {
@@ -43,6 +63,8 @@ export default async function handler(req, res) {
         birthday: "1990-08-15",
         facial: false,
         pregnancy: false,
+        isAdmin: false,
+        commissionRate: 45,
         active: true,
       },
       {
@@ -53,6 +75,8 @@ export default async function handler(req, res) {
         birthday: "1988-12-20",
         facial: true,
         pregnancy: false,
+        isAdmin: false,
+        commissionRate: 45,
         active: true,
       },
     ];

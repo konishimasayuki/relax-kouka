@@ -5,6 +5,7 @@ import CustomerRoster from "./pages/CustomerRoster.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import IndividualDaily from "./pages/IndividualDaily.jsx";
 import Login from "./pages/Login.jsx";
+import Payroll from "./pages/Payroll.jsx";
 import Pricing from "./pages/Pricing.jsx";
 import ReceptionList from "./pages/ReceptionList.jsx";
 import Settings from "./pages/Settings.jsx";
@@ -18,9 +19,10 @@ export const useApp = () => useContext(AppCtx);
 const PAGES = {
   dashboard: Dashboard,
   timeboard: TimeBoard,
-  shift: Shift,
   reception: ReceptionList,
+  shift: Shift,
   daily: IndividualDaily,
+  payroll: Payroll,
   customers: CustomerRoster,
   pricing: Pricing,
   settings: Settings,

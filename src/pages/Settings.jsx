@@ -10,6 +10,8 @@ const emptyStore = {
   beds: 3,
   active: true,
   isHome: false,
+  billingCompany: "",
+  billingAddress: "",
 };
 const emptyStaff = {
   id: "",
@@ -22,6 +24,7 @@ const emptyStaff = {
   pregnancy: false,
   isAdmin: false,
   active: true,
+  commissionRate: 45,
 };
 
 export default function Settings() {
@@ -233,8 +236,27 @@ export default function Settings() {
                 本店にする（スタッフは基本この店舗にいる想定で移動時間を計算）
               </label>
             </div>
+            <div className="row">
+              <div className="field">
+                <label>請求書の宛先会社名</label>
+                <input
+                  value={storeForm.billingCompany}
+                  onChange={(e) => setStoreForm({ ...storeForm, billingCompany: e.target.value })}
+                  placeholder="株式会社 康佳"
+                />
+              </div>
+              <div className="field">
+                <label>請求書の業務遂行地（住所）</label>
+                <input
+                  value={storeForm.billingAddress}
+                  onChange={(e) => setStoreForm({ ...storeForm, billingAddress: e.target.value })}
+                  placeholder="大分県別府市海観寺1杉乃井ホテル内　康楽美ボディリセ"
+                />
+              </div>
+            </div>
             <div className="muted" style={{ fontSize: 12, marginBottom: 12 }}>
               ※ 本店以外の建物への移動は前後20分を自動確保します（同じ建物が連続する場合、間の移動は不要）。
+              給料タブの請求書には、この宛先会社名・住所が印字されます。
             </div>
             <div className="modal-actions">
               <button className="btn gray" onClick={() => setStoreForm(null)}>
@@ -307,6 +329,20 @@ export default function Settings() {
                   />
                   管理者権限（ダッシュボード・料金・顧客名簿・設定が閲覧可能）
                 </label>
+              </div>
+            </div>
+            <div className="field">
+              <label>基本歩合率（％）</label>
+              <input
+                type="number"
+                value={staffForm.commissionRate}
+                onChange={(e) =>
+                  setStaffForm({ ...staffForm, commissionRate: Number(e.target.value) })
+                }
+                placeholder="45"
+              />
+              <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                ※ 給料タブの初期値です。実際の率は日ごとに変わる場合があるため、給料タブ側で日別に変更できます。
               </div>
             </div>
             <div className="field">

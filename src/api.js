@@ -44,6 +44,9 @@ export const api = {
   menus: () => req("menus"),
   saveMenu: (m) => req("menus", { method: "POST", body: JSON.stringify(m) }),
   deleteMenu: (id) => req(`menus?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  payrollRates: () => req("payrollRates"),
+  savePayrollRate: (r) => req("payrollRates", { method: "POST", body: JSON.stringify(r) }),
 };
 
 // ---- コース定義 ----
@@ -89,6 +92,22 @@ export function todayStr() {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+export function thisMonthStr() {
+  return todayStr().slice(0, 7);
+}
+
+// "YYYY-MM" の日数を返す
+export function daysInMonth(monthStr) {
+  const [y, m] = monthStr.split("-").map(Number);
+  return new Date(y, m, 0).getDate();
+}
+
+// "YYYY-MM" + 日 → "YYYY-MM-DD"
+export function dateOfMonth(monthStr, day) {
+  const [y, m] = monthStr.split("-").map(Number);
+  return `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 export function yen(n) {

@@ -3,9 +3,10 @@ import { useState } from "react";
 const MENU = [
   { key: "dashboard", label: "ダッシュボード", ico: "📊" },
   { key: "timeboard", label: "タイムボード", ico: "🗓️" },
-  { key: "shift", label: "シフト", ico: "🕒" },
   { key: "reception", label: "受付一覧表", ico: "📋" },
+  { key: "shift", label: "シフト", ico: "🕒" },
   { key: "daily", label: "個人別日計表", ico: "🧾" },
+  { key: "payroll", label: "給料", ico: "💴" },
   { key: "customers", label: "顧客名簿", ico: "👥" },
   { key: "pricing", label: "料金", ico: "💰" },
   { key: "settings", label: "設定", ico: "⚙️" },

@@ -1222,3 +1222,45 @@ table.grid th.num {
   border-bottom: none;
   font-weight: 700;
 }
+
+/* ---------- 給料タブ（請求書） ---------- */
+.payroll-table .rate-input {
+  width: 44px;
+  padding: 2px 4px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  text-align: right;
+  font-size: 12px;
+}
+
+.payroll-table tfoot td {
+  border-top: 2px solid #333;
+  font-weight: 700;
+  background: var(--bg-soft);
+}
+
+/* 印刷時は請求書だけを表示する */
+@media print {
+  .topbar,
+  .drawer,
+  .drawer-overlay,
+  .toolbar,
+  .page-head {
+    display: none !important;
+  }
+
+  .body-row,
+  .content {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+
+  .payroll-sheet {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+}
