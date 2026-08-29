@@ -9,7 +9,14 @@ export default async function handler(req, res) {
     const date = (req.body && req.body.date) || serverDate();
 
     const stores = [
-      { name: "BODY RECESS（パレス2階）", building: "パレス", floor: "2F", beds: 7, active: true },
+      {
+        name: "BODY RECESS（パレス2階）",
+        building: "パレス",
+        floor: "2F",
+        beds: 7,
+        active: true,
+        isHome: true,
+      },
       { name: "BODY RECESS（宙館13階）", building: "宙館", floor: "13F", beds: 2, active: true },
       { name: "Spa the Ceada", building: "Ceada", floor: "", beds: 5, active: true },
     ];
