@@ -35,6 +35,10 @@ export const api = {
     req(`reception?id=${encodeURIComponent(id)}&date=${encodeURIComponent(date)}`, {
       method: "DELETE",
     }),
+
+  shifts: () => req("shifts"),
+  saveShift: (s) => req("shifts", { method: "POST", body: JSON.stringify(s) }),
+  deleteShift: (id) => req(`shifts?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
 };
 
 // ---- コース定義 ----
