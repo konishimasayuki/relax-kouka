@@ -202,7 +202,7 @@ export default function Payroll() {
             </div>
 
             <div className="sheet-title" style={{ margin: "10px 0" }}>
-              ボディ・フット・リフレ委託料金合計金額　¥
+              ボディ・フット・リフレ委託料金合計金額　¥{totals.commission.toLocaleString("ja-JP")}
             </div>
 
             <table className="sheet-table payroll-table">
@@ -217,16 +217,6 @@ export default function Payroll() {
                   <th>税抜売上</th>
                   <th>歩合金額</th>
                   <th>指名件数</th>
-                  <th>
-                    税抜金額
-                    <br />
-                    (5%)
-                  </th>
-                  <th>
-                    売上合計
-                    <br />
-                    (税抜)
-                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -234,14 +224,17 @@ export default function Payroll() {
                   <tr key={r.day}>
                     <td className="c-center">{r.day}日</td>
                     <td className="c-center">
-                      <input
-                        type="number"
-                        className="rate-input"
-                        value={r.rate}
-                        disabled={savingDay === r.day}
-                        onChange={(e) => saveRate(r.day, e.target.value)}
-                      />
-                      %
+                      <span className="print-only">{r.rate}%</span>
+                      <span className="no-print">
+                        <input
+                          type="number"
+                          className="rate-input"
+                          value={r.rate}
+                          disabled={savingDay === r.day}
+                          onChange={(e) => saveRate(r.day, e.target.value)}
+                        />
+                        %
+                      </span>
                     </td>
                     <td className="c-center">{r.startLabel}</td>
                     <td className="c-center">{r.count ? `${r.count}件` : "件"}</td>
@@ -254,12 +247,6 @@ export default function Payroll() {
                       {r.taxIn ? r.commission.toLocaleString("ja-JP") : ""}
                     </td>
                     <td className="c-center">{r.nominateCount ? `${r.nominateCount}件` : "件"}</td>
-                    <td className="c-amount">
-                      {r.nominateFee ? r.nominateFee.toLocaleString("ja-JP") : ""}
-                    </td>
-                    <td className="c-amount">
-                      {r.taxIn ? r.total.toLocaleString("ja-JP") : ""}
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -276,8 +263,6 @@ export default function Payroll() {
                     {totals.commission.toLocaleString("ja-JP")}円
                   </td>
                   <td />
-                  <td className="c-amount">{totals.nominateFee.toLocaleString("ja-JP")}円</td>
-                  <td className="c-amount">{totals.total.toLocaleString("ja-JP")}円</td>
                 </tr>
               </tfoot>
             </table>

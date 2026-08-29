@@ -1336,6 +1336,11 @@ table.grid th.num {
   font-size: 12px;
 }
 
+/* 画面では入力欄、印刷では文字だけを表示する */
+.print-only {
+  display: none;
+}
+
 .payroll-table tfoot td {
   border-top: 2px solid #333;
   font-weight: 700;
@@ -1387,6 +1392,14 @@ table.grid th.num {
 
   .payroll-table .rate-input {
     width: 30px;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: inline !important;
   }
 
   .sheet-head {
