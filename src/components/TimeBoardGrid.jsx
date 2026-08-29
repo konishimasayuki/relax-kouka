@@ -56,9 +56,11 @@ export default function TimeBoardGrid({
   const staffName = (id) => staff.find((s) => s.id === id)?.name || "?";
   const buildingOf = (storeId) => stores.find((s) => s.id === storeId)?.building || "";
 
-  // パレス2F＝本店。ここが移動の起点・終点になる。
+  // 本店＝ここが移動の起点・終点になる。isHomeフラグを優先し、
+  // 未設定の場合のみ建物名に「パレス」を含む店舗をフォールバックで使う。
   const homeBuilding = useMemo(() => {
-    const home = stores.find((s) => s.building?.includes("パレス"));
+    const home =
+      stores.find((s) => s.isHome) || stores.find((s) => s.building?.includes("パレス"));
     return home?.building || stores[0]?.building || "";
     // eslint-disable-next-line
   }, [stores]);
