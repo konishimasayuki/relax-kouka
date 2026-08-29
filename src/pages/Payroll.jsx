@@ -1,25 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
-import { api, dateOfMonth, daysInMonth, thisMonthStr, yen } from "../api.js";
+import { api, dateOfMonth, daysInMonth, thisMonthStr } from "../api.js";
+
+// 請求先は全店舗共通のため固定（店舗ごとの設定は不要）
+const BILLING_COMPANY = "株式会社 康佳";
+const BILLING_ADDRESS = "大分県別府市海観寺1杉乃井ホテル内　康楽美ボディリセ";
 
 export default function Payroll() {
-  const { role, staffSession, isAdminUser, stores, staff } = useApp();
+  const { role, staffSession, isAdminUser, staff } = useApp();
 
   const isLockedToSelf = role === "staff" && !isAdminUser;
   const selfStaffId = staffSession?.id || "";
 
   const [month, setMonth] = useState(thisMonthStr());
-  const [storeId, setStoreId] = useState("");
   const [staffId, setStaffId] = useState(isLockedToSelf ? selfStaffId : "");
   const [monthRecords, setMonthRecords] = useState({}); // date -> records[]
   const [shifts, setShifts] = useState([]);
   const [rateOverrides, setRateOverrides] = useState([]); // payrollrate items
   const [loading, setLoading] = useState(false);
   const [savingDay, setSavingDay] = useState(null);
-
-  useEffect(() => {
-    if (stores.length && !storeId) setStoreId(stores[0].id);
-  }, [stores, storeId]);
 
   useEffect(() => {
     if (!isLockedToSelf && staff.length && !staffId) setStaffId(staff[0].id);
@@ -53,22 +52,18 @@ export default function Payroll() {
   }, [month]);
 
   const selectedStaff = staff.find((s) => s.id === staffId);
-  const selectedStore = stores.find((s) => s.id === storeId);
 
   const rateOf = (day) =>
-    rateOverrides.find(
-      (r) => r.staffId === staffId && r.storeId === storeId && r.month === month && r.day === day,
-    );
+    rateOverrides.find((r) => r.staffId === staffId && r.month === month && r.day === day);
 
+  // 店舗をまたいでも、スタッフ1人につき請求書は1枚。全店舗の受付を合算する。
   const rows = useMemo(() => {
     const days = daysInMonth(month);
     let cumTaxIn = 0;
     const out = [];
     for (let day = 1; day <= days; day++) {
       const date = dateOfMonth(month, day);
-      const dayRecords = (monthRecords[date] || []).filter(
-        (r) => r.staffId === staffId && r.storeId === storeId,
-      );
+      const dayRecords = (monthRecords[date] || []).filter((r) => r.staffId === staffId);
       const count = dayRecords.length;
       const taxIn = dayRecords.reduce((s, r) => s + Number(r.amount || 0), 0);
       const taxEx = Math.round(taxIn / 1.1);
@@ -104,7 +99,7 @@ export default function Payroll() {
     }
     return out;
     // eslint-disable-next-line
-  }, [month, monthRecords, staffId, storeId, rateOverrides, selectedStaff, shifts]);
+  }, [month, monthRecords, staffId, rateOverrides, selectedStaff, shifts]);
 
   const totals = useMemo(
     () =>
@@ -129,7 +124,6 @@ export default function Payroll() {
       await api.savePayrollRate({
         id: existing?.id || "",
         staffId,
-        storeId,
         month,
         day,
         rate: Number(newRate),
@@ -153,13 +147,6 @@ export default function Payroll() {
 
       <div className="toolbar">
         <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
-        <select value={storeId} onChange={(e) => setStoreId(e.target.value)}>
-          {stores.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
         {!isLockedToSelf && (
           <select value={staffId} onChange={(e) => setStaffId(e.target.value)}>
             {staff.map((s) => (
@@ -181,24 +168,17 @@ export default function Payroll() {
           <div className="sheet">
             <div className="sheet-head">
               <span className="sheet-title">請求書</span>
-              <span>
-                <span>{selectedStore?.billingCompany || "（未設定）"}</span>{" "}
-                御中
-              </span>
+              <span>{BILLING_COMPANY} 御中</span>
               <span>{m}月分</span>
               <span>
-                令和 <span>{reiwaYear}</span> 年{" "}
-                <span>{m}</span> 月 <span>{lastDay}</span>{" "}
-                日
+                令和 <span>{reiwaYear}</span> 年 <span>{m}</span> 月 <span>{lastDay}</span> 日
               </span>
             </div>
             <div className="sheet-head" style={{ paddingTop: 0 }}>
               <span>
                 氏名 <span>{selectedStaff?.name || "（未選択）"}</span>
               </span>
-              <span>
-                業務遂行地（住所）：{selectedStore?.billingAddress || "（未設定）"}
-              </span>
+              <span>業務遂行地（住所）：{BILLING_ADDRESS}</span>
             </div>
 
             <div className="sheet-title" style={{ margin: "10px 0" }}>
@@ -259,9 +239,7 @@ export default function Payroll() {
                   <td className="c-amount">{totals.taxIn.toLocaleString("ja-JP")}円</td>
                   <td />
                   <td className="c-amount">{totals.taxEx.toLocaleString("ja-JP")}円</td>
-                  <td className="c-amount">
-                    {totals.commission.toLocaleString("ja-JP")}円
-                  </td>
+                  <td className="c-amount">{totals.commission.toLocaleString("ja-JP")}円</td>
                   <td />
                 </tr>
               </tfoot>

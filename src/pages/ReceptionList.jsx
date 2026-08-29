@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "../App.jsx";
 import { PAYMENTS, api, courseLabel, todayStr } from "../api.js";
 import SignaturePad from "../components/SignaturePad.jsx";
@@ -56,6 +56,8 @@ export default function ReceptionList() {
   const [loading, setLoading] = useState(false);
   const [signOpen, setSignOpen] = useState(false);
   const [freeTextRows, setFreeTextRows] = useState(new Set());
+  // 削除中のIDを即時マーク（confirm()によるblur連鎖で誤って保存が走るのを防ぐ）
+  const deletingIdsRef = useRef(new Set());
 
   const load = async () => {
     setLoading(true);
@@ -92,25 +94,47 @@ export default function ReceptionList() {
 
   const total = useMemo(() => view.reduce((s, r) => s + Number(r.amount || 0), 0), [view]);
 
-  // レコードの一部を更新して即保存（新規行なら作成）
+  // レコードの一部を更新して即保存（新規行なら作成）。体感速度のため先に画面へ反映する。
   const updateRecord = async (r, patch) => {
+    if (r && deletingIdsRef.current.has(r.id)) return;
     const base = r ? normalizeRecord(r) : emptyRecord(stores[0]?.id, date);
     const payload = { ...base, ...patch };
+
+    if (r) {
+      setRecords((prev) => prev.map((x) => (x.id === r.id ? payload : x)));
+    }
+
     try {
       const saved = await api.saveReception(payload);
+      if (deletingIdsRef.current.has(saved.id)) return; // 保存が返る前に削除された場合は反映しない
       setRecords((prev) => {
         const exists = prev.some((x) => x.id === saved.id);
         return exists ? prev.map((x) => (x.id === saved.id ? saved : x)) : [...prev, saved];
       });
     } catch (e) {
       alert(`保存失敗: ${e.message}`);
+      load();
     }
   };
 
   const del = async (id, recordDate) => {
-    if (!confirm("この受付を削除しますか？")) return;
-    await api.deleteReception(id, recordDate || date);
+    // confirm()はダイアログ表示時に他のフォーカス中の入力欄をblurさせ、
+    // その保存処理と競合することがあるため、確認前に削除中として先にマークしておく
+    deletingIdsRef.current.add(id);
+    const ok = window.confirm("この受付を削除しますか？");
+    if (!ok) {
+      deletingIdsRef.current.delete(id);
+      return;
+    }
     setRecords((prev) => prev.filter((x) => x.id !== id));
+    try {
+      await api.deleteReception(id, recordDate || date);
+    } catch (e) {
+      alert(`削除失敗: ${e.message}`);
+      load();
+    } finally {
+      deletingIdsRef.current.delete(id);
+    }
   };
 
   const updateMeta = async (patch) => {

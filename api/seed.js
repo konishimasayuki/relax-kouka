@@ -17,8 +17,6 @@ export default async function handler(req, res) {
         beds: 7,
         active: true,
         isHome: true,
-        billingCompany: "株式会社 康佳",
-        billingAddress: "大分県別府市海観寺1杉乃井ホテル内　康楽美ボディリセ",
       },
       {
         name: "BODY RECESS（宙館13階）",
@@ -26,8 +24,6 @@ export default async function handler(req, res) {
         floor: "13F",
         beds: 2,
         active: true,
-        billingCompany: "株式会社 康佳",
-        billingAddress: "大分県別府市海観寺1杉乃井ホテル内　康楽美ボディリセ",
       },
       {
         name: "Spa the Ceada",
@@ -35,8 +31,6 @@ export default async function handler(req, res) {
         floor: "",
         beds: 5,
         active: true,
-        billingCompany: "株式会社 スパザシーダ",
-        billingAddress: "大分県別府市海観寺1杉乃井ホテル内　康楽美ボディリセ",
       },
     ];
     const savedStores = [];
