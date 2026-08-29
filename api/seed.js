@@ -72,11 +72,11 @@ export default async function handler(req, res) {
     for (const c of custs) await saveItem("customer", c);
 
     const menuDefs = [
-      { storeId: savedStores[0].id, name: "ボディオイル", minutes: 60, price: 5500, color: "blue" },
-      { storeId: savedStores[0].id, name: "ボディオイル", minutes: 90, price: 8000, color: "blue" },
-      { storeId: savedStores[0].id, name: "フェイシャル", minutes: 40, price: 4400, color: "green" },
-      { storeId: savedStores[1].id, name: "組み合わせ", minutes: 90, price: 9460, color: "purple" },
-      { storeId: savedStores[2].id, name: "フェイシャル", minutes: 40, price: 4400, color: "green" },
+      { storeId: savedStores[0].id, name: "ボディオイル", displayName: "オイル", minutes: 60, price: 5500, color: "blue" },
+      { storeId: savedStores[0].id, name: "ボディオイル", displayName: "オイル", minutes: 90, price: 8000, color: "blue" },
+      { storeId: savedStores[0].id, name: "フェイシャル", displayName: "顔", minutes: 40, price: 4400, color: "green" },
+      { storeId: savedStores[1].id, name: "組み合わせ", displayName: "組合", minutes: 90, price: 9460, color: "purple" },
+      { storeId: savedStores[2].id, name: "フェイシャル", displayName: "顔", minutes: 40, price: 4400, color: "green" },
     ];
     const savedMenus = [];
     for (const m of menuDefs) savedMenus.push(await saveItem("menu", m));
@@ -91,6 +91,7 @@ export default async function handler(req, res) {
         course: {
           menuId: savedMenus[0].id,
           name: savedMenus[0].name,
+          displayName: savedMenus[0].displayName,
           minutes: savedMenus[0].minutes,
           color: savedMenus[0].color,
           parts: ["ho"],
@@ -109,6 +110,7 @@ export default async function handler(req, res) {
         course: {
           menuId: savedMenus[4].id,
           name: savedMenus[4].name,
+          displayName: savedMenus[4].displayName,
           minutes: savedMenus[4].minutes,
           color: savedMenus[4].color,
           parts: ["facial"],
@@ -127,6 +129,7 @@ export default async function handler(req, res) {
         course: {
           menuId: savedMenus[3].id,
           name: savedMenus[3].name,
+          displayName: savedMenus[3].displayName,
           minutes: savedMenus[3].minutes,
           color: savedMenus[3].color,
           parts: ["ho", "foot"],

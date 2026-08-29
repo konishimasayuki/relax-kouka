@@ -10,7 +10,15 @@ function emptyRecord(storeId, date) {
     bed: "",
     customerName: "",
     gender: "女",
-    course: { menuId: "", name: "", minutes: "", color: "", parts: [], freeText: "" },
+    course: {
+      menuId: "",
+      name: "",
+      displayName: "",
+      minutes: "",
+      color: "",
+      parts: [],
+      freeText: "",
+    },
     pregnancy: false,
     nominate: false,
     catch: false,
@@ -112,19 +120,33 @@ export default function ReceptionList() {
 
   // 店舗を変更したら、その店舗のメニューに合わせてコース選択をリセット
   const changeStore = (storeId) => {
-    setForm({ ...form, storeId, course: { ...form.course, menuId: "", name: "", minutes: "", color: "" } });
+    setForm({
+      ...form,
+      storeId,
+      course: { ...form.course, menuId: "", name: "", displayName: "", minutes: "", color: "" },
+    });
   };
 
-  // メニューを選んだら、コース名・時間・色・金額を自動反映（金額は後から編集・消去可）
+  // メニューを選んだら、コース名・表示名・時間・色・金額を自動反映（金額は後から編集・消去可）
   const selectMenu = (menuId) => {
     const m = menus.find((x) => x.id === menuId);
     if (!m) {
-      setForm({ ...form, course: { ...form.course, menuId: "", name: "", minutes: "", color: "" } });
+      setForm({
+        ...form,
+        course: { ...form.course, menuId: "", name: "", displayName: "", minutes: "", color: "" },
+      });
       return;
     }
     setForm({
       ...form,
-      course: { ...form.course, menuId: m.id, name: m.name, minutes: m.minutes, color: m.color },
+      course: {
+        ...form.course,
+        menuId: m.id,
+        name: m.name,
+        displayName: m.displayName,
+        minutes: m.minutes,
+        color: m.color,
+      },
       amount: m.price,
     });
   };

@@ -214,6 +214,7 @@ export default function TimeBoardGrid({
                   const start = toMin(r.startTime);
                   const mins = r.course?.minutes || 60;
                   const color = courseColorHex(r.course?.color) || staffColor(r.staffId, staff);
+                  const label = r.course?.displayName?.trim() || courseLabel(r.course);
                   return (
                     <div
                       className="tb-block"
@@ -222,7 +223,7 @@ export default function TimeBoardGrid({
                       onClick={() => onSelect?.(r)}
                     >
                       <div className="bl-course">
-                        {courseLabel(r.course)}・{storeAbbr(r.storeId)}
+                        {label}・{storeAbbr(r.storeId)}
                       </div>
                       <div className="bl-name">{r.customerName}</div>
                     </div>

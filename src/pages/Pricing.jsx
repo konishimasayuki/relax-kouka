@@ -3,7 +3,15 @@ import { useApp } from "../App.jsx";
 import { COURSE_COLORS, api, yen } from "../api.js";
 
 function emptyMenu(storeId) {
-  return { id: "", storeId: storeId || "", name: "", minutes: 60, price: 0, color: "blue" };
+  return {
+    id: "",
+    storeId: storeId || "",
+    name: "",
+    displayName: "",
+    minutes: 60,
+    price: 0,
+    color: "blue",
+  };
 }
 
 export default function Pricing() {
@@ -70,6 +78,7 @@ export default function Pricing() {
               <tr>
                 <th>色</th>
                 <th>コース名</th>
+                <th>表示名</th>
                 <th className="num">時間</th>
                 <th className="num">料金</th>
                 <th />
@@ -90,6 +99,7 @@ export default function Pricing() {
                     />
                   </td>
                   <td>{m.name}</td>
+                  <td>{m.displayName || <span className="muted">—</span>}</td>
                   <td className="num">{m.minutes}分</td>
                   <td className="num">{yen(m.price)}</td>
                   <td>
@@ -132,6 +142,14 @@ export default function Pricing() {
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="例：オイルリンパ"
+              />
+            </div>
+            <div className="field">
+              <label>表示名（タイムボードに表示する名前）</label>
+              <input
+                value={form.displayName}
+                onChange={(e) => setForm({ ...form, displayName: e.target.value })}
+                placeholder="例：オイル（空欄ならコース名を表示）"
               />
             </div>
             <div className="row">
