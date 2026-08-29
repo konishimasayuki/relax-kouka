@@ -1488,3 +1488,46 @@ table.grid th.num {
   }
 }
 
+/* ---------- ダッシュボード：売上日計表・速報 ---------- */
+.daily-report-card .dr-table td,
+.daily-report-card .dr-table th {
+  white-space: nowrap;
+}
+
+.dr-denom-table th,
+.dr-denom-table td {
+  text-align: center;
+  padding: 6px 4px;
+}
+
+.denom-input {
+  width: 100%;
+  min-width: 52px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px;
+  text-align: right;
+  font-size: 13px;
+}
+
+.quick-report-card .qr-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--border);
+  font-size: 14px;
+}
+
+.quick-report-card .qr-value {
+  font-weight: 700;
+  color: var(--blue);
+  font-variant-numeric: tabular-nums;
+}
+
+.qr-booking-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.7;
+}

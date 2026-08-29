@@ -50,6 +50,10 @@ export const api = {
 
   payrollRates: () => req("payrollRates"),
   savePayrollRate: (r) => req("payrollRates", { method: "POST", body: JSON.stringify(r) }),
+
+  dailyReportMeta: (date, storeId) =>
+    req(`dailyReportMeta?date=${encodeURIComponent(date)}&storeId=${encodeURIComponent(storeId)}`),
+  saveDailyReportMeta: (m) => req("dailyReportMeta", { method: "POST", body: JSON.stringify(m) }),
 };
 
 // ---- コース定義 ----
@@ -111,6 +115,16 @@ export function daysInMonth(monthStr) {
 export function dateOfMonth(monthStr, day) {
   const [y, m] = monthStr.split("-").map(Number);
   return `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+export function addDays(dateStr, n) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + n);
+  const yy = dt.getFullYear();
+  const mm = String(dt.getMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
 }
 
 export function yen(n) {

@@ -102,20 +102,34 @@ export default function TimeBoardGrid({
         .filter((r) => r.staffId === staffId && r.startTime)
         .sort((a, b) => toMin(a.startTime) - toMin(b.startTime));
 
+      // 本店以外の場所は、次の予約が同じ場所で連続する場合を除き、
+      // 施術が終わったらすぐ本店へ戻って待機する（前後20分の移動が発生する）
       const travels = [];
-      let prevBuilding = homeBuilding;
-      for (const r of apps) {
+      let prevLocation = homeBuilding;
+      for (let i = 0; i < apps.length; i++) {
+        const r = apps[i];
         const bld = buildingOf(r.storeId);
-        if (homeBuilding && bld !== prevBuilding) {
-          const s = toMin(r.startTime);
-          travels.push({ start: s - TRAVEL_MIN, end: s });
+        const startMin = toMin(r.startTime);
+
+        if (homeBuilding && bld !== prevLocation) {
+          travels.push({ start: startMin - TRAVEL_MIN, end: startMin });
         }
-        prevBuilding = bld;
-      }
-      if (homeBuilding && apps.length && prevBuilding !== homeBuilding) {
-        const last = apps[apps.length - 1];
-        const endMin = toMin(last.startTime) + (last.course?.minutes || 60);
-        travels.push({ start: endMin, end: endMin + TRAVEL_MIN });
+
+        const endMin = startMin + (r.course?.minutes || 60);
+        const next = apps[i + 1];
+        const nextBld = next ? buildingOf(next.storeId) : null;
+
+        if (homeBuilding && bld !== homeBuilding) {
+          if (!next || nextBld !== bld) {
+            // このステイを終えたら本店へ戻って待機
+            travels.push({ start: endMin, end: endMin + TRAVEL_MIN });
+            prevLocation = homeBuilding;
+          } else {
+            prevLocation = bld; // 同じ場所が連続するので待機せず継続
+          }
+        } else {
+          prevLocation = bld;
+        }
       }
 
       const ranges = todaysShifts

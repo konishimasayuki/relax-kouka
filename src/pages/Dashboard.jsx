@@ -1,17 +1,36 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
-import { PAYMENTS, api, todayStr, yen } from "../api.js";
+import { PAYMENTS, addDays, api, todayStr, yen } from "../api.js";
+import QuickReport from "../components/QuickReport.jsx";
+import SalesDailyReport from "../components/SalesDailyReport.jsx";
+
+function toMin(hhmm) {
+  if (!hhmm) return null;
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + m;
+}
 
 export default function Dashboard() {
   const { stores, ready } = useApp();
   const [date, setDate] = useState(todayStr());
   const [records, setRecords] = useState([]);
+  const [tomorrowRecords, setTomorrowRecords] = useState([]);
+  const [tomorrowShifts, setTomorrowShifts] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const tomorrow = addDays(date, 1);
 
   const load = async () => {
     setLoading(true);
     try {
-      setRecords(await api.reception(date));
+      const [rec, tRec, allShifts] = await Promise.all([
+        api.reception(date),
+        api.reception(tomorrow),
+        api.shifts(),
+      ]);
+      setRecords(rec);
+      setTomorrowRecords(tRec);
+      setTomorrowShifts(allShifts.filter((s) => s.date === tomorrow));
     } finally {
       setLoading(false);
     }
@@ -34,6 +53,23 @@ export default function Dashboard() {
     const avg = records.length ? Math.round(total / records.length) : 0;
     return { total, count: records.length, avg, byStore, byPay };
   }, [records]);
+
+  // 明日のスタッフ稼働人数（店舗を跨いで動くため全店舗合計として算出）
+  const staffCounts = useMemo(() => {
+    const overlap = (start, end, winStart, winEnd) => start < winEnd && end > winStart;
+    let morning = 0;
+    let evening = 0;
+    for (const s of tomorrowShifts) {
+      const st = toMin(s.start);
+      const en = toMin(s.end);
+      if (st === null || en === null) continue;
+      if (overlap(st, en, toMin("11:00"), toMin("15:00"))) morning++;
+      if (overlap(st, en, toMin("15:00"), toMin("23:00"))) evening++;
+    }
+    return { morning, evening };
+  }, [tomorrowShifts]);
+
+  const activeStores = useMemo(() => stores.filter((s) => s.active !== false), [stores]);
 
   return (
     <div>
@@ -109,6 +145,33 @@ export default function Dashboard() {
               </table>
             </div>
           </div>
+
+          {/* ---- 売上日計表（テナント管理のホテルへ毎日提出する様式） ---- */}
+          <div className="page-head" style={{ marginTop: 20 }}>
+            <h2>売上日計表</h2>
+          </div>
+          {activeStores.map((s) => (
+            <SalesDailyReport
+              key={s.id}
+              store={s}
+              date={date}
+              records={records.filter((r) => r.storeId === s.id)}
+            />
+          ))}
+
+          {/* ---- 速報（本日実績と明日の見込み） ---- */}
+          <div className="page-head" style={{ marginTop: 20 }}>
+            <h2>速報</h2>
+          </div>
+          {activeStores.map((s) => (
+            <QuickReport
+              key={s.id}
+              store={s}
+              todayRecords={records.filter((r) => r.storeId === s.id)}
+              tomorrowRecords={tomorrowRecords.filter((r) => r.storeId === s.id)}
+              staffCounts={staffCounts}
+            />
+          ))}
         </>
       )}
     </div>
