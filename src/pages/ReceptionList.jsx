@@ -261,8 +261,13 @@ export default function ReceptionList() {
 
       {form && (
         <div className="modal-overlay" onClick={() => setForm(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>{form.id ? "受付を編集" : "受付を追加"}</h3>
+          <div className="modal reception-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <h3>{form.id ? "受付を編集" : "受付を追加"}</h3>
+              <button type="button" className="modal-close" onClick={() => setForm(null)} aria-label="閉じる">
+                ✕
+              </button>
+            </div>
 
             <div className="row">
               <div className="field">

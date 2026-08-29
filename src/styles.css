@@ -918,3 +918,93 @@ table.grid th.num {
 .shift-page .shift-cal-cell.today .cal-date {
   color: var(--blue);
 }
+
+/* ---------- 受付フォーム（スマホ表示調整） ---------- */
+/* タイトルと保存ボタンをスクロール中も常に見えるように固定する */
+.reception-modal {
+  padding: 0 18px;
+}
+
+.reception-modal .modal-head {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+
+.reception-modal .modal-head h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.reception-modal .modal-close {
+  background: #eef2f7;
+  border: none;
+  border-radius: 999px;
+  width: 30px;
+  height: 30px;
+  font-size: 14px;
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.reception-modal .modal-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  background: #fff;
+  border-top: 1px solid var(--border);
+  padding: 12px 0 max(16px, env(safe-area-inset-bottom));
+  margin-top: 10px;
+}
+
+/* 入力欄の高さを揃え、フォント16pxでiOSのフォーカス時自動ズームを防ぐ */
+.reception-modal .field input,
+.reception-modal .field select,
+.reception-modal .field textarea {
+  min-height: 46px;
+  font-size: 16px;
+}
+
+/* iOSの日付・時刻入力の中央寄せを左揃えに統一 */
+.reception-modal input::-webkit-date-and-time-value {
+  text-align: left;
+}
+
+/* 指名・妊婦チェックをタップしやすいチップ型にする */
+.reception-modal .checks {
+  gap: 10px;
+}
+
+.reception-modal .check {
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.reception-modal .check input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--blue);
+  margin: 0;
+}
+
+.reception-modal .check:has(input:checked) {
+  background: var(--blue-light);
+  border-color: var(--blue);
+  color: var(--blue);
+}
