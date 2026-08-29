@@ -1,0 +1,414 @@
+import { useEffect, useMemo, useState } from "react";
+import { useApp } from "../App.jsx";
+import {
+  COURSE_PARTS,
+  COURSE_TYPES,
+  DURATIONS,
+  PAYMENTS,
+  api,
+  courseLabel,
+  yen,
+} from "../api.js";
+
+function emptyRecord(storeId) {
+  return {
+    id: "",
+    storeId: storeId || "",
+    bed: 1,
+    customerName: "",
+    gender: "女",
+    course: { code: "B", minutes: 60, parts: [], facial: false },
+    pregnancy: false,
+    nominate: false,
+    catch: false,
+    staffId: "",
+    startTime: "",
+    payment: "現",
+    receptionist: "",
+    room: "",
+    phone: "",
+    amount: 0,
+    note: "",
+  };
+}
+
+export default function ReceptionList() {
+  const { stores, staff, date, setDate, ready } = useApp();
+  const [storeId, setStoreId] = useState("");
+  const [records, setRecords] = useState([]);
+  const [form, setForm] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (stores.length && !storeId) setStoreId(stores[0].id);
+  }, [stores, storeId]);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      setRecords(await api.reception(date));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // eslint-disable-next-line
+  useEffect(() => {
+    if (ready) load();
+  }, [date, ready]);
+
+  const view = useMemo(
+    () => records.filter((r) => !storeId || r.storeId === storeId),
+    [records, storeId],
+  );
+
+  const total = useMemo(
+    () => view.reduce((s, r) => s + Number(r.amount || 0), 0),
+    [view],
+  );
+
+  const save = async () => {
+    if (!form.customerName.trim()) return alert("氏名を入力してください");
+    setBusy(true);
+    try {
+      await api.saveReception({ ...form, date });
+      await load();
+      setForm(null);
+    } catch (e) {
+      alert(`保存失敗: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const del = async (id) => {
+    if (!confirm("この受付を削除しますか？")) return;
+    await api.deleteReception(id, date);
+    await load();
+  };
+
+  const staffName = (id) => staff.find((s) => s.id === id)?.name || "—";
+  const beds = stores.find((s) => s.id === storeId)?.beds || 8;
+
+  const togglePart = (key) => {
+    const parts = form.course.parts.includes(key)
+      ? form.course.parts.filter((p) => p !== key)
+      : [...form.course.parts, key];
+    setForm({ ...form, course: { ...form.course, parts } });
+  };
+
+  return (
+    <div>
+      <div className="page-head">
+        <h2>受付一覧表</h2>
+      </div>
+
+      <div className="toolbar">
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        <select value={storeId} onChange={(e) => setStoreId(e.target.value)}>
+          {stores.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+        <button className="btn sm" onClick={() => setForm(emptyRecord(storeId))}>
+          ＋ 受付追加
+        </button>
+      </div>
+
+      <div className="stat-grid" style={{ marginBottom: 14 }}>
+        <div className="stat">
+          <div className="label">客数</div>
+          <div className="value">{view.length}</div>
+        </div>
+        <div className="stat">
+          <div className="label">売上合計</div>
+          <div className="value">{yen(total)}</div>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="empty">読み込み中…</div>
+      ) : view.length === 0 ? (
+        <div className="empty">受付がありません</div>
+      ) : (
+        <div className="table-wrap">
+          <table className="grid">
+            <thead>
+              <tr>
+                <th>Bed</th>
+                <th>氏名</th>
+                <th>性別</th>
+                <th>コース</th>
+                <th>指名</th>
+                <th>担当</th>
+                <th>開始</th>
+                <th>支払</th>
+                <th>部屋/TEL</th>
+                <th className="num">金額</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {view.map((r) => (
+                <tr key={r.id}>
+                  <td>{r.bed}</td>
+                  <td>{r.customerName}</td>
+                  <td>{r.gender}</td>
+                  <td>
+                    {courseLabel(r.course)}
+                    {r.pregnancy && <span className="pill green" style={{ marginLeft: 4 }}>妊</span>}
+                  </td>
+                  <td>{r.nominate ? "○" : ""}</td>
+                  <td>{staffName(r.staffId)}</td>
+                  <td>{r.startTime}</td>
+                  <td>{r.payment}</td>
+                  <td>{r.room || r.phone || ""}</td>
+                  <td className="num">{Number(r.amount || 0).toLocaleString("ja-JP")}</td>
+                  <td>
+                    <button className="btn sm ghost" onClick={() => setForm({ ...r })}>
+                      編集
+                    </button>{" "}
+                    <button className="btn sm danger" onClick={() => del(r.id)}>
+                      削除
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {form && (
+        <div className="modal-overlay" onClick={() => setForm(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>{form.id ? "受付を編集" : "受付を追加"}</h3>
+
+            <div className="row">
+              <div className="field">
+                <label>店舗</label>
+                <select
+                  value={form.storeId}
+                  onChange={(e) => setForm({ ...form, storeId: e.target.value })}
+                >
+                  {stores.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label>ベッド</label>
+                <select
+                  value={form.bed}
+                  onChange={(e) => setForm({ ...form, bed: Number(e.target.value) })}
+                >
+                  {Array.from({ length: beds }, (_, i) => i + 1).map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="field">
+                <label>氏名</label>
+                <input
+                  value={form.customerName}
+                  onChange={(e) => setForm({ ...form, customerName: e.target.value })}
+                />
+              </div>
+              <div className="field">
+                <label>性別</label>
+                <select
+                  value={form.gender}
+                  onChange={(e) => setForm({ ...form, gender: e.target.value })}
+                >
+                  <option value="女">女</option>
+                  <option value="男">男</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="field">
+              <label>コース</label>
+              <div className="row">
+                <select
+                  value={form.course.code}
+                  onChange={(e) =>
+                    setForm({ ...form, course: { ...form.course, code: e.target.value } })
+                  }
+                >
+                  {COURSE_TYPES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.code} {c.label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={form.course.minutes}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      course: { ...form.course, minutes: Number(e.target.value) },
+                    })
+                  }
+                >
+                  {DURATIONS.map((d) => (
+                    <option key={d} value={d}>
+                      {d}分
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="checks" style={{ marginTop: 8 }}>
+                {COURSE_PARTS.map((p) => (
+                  <label className="check" key={p.key}>
+                    <input
+                      type="checkbox"
+                      checked={form.course.parts.includes(p.key)}
+                      onChange={() => togglePart(p.key)}
+                    />
+                    {p.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="field">
+              <div className="checks">
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={form.nominate}
+                    onChange={(e) => setForm({ ...form, nominate: e.target.checked })}
+                  />
+                  指名
+                </label>
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={form.catch}
+                    onChange={(e) => setForm({ ...form, catch: e.target.checked })}
+                  />
+                  キャッチ
+                </label>
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={form.pregnancy}
+                    onChange={(e) => setForm({ ...form, pregnancy: e.target.checked })}
+                  />
+                  妊婦
+                </label>
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="field">
+                <label>担当スタッフ</label>
+                <select
+                  value={form.staffId}
+                  onChange={(e) => setForm({ ...form, staffId: e.target.value })}
+                >
+                  <option value="">未定</option>
+                  {staff
+                    .filter((s) => s.active)
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                        {form.course.facial || form.course.parts.includes("facial")
+                          ? s.facial
+                            ? ""
+                            : "（F不可）"
+                          : ""}
+                      </option>
+                    ))}
+                </select>
+              </div>
+              <div className="field">
+                <label>開始時間</label>
+                <input
+                  type="time"
+                  value={form.startTime}
+                  onChange={(e) => setForm({ ...form, startTime: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="field">
+                <label>支払方法</label>
+                <select
+                  value={form.payment}
+                  onChange={(e) => setForm({ ...form, payment: e.target.value })}
+                >
+                  {PAYMENTS.map((p) => (
+                    <option key={p} value={p}>
+                      {p === "現" ? "現金" : p === "部" ? "部屋掛け" : "クレジット"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label>金額</label>
+                <input
+                  type="number"
+                  value={form.amount}
+                  onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })}
+                />
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="field">
+                <label>部屋番号</label>
+                <input
+                  value={form.room}
+                  onChange={(e) => setForm({ ...form, room: e.target.value })}
+                />
+              </div>
+              <div className="field">
+                <label>電話番号</label>
+                <input
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="field">
+              <label>受付者 / メモ</label>
+              <input
+                value={form.receptionist}
+                onChange={(e) => setForm({ ...form, receptionist: e.target.value })}
+                placeholder="受付者"
+                style={{ marginBottom: 8 }}
+              />
+              <input
+                value={form.note}
+                onChange={(e) => setForm({ ...form, note: e.target.value })}
+                placeholder="メモ"
+              />
+            </div>
+
+            <div className="modal-actions">
+              <button className="btn gray" onClick={() => setForm(null)}>
+                キャンセル
+              </button>
+              <button className="btn" onClick={save} disabled={busy}>
+                保存
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
