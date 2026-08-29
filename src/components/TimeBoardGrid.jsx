@@ -3,8 +3,6 @@ import { courseLabel, staffColor } from "../api.js";
 
 const START_HOUR = 11;
 const END_HOUR = 24; // 表示ラベルは 11〜23
-const HOUR_W = 56;
-const MIN_W = HOUR_W / 60;
 const TRAVEL_MIN = 20;
 const STAFF_COL_W = 96;
 
@@ -41,9 +39,20 @@ function computeOffDuty(ranges, dayStart, dayEnd) {
 
 /**
  * タイムボードの描画本体（通常画面／別ウィンドウ表示の両方から使う共通部品）
- * props: stores, staff, records, shifts, date, onSelect(record)
+ * props: stores, staff, records, shifts, date, onSelect(record), hourWidth（1時間分の幅px、既定56）
  */
-export default function TimeBoardGrid({ stores, staff, records, shifts, date, onSelect }) {
+export default function TimeBoardGrid({
+  stores,
+  staff,
+  records,
+  shifts,
+  date,
+  onSelect,
+  hourWidth = 56,
+}) {
+  const HOUR_W = hourWidth;
+  const MIN_W = HOUR_W / 60;
+
   const staffName = (id) => staff.find((s) => s.id === id)?.name || "?";
   const buildingOf = (storeId) => stores.find((s) => s.id === storeId)?.building || "";
 

@@ -72,7 +72,14 @@ export default function BoardView() {
           <span className="pill">{timeLabel}</span>
         </div>
         <div className="board-body">
-          <TimeBoardGrid stores={stores} staff={staff} records={records} shifts={shifts} date={date} />
+          <TimeBoardGrid
+            stores={stores}
+            staff={staff}
+            records={records}
+            shifts={shifts}
+            date={date}
+            hourWidth={140}
+          />
         </div>
       </div>
     </div>
