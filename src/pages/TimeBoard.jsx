@@ -56,6 +56,7 @@ export default function TimeBoard() {
           shifts={shifts}
           date={date}
           onSelect={setSel}
+          hourWidth={80}
         />
       )}
 

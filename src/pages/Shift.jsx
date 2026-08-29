@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
 import { api, staffColor } from "../api.js";
 
-const HOUR_START = 8;
-const HOUR_END = 24;
-const HOUR_W = 44;
+const HOUR_START = 11;
+const HOUR_END = 24; // 表示ラベルは 11〜23
+const HOUR_W = 60;
 const MIN_W = HOUR_W / 60;
 const WEEK_LABEL = ["日", "月", "火", "水", "木", "金", "土"];
 
@@ -118,8 +118,15 @@ export default function Shift() {
 
   const hours = [];
   for (let h = HOUR_START; h < HOUR_END; h++) hours.push(h);
-  const laneW = (HOUR_END - HOUR_START) * HOUR_W;
+  const totalMin = (HOUR_END - HOUR_START) * 60;
+  const laneW = totalMin * MIN_W;
   const BED_W = 84;
+
+  // グリッド線（10分刻み）を0〜終端まで一括生成し、最後の境界線も必ず引く
+  const gridMarks = [];
+  for (let m = 0; m <= totalMin; m += 10) {
+    gridMarks.push({ pos: m * MIN_W, major: m % 60 === 0 });
+  }
 
   const blockStyle = (startMin, endMin, color) => ({
     left: (startMin - HOUR_START * 60) * MIN_W,
@@ -163,8 +170,12 @@ export default function Shift() {
                     <span className="b-name">{staffName(s.staffId)}</span>
                   </div>
                   <div className="tb-lane" style={{ width: laneW }}>
-                    {hours.map((h, i) => (
-                      <div className="tb-gridline" key={h} style={{ left: i * HOUR_W }} />
+                    {gridMarks.map((g, i) => (
+                      <div
+                        className={g.major ? "tb-gridline" : "tb-gridline-minor"}
+                        key={i}
+                        style={{ left: g.pos }}
+                      />
                     ))}
                     <div
                       className="tb-block"
