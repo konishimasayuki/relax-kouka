@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
-import { PAYMENTS, api, courseLabel, todayStr, yen } from "../api.js";
+import { PAYMENTS, api, courseLabel, todayStr } from "../api.js";
 import SignaturePad from "../components/SignaturePad.jsx";
 
 function emptyRecord(storeId, date) {
@@ -22,6 +22,9 @@ function emptyRecord(storeId, date) {
     pregnancy: false,
     nominate: false,
     done: false,
+    couponCheck: false,
+    catchCheck: false,
+    cashNote: "",
     staffId: "",
     startTime: "",
     payment: "現金",
@@ -52,6 +55,7 @@ export default function ReceptionList() {
   const [meta, setMeta] = useState(emptyMeta(todayStr()));
   const [loading, setLoading] = useState(false);
   const [signOpen, setSignOpen] = useState(false);
+  const [freeTextRows, setFreeTextRows] = useState(new Set());
 
   const load = async () => {
     setLoading(true);
@@ -59,6 +63,7 @@ export default function ReceptionList() {
       const [rec, mt] = await Promise.all([api.reception(date), api.receptionMeta(date)]);
       setRecords(rec);
       setMeta(mt);
+      setFreeTextRows(new Set(rec.filter((r) => r.course?.freeText).map((r) => r.id)));
     } finally {
       setLoading(false);
     }
@@ -130,6 +135,7 @@ export default function ReceptionList() {
     staff.filter((s) => s.active && (workingStaffIds.has(s.id) || s.id === r?.staffId));
 
   const menusFor = (r) => menus.filter((m) => m.storeId === (r?.storeId || stores[0]?.id));
+  const shortStoreLabel = (s) => `${s.building || ""}${s.floor || ""}` || s.name;
 
   // ---- 紙の受付表の再現用 ----
   const [yy, mm, dd] = date.split("-").map(Number);
@@ -153,12 +159,16 @@ export default function ReceptionList() {
         <span className="muted" style={{ fontSize: 12 }}>
           セルをクリックしてそのまま編集／行を右クリックで削除
         </span>
+        <button className="btn sm ghost" onClick={() => window.print()}>
+          🖨️ 印刷
+        </button>
       </div>
+      <style>{"@page { size: A4 landscape; margin: 8mm; }"}</style>
 
       {loading ? (
         <div className="empty">読み込み中…</div>
       ) : (
-        <div className="sheet-scroll payroll-sheet">
+        <div className="sheet-scroll reception-sheet">
           <div className="sheet">
             <div className="sheet-head">
               <span className="sheet-title">Body Recess　受付表</span>
@@ -166,7 +176,7 @@ export default function ReceptionList() {
                 客数{" "}
                 <input
                   type="number"
-                  className="meta-input"
+                  className="meta-input meta-input-wide"
                   defaultValue={meta.guestCount}
                   onBlur={(e) => updateMeta({ guestCount: e.target.value })}
                 />{" "}
@@ -273,7 +283,7 @@ export default function ReceptionList() {
                         >
                           {stores.map((s) => (
                             <option key={s.id} value={s.id}>
-                              {s.name}
+                              {shortStoreLabel(s)}
                             </option>
                           ))}
                         </select>
@@ -313,65 +323,105 @@ export default function ReceptionList() {
                         </span>
                       </td>
                       <td className="c-course">
-                        <select
-                          className="cell-select"
-                          value={r?.course?.menuId || ""}
-                          onChange={(e) => {
-                            const m = menusFor(r).find((x) => x.id === e.target.value);
-                            if (!m) {
+                        {freeTextRows.has(rowKey) ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                            <input
+                              className="cell-input"
+                              key={`${rowKey}-free`}
+                              defaultValue={r?.course?.freeText || ""}
+                              placeholder="自由記述"
+                              onBlur={(e) =>
+                                updateRecord(r, {
+                                  course: { ...(r?.course || {}), freeText: e.target.value },
+                                })
+                              }
+                            />
+                            <span
+                              className="clickable"
+                              title="コース一覧から選び直す"
+                              onClick={() => {
+                                setFreeTextRows((prev) => {
+                                  const s = new Set(prev);
+                                  s.delete(rowKey);
+                                  return s;
+                                });
+                                updateRecord(r, {
+                                  course: { ...(r?.course || {}), freeText: "" },
+                                });
+                              }}
+                            >
+                              ▾
+                            </span>
+                          </div>
+                        ) : (
+                          <select
+                            className="cell-select"
+                            value={r?.course?.menuId || ""}
+                            onChange={(e) => {
+                              if (e.target.value === "__free__") {
+                                setFreeTextRows((prev) => new Set(prev).add(rowKey));
+                                return;
+                              }
+                              const m = menusFor(r).find((x) => x.id === e.target.value);
+                              if (!m) {
+                                updateRecord(r, {
+                                  course: {
+                                    ...(r?.course || {}),
+                                    menuId: "",
+                                    name: "",
+                                    displayName: "",
+                                    minutes: "",
+                                    color: "",
+                                  },
+                                });
+                                return;
+                              }
                               updateRecord(r, {
                                 course: {
                                   ...(r?.course || {}),
-                                  menuId: "",
-                                  name: "",
-                                  displayName: "",
-                                  minutes: "",
-                                  color: "",
+                                  menuId: m.id,
+                                  name: m.name,
+                                  displayName: m.displayName,
+                                  minutes: m.minutes,
+                                  color: m.color,
                                 },
+                                amount: m.price,
                               });
-                              return;
-                            }
-                            updateRecord(r, {
-                              course: {
-                                ...(r?.course || {}),
-                                menuId: m.id,
-                                name: m.name,
-                                displayName: m.displayName,
-                                minutes: m.minutes,
-                                color: m.color,
-                              },
-                              amount: m.price,
-                            });
-                          }}
-                        >
-                          <option value="">未選択</option>
-                          {menusFor(r).map((m) => (
-                            <option key={m.id} value={m.id}>
-                              {m.name}（{m.minutes}分）
-                            </option>
-                          ))}
-                        </select>
-                        <input
-                          className="cell-input course-free"
-                          key={`${rowKey}-free`}
-                          defaultValue={r?.course?.freeText || ""}
-                          placeholder="自由記述"
-                          onBlur={(e) =>
-                            updateRecord(r, {
-                              course: { ...(r?.course || {}), freeText: e.target.value },
-                            })
-                          }
-                        />
+                            }}
+                          >
+                            <option value="">未選択</option>
+                            {menusFor(r).map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.name}（{m.minutes}分）
+                              </option>
+                            ))}
+                            <option value="__free__">自由記述</option>
+                          </select>
+                        )}
                         {r?.pregnancy && <span className="printed">（妊）</span>}
                       </td>
-                      <td className="c-center" />
+                      <td className="c-center">
+                        <input
+                          type="checkbox"
+                          checked={!!r?.couponCheck}
+                          disabled={!r}
+                          onChange={(e) => updateRecord(r, { couponCheck: e.target.checked })}
+                        />
+                      </td>
                       <td
                         className="c-center clickable"
                         onClick={() => updateRecord(r, { nominate: !r?.nominate })}
                       >
                         {r?.nominate ? "○" : ""}
                       </td>
-                      <td className="c-center" />
+                      <td className="c-center">
+                        <input
+                          type="checkbox"
+                          checked={!!r?.catchCheck}
+                          disabled={!r}
+                          onChange={(e) => updateRecord(r, { catchCheck: e.target.checked })}
+                        />
+                      </td>
                       <td className="c-center">
                         <select
                           className="cell-select"
@@ -459,7 +509,14 @@ export default function ReceptionList() {
                           onBlur={(e) => updateRecord(r, { amount: Number(e.target.value) || 0 })}
                         />
                       </td>
-                      <td className="c-center" />
+                      <td className="c-center">
+                        <input
+                          className="cell-input c-narrow"
+                          key={`${rowKey}-cashnote`}
+                          defaultValue={r?.cashNote || ""}
+                          onBlur={(e) => updateRecord(r, { cashNote: e.target.value })}
+                        />
+                      </td>
                     </tr>
                   );
                 })}

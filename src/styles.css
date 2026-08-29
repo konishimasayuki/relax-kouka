@@ -1212,6 +1212,17 @@ table.grid th.num {
   color: #1c1c1c;
 }
 
+/* 客数（ホテル全体の人数など4桁）用の幅広版 */
+.meta-input-wide {
+  width: 60px;
+}
+
+/* 開始時間の時計アイコンを非表示にする */
+.sheet-table input[type="time"]::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
+
 .meta-input:focus {
   outline: none;
   border-bottom-color: var(--blue);
@@ -1297,11 +1308,17 @@ table.grid th.num {
 }
 
 .sf-total > div {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 52px 44px 1fr;
   gap: 8px;
   border-bottom: 1px dashed #bbb;
   padding-bottom: 2px;
+}
+
+.sf-total > div > span:nth-child(2),
+.sf-total > div > span:nth-child(3) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .sf-total > div:last-child {
@@ -1374,5 +1391,55 @@ table.grid th.num {
 
   .sheet-head {
     font-size: 10.5px !important;
+  }
+}
+
+/* ---------- 受付一覧表：PCではスクロールなしで画面に収める ---------- */
+@media (min-width: 900px) {
+  .reception-sheet .sheet {
+    min-width: 0;
+    width: 100%;
+    font-size: 10.5px;
+  }
+
+  .reception-sheet .sheet-table th,
+  .reception-sheet .sheet-table td {
+    padding: 2px 3px;
+  }
+
+  .reception-sheet .cell-input,
+  .reception-sheet .cell-select {
+    font-size: 10.5px;
+  }
+
+  .reception-sheet .cell-input.c-narrow {
+    width: 44px;
+  }
+}
+
+/* ---------- 受付一覧表の印刷（A4横） ---------- */
+@media print {
+  .reception-sheet {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .reception-sheet .sheet {
+    min-width: 0 !important;
+    width: 100% !important;
+    font-size: 9px;
+  }
+
+  .reception-sheet .sheet-table th,
+  .reception-sheet .sheet-table td {
+    padding: 1.5px 2px !important;
+    font-size: 8px !important;
+  }
+
+  .reception-sheet .cell-input,
+  .reception-sheet .cell-select {
+    font-size: 8px !important;
   }
 }
