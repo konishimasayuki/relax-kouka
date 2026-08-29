@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api } from "../api.js";
+import TimeInput10 from "./TimeInput10.jsx";
 
 function emptyBreak(date, staffId) {
   return { id: "", date, staffId: staffId || "", start: "13:00", end: "13:30" };
@@ -67,21 +68,11 @@ export default function BreakModal({ date, staff, assignableStaffIds, editing, o
         <div className="row">
           <div className="field">
             <label>開始</label>
-            <input
-              type="time"
-              step="600"
-              value={form.start}
-              onChange={(e) => setForm({ ...form, start: e.target.value })}
-            />
+            <TimeInput10 value={form.start} onChange={(v) => setForm({ ...form, start: v })} />
           </div>
           <div className="field">
             <label>終了</label>
-            <input
-              type="time"
-              step="600"
-              value={form.end}
-              onChange={(e) => setForm({ ...form, end: e.target.value })}
-            />
+            <TimeInput10 value={form.end} onChange={(v) => setForm({ ...form, end: v })} />
           </div>
         </div>
 

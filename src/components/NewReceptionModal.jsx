@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { PAYMENTS, api } from "../api.js";
+import TimeInput10 from "./TimeInput10.jsx";
 
 function emptyForm(date, storeId) {
   return {
@@ -92,11 +93,9 @@ export default function NewReceptionModal({ date, stores, staff, menus, workingS
           </div>
           <div className="field">
             <label>開始時間</label>
-            <input
-              type="time"
-              step="600"
+            <TimeInput10
               value={form.startTime}
-              onChange={(e) => setForm({ ...form, startTime: e.target.value })}
+              onChange={(v) => setForm({ ...form, startTime: v })}
             />
           </div>
         </div>

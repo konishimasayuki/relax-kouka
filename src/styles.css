@@ -1567,3 +1567,27 @@ table.grid th.num {
   font-size: 15px;
   line-height: 1.4;
 }
+
+/* ---------- 10分刻み時間入力（時・分セレクト） ---------- */
+.time10 {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.time10 select {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 2px;
+  font-size: 14px;
+  background: #fff;
+  color: var(--text);
+}
+
+.cell-input.time10-cell select {
+  border: none;
+  background: transparent;
+  padding: 1px;
+  font-size: inherit;
+  width: auto;
+}

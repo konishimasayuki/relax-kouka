@@ -58,6 +58,24 @@ export const api = {
   dailyReportMeta: (date, storeId) =>
     req(`dailyReportMeta?date=${encodeURIComponent(date)}&storeId=${encodeURIComponent(storeId)}`),
   saveDailyReportMeta: (m) => req("dailyReportMeta", { method: "POST", body: JSON.stringify(m) }),
+
+  fortuneStaff: () => req("fortuneStaff"),
+  saveFortuneStaff: (s) => req("fortuneStaff", { method: "POST", body: JSON.stringify(s) }),
+  deleteFortuneStaff: (id) => req(`fortuneStaff?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  fortuneShifts: () => req("fortuneShifts"),
+  saveFortuneShift: (s) => req("fortuneShifts", { method: "POST", body: JSON.stringify(s) }),
+  deleteFortuneShift: (id) => req(`fortuneShifts?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  fortuneReservations: (date) =>
+    req(`fortuneReservations?date=${encodeURIComponent(date)}`),
+  saveFortuneReservation: (r) =>
+    req("fortuneReservations", { method: "POST", body: JSON.stringify(r) }),
+  deleteFortuneReservation: (id, date) =>
+    req(
+      `fortuneReservations?id=${encodeURIComponent(id)}&date=${encodeURIComponent(date)}`,
+      { method: "DELETE" },
+    ),
 };
 
 // ---- コース定義 ----

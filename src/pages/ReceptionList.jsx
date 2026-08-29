@@ -3,6 +3,7 @@ import { useApp } from "../App.jsx";
 import { PAYMENTS, api, todayStr } from "../api.js";
 import NewReceptionModal from "../components/NewReceptionModal.jsx";
 import SignaturePad from "../components/SignaturePad.jsx";
+import TimeInput10 from "../components/TimeInput10.jsx";
 
 function emptyRecord(storeId, date) {
   return {
@@ -467,12 +468,10 @@ export default function ReceptionList() {
                         </select>
                       </td>
                       <td className="c-center">
-                        <input
-                          type="time"
-                          step="600"
-                          className="cell-input c-narrow"
+                        <TimeInput10
+                          className="time10-cell"
                           value={r?.startTime || ""}
-                          onChange={(e) => updateRecord(r, { startTime: e.target.value })}
+                          onChange={(v) => updateRecord(r, { startTime: v })}
                         />
                       </td>
                       <td className="c-center printed pay-cell">

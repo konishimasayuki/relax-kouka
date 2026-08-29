@@ -4,6 +4,7 @@ import { PAYMENTS, api, todayStr } from "../api.js";
 import BreakModal from "../components/BreakModal.jsx";
 import NewReceptionModal from "../components/NewReceptionModal.jsx";
 import TimeBoardGrid from "../components/TimeBoardGrid.jsx";
+import TimeInput10 from "../components/TimeInput10.jsx";
 
 export default function TimeBoard() {
   const { stores, staff, menus, ready } = useApp();
@@ -177,11 +178,9 @@ export default function TimeBoard() {
               </div>
               <div className="field">
                 <label>開始</label>
-                <input
-                  type="time"
-                  step="600"
+                <TimeInput10
                   value={sel.startTime || ""}
-                  onChange={(e) => updateSel({ startTime: e.target.value })}
+                  onChange={(v) => updateSel({ startTime: v })}
                 />
               </div>
             </div>

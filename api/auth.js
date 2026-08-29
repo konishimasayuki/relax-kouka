@@ -20,6 +20,18 @@ export default async function handler(req, res) {
         isAdmin: !!found.isAdmin,
       });
     }
+
+    const fortuneList = await listAll("fortunestaff");
+    const foundFortune = fortuneList.find(
+      (s) => s.loginId === loginId && s.password === password,
+    );
+    if (foundFortune) {
+      return res.json({
+        role: "fortune",
+        staffId: foundFortune.id,
+        staffName: foundFortune.name,
+      });
+    }
   } catch (e) {
     return res.status(500).json({ error: String(e?.message || e) });
   }

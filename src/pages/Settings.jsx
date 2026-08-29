@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApp } from "../App.jsx";
 import { api } from "../api.js";
 
@@ -24,13 +24,20 @@ const emptyStaff = {
   active: true,
   commissionRate: 45,
 };
+const emptyFortuneStaff = { id: "", name: "", loginId: "", password: "" };
 
 export default function Settings() {
   const { stores, staff, refreshMaster, isAdminUser } = useApp();
   const [tab, setTab] = useState("store");
   const [storeForm, setStoreForm] = useState(null);
   const [staffForm, setStaffForm] = useState(null);
+  const [fortuneStaffList, setFortuneStaffList] = useState([]);
+  const [fortuneStaffForm, setFortuneStaffForm] = useState(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (tab === "fortuneStaff") api.fortuneStaff().then(setFortuneStaffList).catch(() => {});
+  }, [tab]);
 
   const saveStore = async () => {
     if (!storeForm.name.trim()) return alert("店舗名を入力してください");
@@ -81,6 +88,29 @@ export default function Settings() {
     await refreshMaster();
   };
 
+  const reloadFortuneStaff = () => api.fortuneStaff().then(setFortuneStaffList);
+
+  const saveFortuneStaff = async () => {
+    if (!fortuneStaffForm.name.trim()) return alert("氏名を入力してください");
+    if (!fortuneStaffForm.loginId.trim()) return alert("IDを入力してください");
+    setBusy(true);
+    try {
+      await api.saveFortuneStaff(fortuneStaffForm);
+      await reloadFortuneStaff();
+      setFortuneStaffForm(null);
+    } catch (e) {
+      alert(`保存失敗: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const delFortuneStaff = async (id) => {
+    if (!confirm("この占いスタッフを削除しますか？")) return;
+    await api.deleteFortuneStaff(id);
+    await reloadFortuneStaff();
+  };
+
   return (
     <div>
       <div className="page-head">
@@ -99,6 +129,12 @@ export default function Settings() {
           onClick={() => setTab("staff")}
         >
           スタッフ登録
+        </button>
+        <button
+          className={tab === "fortuneStaff" ? "btn sm" : "btn sm gray"}
+          onClick={() => setTab("fortuneStaff")}
+        >
+          スタッフ登録（占い）
         </button>
       </div>
 
@@ -161,6 +197,39 @@ export default function Settings() {
                 </button>
                 {isAdminUser && (
                   <button className="btn sm danger" onClick={() => delStaff(s.id)}>
+                    削除
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === "fortuneStaff" && (
+        <div>
+          <div className="toolbar">
+            <button className="btn sm" onClick={() => setFortuneStaffForm({ ...emptyFortuneStaff })}>
+              ＋ 占いスタッフを追加
+            </button>
+          </div>
+          {fortuneStaffList.length === 0 && (
+            <div className="empty">占いスタッフが登録されていません</div>
+          )}
+          {fortuneStaffList.map((s) => (
+            <div className="card" key={s.id}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <strong>{s.name}</strong>
+                  <div className="muted" style={{ fontSize: 13 }}>
+                    ID: {s.loginId} ／ PW: {s.password}
+                  </div>
+                </div>
+                <button className="btn sm ghost" onClick={() => setFortuneStaffForm({ ...s })}>
+                  編集
+                </button>
+                {isAdminUser && (
+                  <button className="btn sm danger" onClick={() => delFortuneStaff(s.id)}>
                     削除
                   </button>
                 )}
@@ -362,6 +431,52 @@ export default function Settings() {
                 キャンセル
               </button>
               <button className="btn" onClick={saveStaff} disabled={busy}>
+                保存
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {fortuneStaffForm && (
+        <div className="modal-overlay" onClick={() => setFortuneStaffForm(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>{fortuneStaffForm.id ? "占いスタッフを編集" : "占いスタッフを追加"}</h3>
+            <div className="field">
+              <label>氏名</label>
+              <input
+                value={fortuneStaffForm.name}
+                onChange={(e) =>
+                  setFortuneStaffForm({ ...fortuneStaffForm, name: e.target.value })
+                }
+              />
+            </div>
+            <div className="row">
+              <div className="field">
+                <label>ID</label>
+                <input
+                  value={fortuneStaffForm.loginId}
+                  onChange={(e) =>
+                    setFortuneStaffForm({ ...fortuneStaffForm, loginId: e.target.value })
+                  }
+                  autoCapitalize="none"
+                />
+              </div>
+              <div className="field">
+                <label>パスワード（表示）</label>
+                <input
+                  value={fortuneStaffForm.password}
+                  onChange={(e) =>
+                    setFortuneStaffForm({ ...fortuneStaffForm, password: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="btn gray" onClick={() => setFortuneStaffForm(null)}>
+                キャンセル
+              </button>
+              <button className="btn" onClick={saveFortuneStaff} disabled={busy}>
                 保存
               </button>
             </div>

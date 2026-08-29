@@ -3,6 +3,7 @@ import { api } from "./api.js";
 import Layout from "./components/Layout.jsx";
 import CustomerRoster from "./pages/CustomerRoster.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import Fortune from "./pages/Fortune.jsx";
 import IndividualDaily from "./pages/IndividualDaily.jsx";
 import Login from "./pages/Login.jsx";
 import Payroll from "./pages/Payroll.jsx";
@@ -21,6 +22,7 @@ const PAGES = {
   timeboard: TimeBoard,
   reception: ReceptionList,
   shift: Shift,
+  fortune: Fortune,
   daily: IndividualDaily,
   payroll: Payroll,
   customers: CustomerRoster,
@@ -33,10 +35,13 @@ export default function App() {
   const [role, setRole] = useState(() => loadSession()?.role || null);
   const [staffSession, setStaffSession] = useState(() => {
     const s = loadSession();
-    return s?.role === "staff" ? { id: s.staffId, name: s.staffName, isAdmin: !!s.isAdmin } : null;
+    return s?.role === "staff" || s?.role === "fortune"
+      ? { id: s.staffId, name: s.staffName, isAdmin: !!s.isAdmin }
+      : null;
   });
   const [page, setPage] = useState(() => {
     const s = loadSession();
+    if (s?.role === "fortune") return "fortune";
     if (s?.role === "staff" && !s?.isAdmin) return "timeboard";
     return "dashboard";
   });
@@ -71,6 +76,10 @@ export default function App() {
   // 管理者権限のないスタッフは、ダッシュボード／料金／顧客名簿／設定に入れない
   const RESTRICTED_PAGES = ["dashboard", "pricing", "customers", "settings"];
   useEffect(() => {
+    if (role === "fortune" && page !== "fortune") {
+      setPage("fortune");
+      return;
+    }
     if (role === "staff" && !isAdminUser && RESTRICTED_PAGES.includes(page)) setPage("timeboard");
     // eslint-disable-next-line
   }, [role, isAdminUser, page]);
@@ -78,12 +87,14 @@ export default function App() {
   const handleLogin = (result) => {
     setRole(result.role);
     setStaffSession(
-      result.role === "staff"
+      result.role === "staff" || result.role === "fortune"
         ? { id: result.staffId, name: result.staffName, isAdmin: !!result.isAdmin }
         : null,
     );
     saveSession(result);
-    if (result.role === "staff" && !result.isAdmin) {
+    if (result.role === "fortune") {
+      setPage("fortune");
+    } else if (result.role === "staff" && !result.isAdmin) {
       setPage("timeboard");
     } else {
       setPage("dashboard");

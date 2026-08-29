@@ -5,6 +5,7 @@ const MENU = [
   { key: "timeboard", label: "タイムボード", ico: "🗓️" },
   { key: "reception", label: "受付一覧表", ico: "📋" },
   { key: "shift", label: "シフト", ico: "🕒" },
+  { key: "fortune", label: "杉の泉", ico: "🔮" },
   { key: "daily", label: "個人別日計表", ico: "🧾" },
   { key: "payroll", label: "給料", ico: "💴" },
   { key: "customers", label: "顧客名簿", ico: "👥" },
@@ -15,8 +16,12 @@ const MENU = [
 export default function Layout({ page, setPage, role, staffSession, isAdminUser, onLogout, children }) {
   const [open, setOpen] = useState(false);
   const RESTRICTED = ["dashboard", "pricing", "customers", "settings"];
-  const menu =
-    role === "staff" && !isAdminUser ? MENU.filter((m) => !RESTRICTED.includes(m.key)) : MENU;
+  let menu = MENU;
+  if (role === "fortune") {
+    menu = MENU.filter((m) => m.key === "fortune");
+  } else if (role === "staff" && !isAdminUser) {
+    menu = MENU.filter((m) => !RESTRICTED.includes(m.key));
+  }
   const current = menu.find((m) => m.key === page);
 
   const go = (key) => {
@@ -25,7 +30,11 @@ export default function Layout({ page, setPage, role, staffSession, isAdminUser,
   };
 
   const badge =
-    role === "debug" ? "DEBUG" : role === "staff" ? staffSession?.name || "スタッフ" : "管理者";
+    role === "debug"
+      ? "DEBUG"
+      : role === "staff" || role === "fortune"
+        ? staffSession?.name || "スタッフ"
+        : "管理者";
 
   return (
     <div className="app">

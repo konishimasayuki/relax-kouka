@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
 import { api, staffColor, todayStr } from "../api.js";
+import TimeInput10 from "../components/TimeInput10.jsx";
 
 const HOUR_START = 11;
 const HOUR_END = 24; // 表示ラベルは 11〜23
@@ -276,21 +277,11 @@ export default function Shift() {
             <div className="row">
               <div className="field">
                 <label>開始</label>
-                <input
-                  type="time"
-                  step="600"
-                  value={form.start}
-                  onChange={(e) => setForm({ ...form, start: e.target.value })}
-                />
+                <TimeInput10 value={form.start} onChange={(v) => setForm({ ...form, start: v })} />
               </div>
               <div className="field">
                 <label>終了</label>
-                <input
-                  type="time"
-                  step="600"
-                  value={form.end}
-                  onChange={(e) => setForm({ ...form, end: e.target.value })}
-                />
+                <TimeInput10 value={form.end} onChange={(v) => setForm({ ...form, end: v })} />
               </div>
             </div>
             <div className="field">

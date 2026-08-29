@@ -168,6 +168,14 @@ export default async function handler(req, res) {
     ];
     for (const r of recs) await saveItem(ns, { ...r, date });
 
+    const fortuneStaffDefs = [
+      { name: "メグ", loginId: "megu", password: "1234" },
+      { name: "リナ", loginId: "rina", password: "1234" },
+      { name: "カノア", loginId: "kanoa", password: "1234" },
+      { name: "つち", loginId: "tsuchi", password: "1234" },
+    ];
+    for (const s of fortuneStaffDefs) await saveItem("fortunestaff", s);
+
     await redis.set("seed:done", "1");
     return res.json({ seeded: true });
   } catch (e) {
