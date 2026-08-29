@@ -7,6 +7,7 @@ import IndividualDaily from "./pages/IndividualDaily.jsx";
 import Login from "./pages/Login.jsx";
 import ReceptionList from "./pages/ReceptionList.jsx";
 import Settings from "./pages/Settings.jsx";
+import Shift from "./pages/Shift.jsx";
 import TimeBoard from "./pages/TimeBoard.jsx";
 
 const AppCtx = createContext(null);
@@ -15,6 +16,7 @@ export const useApp = () => useContext(AppCtx);
 const PAGES = {
   dashboard: Dashboard,
   timeboard: TimeBoard,
+  shift: Shift,
   reception: ReceptionList,
   daily: IndividualDaily,
   customers: CustomerRoster,
@@ -22,7 +24,8 @@ const PAGES = {
 };
 
 export default function App() {
-  const [role, setRole] = useState(null); // "admin" | "debug" | null
+  const [role, setRole] = useState(null); // "admin" | "debug" | "staff" | null
+  const [staffSession, setStaffSession] = useState(null); // {id, name} ログイン中スタッフ
   const [page, setPage] = useState("dashboard");
   const [date, setDate] = useState(todayStr());
   const [stores, setStores] = useState([]);
@@ -48,18 +51,32 @@ export default function App() {
     };
   }, [role, refreshMaster]);
 
+  // スタッフログインは設定画面に入れない（管理者・デバッグのみ）
+  useEffect(() => {
+    if (role === "staff" && page === "settings") setPage("dashboard");
+  }, [role, page]);
+
+  const handleLogin = (result) => {
+    setRole(result.role);
+    setStaffSession(
+      result.role === "staff" ? { id: result.staffId, name: result.staffName } : null,
+    );
+  };
+
   const logout = () => {
     setRole(null);
+    setStaffSession(null);
     setReady(false);
     setPage("dashboard");
   };
 
-  if (!role) return <Login onLogin={setRole} />;
+  if (!role) return <Login onLogin={handleLogin} />;
 
   const PageComp = PAGES[page] || Dashboard;
 
   const ctx = {
     role,
+    staffSession,
     date,
     setDate,
     stores,
@@ -70,7 +87,7 @@ export default function App() {
 
   return (
     <AppCtx.Provider value={ctx}>
-      <Layout page={page} setPage={setPage} role={role} onLogout={logout}>
+      <Layout page={page} setPage={setPage} role={role} staffSession={staffSession} onLogout={logout}>
         {ready ? <PageComp /> : <div className="empty">読み込み中…</div>}
       </Layout>
     </AppCtx.Provider>
