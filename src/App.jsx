@@ -5,6 +5,7 @@ import CustomerRoster from "./pages/CustomerRoster.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Fortune from "./pages/Fortune.jsx";
 import IndividualDaily from "./pages/IndividualDaily.jsx";
+import Inventory from "./pages/Inventory.jsx";
 import Login from "./pages/Login.jsx";
 import Payroll from "./pages/Payroll.jsx";
 import Pricing from "./pages/Pricing.jsx";
@@ -22,6 +23,7 @@ const PAGES = {
   timeboard: TimeBoard,
   reception: ReceptionList,
   shift: Shift,
+  inventory: Inventory,
   fortune: Fortune,
   daily: IndividualDaily,
   payroll: Payroll,

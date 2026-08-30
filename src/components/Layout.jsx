@@ -5,6 +5,7 @@ const MENU = [
   { key: "timeboard", label: "タイムボード", ico: "🗓️" },
   { key: "reception", label: "受付一覧表", ico: "📋" },
   { key: "shift", label: "シフト", ico: "🕒" },
+  { key: "inventory", label: "在庫管理", ico: "📦" },
   { key: "fortune", label: "杉の泉", ico: "🔮" },
   { key: "daily", label: "個人別日計表", ico: "🧾" },
   { key: "payroll", label: "給料", ico: "💴" },
