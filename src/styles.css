@@ -877,6 +877,7 @@ table.grid th.num {
 
 .board-body .tb-block.travel {
   font-size: 12px;
+  font-weight: 700;
 }
 
 .board-body .tb-block.break {
