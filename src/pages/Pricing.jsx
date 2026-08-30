@@ -14,10 +14,24 @@ function emptyMenu(storeId) {
   };
 }
 
+function emptyOption(storeId) {
+  return {
+    id: "",
+    storeId: storeId || "",
+    name: "",
+    displayName: "",
+    minutes: 10,
+    price: 0,
+    color: "blue",
+  };
+}
+
 export default function Pricing() {
-  const { stores, menus, refreshMaster, isAdminUser } = useApp();
+  const { stores, menus, options, refreshMaster, isAdminUser } = useApp();
   const [storeId, setStoreId] = useState("");
+  const [tab, setTab] = useState("course");
   const [form, setForm] = useState(null);
+  const [optionForm, setOptionForm] = useState(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -26,6 +40,10 @@ export default function Pricing() {
 
   const list = menus
     .filter((m) => m.storeId === storeId)
+    .sort((a, b) => (a.minutes || 0) - (b.minutes || 0));
+
+  const optionList = options
+    .filter((o) => o.storeId === storeId)
     .sort((a, b) => (a.minutes || 0) - (b.minutes || 0));
 
   const save = async () => {
@@ -48,6 +66,26 @@ export default function Pricing() {
     await refreshMaster();
   };
 
+  const saveOption = async () => {
+    if (!optionForm.name.trim()) return alert("オプション名を入力してください");
+    setBusy(true);
+    try {
+      await api.saveOption(optionForm);
+      await refreshMaster();
+      setOptionForm(null);
+    } catch (e) {
+      alert(`保存失敗: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const delOption = async (id) => {
+    if (!confirm("このオプションを削除しますか？")) return;
+    await api.deleteOption(id);
+    await refreshMaster();
+  };
+
   const colorOf = (key) => COURSE_COLORS.find((c) => c.key === key);
 
   return (
@@ -64,58 +102,140 @@ export default function Pricing() {
             </option>
           ))}
         </select>
-        <button className="btn sm" onClick={() => setForm(emptyMenu(storeId))}>
-          ＋ コース追加
+        <button
+          className={tab === "course" ? "btn sm" : "btn sm gray"}
+          onClick={() => setTab("course")}
+        >
+          コース
+        </button>
+        <button
+          className={tab === "option" ? "btn sm" : "btn sm gray"}
+          onClick={() => setTab("option")}
+        >
+          オプション
         </button>
       </div>
 
-      {list.length === 0 ? (
-        <div className="empty">この店舗のコースがまだ登録されていません</div>
-      ) : (
-        <div className="table-wrap">
-          <table className="grid">
-            <thead>
-              <tr>
-                <th>色</th>
-                <th>コース名</th>
-                <th>表示名</th>
-                <th className="num">時間</th>
-                <th className="num">料金</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((m) => (
-                <tr key={m.id}>
-                  <td>
-                    <span
-                      style={{
-                        display: "inline-block",
-                        width: 14,
-                        height: 14,
-                        borderRadius: 4,
-                        background: colorOf(m.color)?.hex || "#999",
-                      }}
-                    />
-                  </td>
-                  <td>{m.name}</td>
-                  <td>{m.displayName || <span className="muted">—</span>}</td>
-                  <td className="num">{m.minutes}分</td>
-                  <td className="num">{yen(m.price)}</td>
-                  <td>
-                    <button className="btn sm ghost" onClick={() => setForm({ ...m })}>
-                      編集
-                    </button>{" "}
-                    {isAdminUser && (
-                      <button className="btn sm danger" onClick={() => del(m.id)}>
-                        削除
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {tab === "course" && (
+        <div>
+          <div className="toolbar">
+            <button className="btn sm" onClick={() => setForm(emptyMenu(storeId))}>
+              ＋ コース追加
+            </button>
+          </div>
+
+          {list.length === 0 ? (
+            <div className="empty">この店舗のコースがまだ登録されていません</div>
+          ) : (
+            <div className="table-wrap">
+              <table className="grid">
+                <thead>
+                  <tr>
+                    <th>色</th>
+                    <th>コース名</th>
+                    <th>表示名</th>
+                    <th className="num">時間</th>
+                    <th className="num">料金</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {list.map((m) => (
+                    <tr key={m.id}>
+                      <td>
+                        <span
+                          style={{
+                            display: "inline-block",
+                            width: 14,
+                            height: 14,
+                            borderRadius: 4,
+                            background: colorOf(m.color)?.hex || "#999",
+                          }}
+                        />
+                      </td>
+                      <td>{m.name}</td>
+                      <td>{m.displayName || <span className="muted">—</span>}</td>
+                      <td className="num">{m.minutes}分</td>
+                      <td className="num">{yen(m.price)}</td>
+                      <td>
+                        <button className="btn sm ghost" onClick={() => setForm({ ...m })}>
+                          編集
+                        </button>{" "}
+                        {isAdminUser && (
+                          <button className="btn sm danger" onClick={() => del(m.id)}>
+                            削除
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === "option" && (
+        <div>
+          <div className="toolbar">
+            <button className="btn sm" onClick={() => setOptionForm(emptyOption(storeId))}>
+              ＋ オプション追加
+            </button>
+          </div>
+
+          {optionList.length === 0 ? (
+            <div className="empty">この店舗のオプションがまだ登録されていません</div>
+          ) : (
+            <div className="table-wrap">
+              <table className="grid">
+                <thead>
+                  <tr>
+                    <th>色</th>
+                    <th>オプション名</th>
+                    <th>表示名</th>
+                    <th className="num">時間</th>
+                    <th className="num">料金</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {optionList.map((o) => (
+                    <tr key={o.id}>
+                      <td>
+                        <span
+                          style={{
+                            display: "inline-block",
+                            width: 14,
+                            height: 14,
+                            borderRadius: 4,
+                            background: colorOf(o.color)?.hex || "#999",
+                          }}
+                        />
+                      </td>
+                      <td>{o.name}</td>
+                      <td>{o.displayName || <span className="muted">—</span>}</td>
+                      <td className="num">{o.minutes}分</td>
+                      <td className="num">{yen(o.price)}</td>
+                      <td>
+                        <button className="btn sm ghost" onClick={() => setOptionForm({ ...o })}>
+                          編集
+                        </button>{" "}
+                        {isAdminUser && (
+                          <button className="btn sm danger" onClick={() => delOption(o.id)}>
+                            削除
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+            ※ オプションは受付登録時にコースへ追加でき、時間・料金がコースに合算されます（例：40分コース＋20分オプション＝60分施術）。
+          </div>
         </div>
       )}
 
@@ -210,6 +330,108 @@ export default function Pricing() {
                 キャンセル
               </button>
               <button className="btn" onClick={save} disabled={busy}>
+                保存
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {optionForm && (
+        <div className="modal-overlay" onClick={() => setOptionForm(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>{optionForm.id ? "オプションを編集" : "オプションを追加"}</h3>
+            <div className="field">
+              <label>店舗</label>
+              <select
+                value={optionForm.storeId}
+                onChange={(e) => setOptionForm({ ...optionForm, storeId: e.target.value })}
+              >
+                {stores.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label>オプション名</label>
+              <input
+                value={optionForm.name}
+                onChange={(e) => setOptionForm({ ...optionForm, name: e.target.value })}
+                placeholder="例：背中集中"
+              />
+            </div>
+            <div className="field">
+              <label>表示名（タイムボードに表示する名前）</label>
+              <input
+                value={optionForm.displayName}
+                onChange={(e) => setOptionForm({ ...optionForm, displayName: e.target.value })}
+                placeholder="例：背中（空欄ならオプション名を表示）"
+              />
+            </div>
+            <div className="row">
+              <div className="field">
+                <label>時間（分）</label>
+                <input
+                  type="number"
+                  value={optionForm.minutes}
+                  onChange={(e) =>
+                    setOptionForm({ ...optionForm, minutes: Number(e.target.value) })
+                  }
+                />
+              </div>
+              <div className="field">
+                <label>料金</label>
+                <input
+                  type="number"
+                  value={optionForm.price}
+                  onChange={(e) => setOptionForm({ ...optionForm, price: Number(e.target.value) })}
+                />
+              </div>
+            </div>
+            <div className="field">
+              <label>色（タイムボードの表示色）</label>
+              <div className="checks">
+                {COURSE_COLORS.map((c) => (
+                  <label
+                    className="check"
+                    key={c.key}
+                    style={{
+                      border:
+                        optionForm.color === c.key
+                          ? `2px solid ${c.hex}`
+                          : "1px solid var(--border)",
+                      borderRadius: 8,
+                      padding: "4px 10px",
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="option-color"
+                      checked={optionForm.color === c.key}
+                      onChange={() => setOptionForm({ ...optionForm, color: c.key })}
+                    />
+                    <span
+                      style={{
+                        display: "inline-block",
+                        width: 12,
+                        height: 12,
+                        borderRadius: 3,
+                        background: c.hex,
+                        marginRight: 2,
+                      }}
+                    />
+                    {c.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="btn gray" onClick={() => setOptionForm(null)}>
+                キャンセル
+              </button>
+              <button className="btn" onClick={saveOption} disabled={busy}>
                 保存
               </button>
             </div>

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { courseColorHex, courseLabel, staffColor } from "../api.js";
+import { courseBoardLabel, courseColorHex, staffColor, totalMinutes } from "../api.js";
 
 const START_HOUR = 11;
 const END_HOUR = 24; // 表示ラベルは 11〜23
@@ -118,7 +118,7 @@ export default function TimeBoardGrid({
           travels.push({ start: startMin - TRAVEL_MIN, end: startMin });
         }
 
-        const endMin = startMin + (r.course?.minutes || 60);
+        const endMin = startMin + totalMinutes(r.course);
         const next = apps[i + 1];
         const nextBld = next ? buildingOf(next.storeId) : null;
 
@@ -248,9 +248,9 @@ export default function TimeBoardGrid({
 
                 {apps.map((r) => {
                   const start = toMin(r.startTime);
-                  const mins = r.course?.minutes || 60;
+                  const mins = totalMinutes(r.course) || 60;
                   const color = courseColorHex(r.course?.color) || staffColor(r.staffId, staff);
-                  const label = r.course?.displayName?.trim() || courseLabel(r.course);
+                  const label = courseBoardLabel(r.course);
                   return (
                     <div
                       className="tb-block"
@@ -283,9 +283,9 @@ export default function TimeBoardGrid({
 
               {unassignedApps.map((r) => {
                 const start = toMin(r.startTime);
-                const mins = r.course?.minutes || 60;
+                const mins = totalMinutes(r.course) || 60;
                 const color = courseColorHex(r.course?.color) || staffColor(r.staffId, staff);
-                const label = r.course?.displayName?.trim() || courseLabel(r.course);
+                const label = courseBoardLabel(r.course);
                 return (
                   <div
                     className="tb-block"

@@ -48,16 +48,23 @@ export default function App() {
   const [stores, setStores] = useState([]);
   const [staff, setStaff] = useState([]);
   const [menus, setMenus] = useState([]);
+  const [options, setOptions] = useState([]);
   const [ready, setReady] = useState(false);
 
   // 管理者相当（管理者/デバッグ、または管理者権限ありのスタッフ）かどうか
   const isAdminUser = role === "admin" || role === "debug" || (role === "staff" && !!staffSession?.isAdmin);
 
   const refreshMaster = useCallback(async () => {
-    const [st, sf, mn] = await Promise.all([api.stores(), api.staff(), api.menus()]);
+    const [st, sf, mn, op] = await Promise.all([
+      api.stores(),
+      api.staff(),
+      api.menus(),
+      api.options(),
+    ]);
     setStores(st);
     setStaff(sf);
     setMenus(mn);
+    setOptions(op);
   }, []);
 
   useEffect(() => {
@@ -120,6 +127,7 @@ export default function App() {
     stores,
     staff,
     menus,
+    options,
     refreshMaster,
     ready,
   };

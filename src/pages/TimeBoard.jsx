@@ -7,7 +7,7 @@ import TimeBoardGrid from "../components/TimeBoardGrid.jsx";
 import TimeInput10 from "../components/TimeInput10.jsx";
 
 export default function TimeBoard() {
-  const { stores, staff, menus, ready } = useApp();
+  const { stores, staff, menus, options, ready } = useApp();
   const [date, setDate] = useState(todayStr());
   const [records, setRecords] = useState([]);
   const [shifts, setShifts] = useState([]);
@@ -52,14 +52,17 @@ export default function TimeBoard() {
     staff.filter((s) => s.active && (workingStaffIds.has(s.id) || s.id === r?.staffId));
 
   const menusFor = (r) => menus.filter((m) => m.storeId === r?.storeId);
+  const optionsFor = (r) => options.filter((o) => o.storeId === r?.storeId);
 
   const updateSel = (patch) => setSel((prev) => ({ ...prev, ...patch }));
 
   const selectMenu = (menuId) => {
     const m = menusFor(sel).find((x) => x.id === menuId);
+    const optionPrice = options.find((o) => o.id === sel.course?.optionId)?.price || 0;
     if (!m) {
       updateSel({
         course: { ...sel.course, menuId: "", name: "", displayName: "", minutes: "", color: "" },
+        amount: optionPrice,
       });
       return;
     }
@@ -72,7 +75,37 @@ export default function TimeBoard() {
         minutes: m.minutes,
         color: m.color,
       },
-      amount: m.price,
+      amount: m.price + optionPrice,
+    });
+  };
+
+  const selectOption = (optionId) => {
+    const o = optionsFor(sel).find((x) => x.id === optionId);
+    const menuPrice = menus.find((m) => m.id === sel.course?.menuId)?.price || 0;
+    if (!o) {
+      updateSel({
+        course: {
+          ...sel.course,
+          optionId: "",
+          optionName: "",
+          optionDisplayName: "",
+          optionMinutes: "",
+          optionColor: "",
+        },
+        amount: menuPrice,
+      });
+      return;
+    }
+    updateSel({
+      course: {
+        ...sel.course,
+        optionId: o.id,
+        optionName: o.name,
+        optionDisplayName: o.displayName,
+        optionMinutes: o.minutes,
+        optionColor: o.color,
+      },
+      amount: menuPrice + o.price,
     });
   };
 
@@ -161,6 +194,21 @@ export default function TimeBoard() {
               </select>
             </div>
 
+            <div className="field">
+              <label>オプション</label>
+              <select
+                value={sel.course?.optionId || ""}
+                onChange={(e) => selectOption(e.target.value)}
+              >
+                <option value="">なし</option>
+                {optionsFor(sel).map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="row">
               <div className="field">
                 <label>担当</label>
@@ -241,6 +289,7 @@ export default function TimeBoard() {
           stores={stores}
           staff={staff}
           menus={menus}
+          options={options}
           workingStaffIds={workingStaffIds}
           onClose={() => setNewOpen(false)}
           onSaved={(saved) => {

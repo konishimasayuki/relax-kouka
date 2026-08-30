@@ -52,6 +52,10 @@ export const api = {
   saveMenu: (m) => req("menus", { method: "POST", body: JSON.stringify(m) }),
   deleteMenu: (id) => req(`menus?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
 
+  options: () => req("options"),
+  saveOption: (o) => req("options", { method: "POST", body: JSON.stringify(o) }),
+  deleteOption: (id) => req(`options?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
+
   payrollRates: () => req("payrollRates"),
   savePayrollRate: (r) => req("payrollRates", { method: "POST", body: JSON.stringify(r) }),
 
@@ -103,15 +107,42 @@ export function courseColorHex(key) {
   return COURSE_COLORS.find((c) => c.key === key)?.hex || null;
 }
 
+// コースに紐づくオプションの表示名（未選択なら空文字）
+export function optionLabel(course) {
+  if (!course?.optionName) return "";
+  return course.optionDisplayName?.trim() || course.optionName;
+}
+
 export function courseLabel(course) {
   if (!course) return "";
-  if (course.freeText?.trim()) return course.freeText.trim();
-  const parts = (course.parts || [])
-    .map((p) => COURSE_PARTS.find((x) => x.key === p)?.label)
-    .filter(Boolean)
-    .join("");
-  const base = `${course.name || ""}${course.minutes || ""}`;
-  return parts ? `${base}(${parts})` : base;
+  let base;
+  if (course.freeText?.trim()) {
+    base = course.freeText.trim();
+  } else {
+    const parts = (course.parts || [])
+      .map((p) => COURSE_PARTS.find((x) => x.key === p)?.label)
+      .filter(Boolean)
+      .join("");
+    const b = `${course.name || ""}${course.minutes || ""}`;
+    base = parts ? `${b}(${parts})` : b;
+  }
+  const opt = optionLabel(course);
+  return opt ? `${base}＋${opt}` : base;
+}
+
+// タイムボードのブロックに表示するラベル（表示名優先、オプションがあれば追記）
+export function courseBoardLabel(course) {
+  if (!course) return "";
+  const opt = optionLabel(course);
+  if (course.displayName?.trim()) {
+    return opt ? `${course.displayName.trim()}＋${opt}` : course.displayName.trim();
+  }
+  return courseLabel(course); // courseLabel側で既にオプションを含んでいる
+}
+
+// コース＋オプションの合計施術時間（分）
+export function totalMinutes(course) {
+  return Number(course?.minutes || 0) + Number(course?.optionMinutes || 0);
 }
 
 // ---- 日付ユーティリティ ----

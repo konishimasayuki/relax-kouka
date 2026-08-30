@@ -10,7 +10,19 @@ function emptyForm(date, storeId) {
     bed: "",
     customerName: "",
     gender: "女",
-    course: { menuId: "", name: "", displayName: "", minutes: "", color: "", freeText: "" },
+    course: {
+      menuId: "",
+      name: "",
+      displayName: "",
+      minutes: "",
+      color: "",
+      freeText: "",
+      optionId: "",
+      optionName: "",
+      optionDisplayName: "",
+      optionMinutes: "",
+      optionColor: "",
+    },
     nominate: false,
     staffId: "",
     startTime: "",
@@ -24,29 +36,53 @@ function emptyForm(date, storeId) {
 
 /**
  * 新規受付登録モーダル。
- * props: date, stores, staff, menus, workingStaffIds(Set), onClose(), onSaved(record)
+ * props: date, stores, staff, menus, options, workingStaffIds(Set), onClose(), onSaved(record)
  */
-export default function NewReceptionModal({ date, stores, staff, menus, workingStaffIds, onClose, onSaved }) {
+export default function NewReceptionModal({
+  date,
+  stores,
+  staff,
+  menus,
+  options,
+  workingStaffIds,
+  onClose,
+  onSaved,
+}) {
   const [form, setForm] = useState(() => emptyForm(date, stores[0]?.id));
   const [busy, setBusy] = useState(false);
 
   const menusFor = () => menus.filter((m) => m.storeId === form.storeId);
+  const optionsFor = () => options.filter((o) => o.storeId === form.storeId);
   const assignable = staff.filter((s) => s.active && workingStaffIds.has(s.id));
 
   const changeStore = (storeId) => {
     setForm({
       ...form,
       storeId,
-      course: { menuId: "", name: "", displayName: "", minutes: "", color: "", freeText: "" },
+      course: {
+        menuId: "",
+        name: "",
+        displayName: "",
+        minutes: "",
+        color: "",
+        freeText: "",
+        optionId: "",
+        optionName: "",
+        optionDisplayName: "",
+        optionMinutes: "",
+        optionColor: "",
+      },
     });
   };
 
   const selectMenu = (menuId) => {
     const m = menusFor().find((x) => x.id === menuId);
+    const optionPrice = options.find((o) => o.id === form.course.optionId)?.price || 0;
     if (!m) {
       setForm({
         ...form,
         course: { ...form.course, menuId: "", name: "", displayName: "", minutes: "", color: "" },
+        amount: optionPrice,
       });
       return;
     }
@@ -60,7 +96,39 @@ export default function NewReceptionModal({ date, stores, staff, menus, workingS
         minutes: m.minutes,
         color: m.color,
       },
-      amount: m.price,
+      amount: m.price + optionPrice,
+    });
+  };
+
+  const selectOption = (optionId) => {
+    const o = optionsFor().find((x) => x.id === optionId);
+    const menuPrice = menus.find((m) => m.id === form.course.menuId)?.price || 0;
+    if (!o) {
+      setForm({
+        ...form,
+        course: {
+          ...form.course,
+          optionId: "",
+          optionName: "",
+          optionDisplayName: "",
+          optionMinutes: "",
+          optionColor: "",
+        },
+        amount: menuPrice,
+      });
+      return;
+    }
+    setForm({
+      ...form,
+      course: {
+        ...form.course,
+        optionId: o.id,
+        optionName: o.name,
+        optionDisplayName: o.displayName,
+        optionMinutes: o.minutes,
+        optionColor: o.color,
+      },
+      amount: menuPrice + o.price,
     });
   };
 
@@ -76,6 +144,8 @@ export default function NewReceptionModal({ date, stores, staff, menus, workingS
       setBusy(false);
     }
   };
+
+  const totalMin = Number(form.course.minutes || 0) + Number(form.course.optionMinutes || 0);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -160,6 +230,29 @@ export default function NewReceptionModal({ date, stores, staff, menus, workingS
             onChange={(e) => setForm({ ...form, course: { ...form.course, freeText: e.target.value } })}
             placeholder="コース自由記述（入力するとこちらが優先表示されます）"
           />
+        </div>
+
+        <div className="field">
+          <label>オプション</label>
+          {optionsFor().length === 0 ? (
+            <div className="muted" style={{ fontSize: 13 }}>
+              この店舗のオプションは登録されていません
+            </div>
+          ) : (
+            <select value={form.course.optionId} onChange={(e) => selectOption(e.target.value)}>
+              <option value="">なし</option>
+              {optionsFor().map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+          )}
+          {totalMin > 0 && (
+            <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+              合計施術時間：{totalMin}分
+            </div>
+          )}
         </div>
 
         <div className="field">

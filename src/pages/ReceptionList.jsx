@@ -20,6 +20,11 @@ function emptyRecord(storeId, date) {
       minutes: "",
       color: "",
       freeText: "",
+      optionId: "",
+      optionName: "",
+      optionDisplayName: "",
+      optionMinutes: "",
+      optionColor: "",
     },
     pregnancy: false,
     nominate: false,
@@ -50,7 +55,7 @@ function emptyMeta(date) {
 }
 
 export default function ReceptionList() {
-  const { stores, staff, menus, ready } = useApp();
+  const { stores, staff, menus, options, ready } = useApp();
   const [date, setDate] = useState(todayStr());
   const [records, setRecords] = useState([]);
   const [shifts, setShifts] = useState([]);
@@ -416,7 +421,9 @@ export default function ReceptionList() {
                                   minutes: m.minutes,
                                   color: m.color,
                                 },
-                                amount: m.price,
+                                amount:
+                                  m.price +
+                                  (options.find((o) => o.id === r?.course?.optionId)?.price || 0),
                               });
                             }}
                           >
@@ -649,6 +656,7 @@ export default function ReceptionList() {
           stores={stores}
           staff={staff}
           menus={menus}
+          options={options}
           workingStaffIds={workingStaffIds}
           onClose={() => setNewOpen(false)}
           onSaved={(saved) => {
