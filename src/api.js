@@ -56,6 +56,23 @@ export const api = {
   saveOption: (o) => req("options", { method: "POST", body: JSON.stringify(o) }),
   deleteOption: (id) => req(`options?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
 
+  coupons: () => req("coupons"),
+  saveCoupon: (c) => req("coupons", { method: "POST", body: JSON.stringify(c) }),
+  deleteCoupon: (id) => req(`coupons?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  debugThreads: () => req("debugThreads"),
+  saveDebugThread: (t) => req("debugThreads", { method: "POST", body: JSON.stringify(t) }),
+  deleteDebugThread: (id) => req(`debugThreads?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  debugMessages: (threadId) =>
+    req(`debugMessages?threadId=${encodeURIComponent(threadId)}`),
+  saveDebugMessage: (m) => req("debugMessages", { method: "POST", body: JSON.stringify(m) }),
+  deleteDebugMessage: (id, threadId) =>
+    req(
+      `debugMessages?id=${encodeURIComponent(id)}&threadId=${encodeURIComponent(threadId)}`,
+      { method: "DELETE" },
+    ),
+
   payrollRates: () => req("payrollRates"),
   savePayrollRate: (r) => req("payrollRates", { method: "POST", body: JSON.stringify(r) }),
 
@@ -211,8 +228,9 @@ export function yen(n) {
   return `¥${Number(n || 0).toLocaleString("ja-JP")}`;
 }
 
-// 施術者ごとの色（タイムボード用）
-const STAFF_COLORS = [
+// 施術者ごとの色（タイムボード用）。30色から選んで登録できるようにする。
+// スタッフに個別設定(s.color)があればそれを優先し、未設定ならこの並び順で自動割り当てする。
+export const STAFF_COLOR_PALETTE = [
   "#1f6feb",
   "#e5484d",
   "#2fa84f",
@@ -221,10 +239,40 @@ const STAFF_COLORS = [
   "#0ea5b7",
   "#e0699f",
   "#5b6b7b",
+  "#ff7a45",
+  "#16a34a",
+  "#0891b2",
+  "#7c3aed",
+  "#db2777",
+  "#ca8a04",
+  "#dc2626",
+  "#2563eb",
+  "#059669",
+  "#9333ea",
+  "#f59e0b",
+  "#0d9488",
+  "#be123c",
+  "#4f46e5",
+  "#65a30d",
+  "#c026d3",
+  "#ea580c",
+  "#0284c7",
+  "#a21caf",
+  "#15803d",
+  "#b91c1c",
+  "#6d28d9",
 ];
+const STAFF_COLORS = STAFF_COLOR_PALETTE;
 
 export function staffColor(staffId, staffList) {
   const idx = staffList.findIndex((s) => s.id === staffId);
   if (idx < 0) return "#5b6b7b";
+  const s = staffList[idx];
+  if (s?.color) return s.color;
   return STAFF_COLORS[idx % STAFF_COLORS.length];
+}
+
+// タイムボード・受付一覧表の担当表示用。ニックネーム未設定なら氏名を使う
+export function staffDisplayName(s) {
+  return s?.nickname?.trim() || s?.name || "";
 }

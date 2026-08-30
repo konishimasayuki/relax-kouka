@@ -3,6 +3,7 @@ import { api } from "./api.js";
 import Layout from "./components/Layout.jsx";
 import CustomerRoster from "./pages/CustomerRoster.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import DebugRequests from "./pages/DebugRequests.jsx";
 import Fortune from "./pages/Fortune.jsx";
 import IndividualDaily from "./pages/IndividualDaily.jsx";
 import Inventory from "./pages/Inventory.jsx";
@@ -30,6 +31,7 @@ const PAGES = {
   customers: CustomerRoster,
   pricing: Pricing,
   settings: Settings,
+  debugRequests: DebugRequests,
 };
 
 export default function App() {
@@ -51,22 +53,25 @@ export default function App() {
   const [staff, setStaff] = useState([]);
   const [menus, setMenus] = useState([]);
   const [options, setOptions] = useState([]);
+  const [coupons, setCoupons] = useState([]);
   const [ready, setReady] = useState(false);
 
   // 管理者相当（管理者/デバッグ、または管理者権限ありのスタッフ）かどうか
   const isAdminUser = role === "admin" || role === "debug" || (role === "staff" && !!staffSession?.isAdmin);
 
   const refreshMaster = useCallback(async () => {
-    const [st, sf, mn, op] = await Promise.all([
+    const [st, sf, mn, op, cp] = await Promise.all([
       api.stores(),
       api.staff(),
       api.menus(),
       api.options(),
+      api.coupons(),
     ]);
     setStores(st);
     setStaff(sf);
     setMenus(mn);
     setOptions(op);
+    setCoupons(cp);
   }, []);
 
   useEffect(() => {
@@ -82,8 +87,8 @@ export default function App() {
     };
   }, [role, refreshMaster]);
 
-  // 管理者権限のないスタッフは、ダッシュボード／料金／顧客名簿／設定に入れない
-  const RESTRICTED_PAGES = ["dashboard", "pricing", "customers", "settings"];
+  // 管理者権限のないスタッフは、ダッシュボード／料金／顧客名簿／設定／デバッグ依頼に入れない
+  const RESTRICTED_PAGES = ["dashboard", "pricing", "customers", "settings", "debugRequests"];
   useEffect(() => {
     if (role === "fortune" && page !== "fortune") {
       setPage("fortune");
@@ -130,6 +135,7 @@ export default function App() {
     staff,
     menus,
     options,
+    coupons,
     refreshMaster,
     ready,
   };

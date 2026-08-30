@@ -575,6 +575,17 @@ table.grid th.num {
 
 .tb-bed .b-name {
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.b-name-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: 0 0 auto;
 }
 
 .tb-lane {
@@ -625,6 +636,8 @@ table.grid th.num {
   bottom: 4px;
   z-index: 2;
   border-radius: 8px;
+  touch-action: none;
+  cursor: grab;
   padding: 4px 6px;
   color: #fff;
   font-size: 11px;
@@ -1631,4 +1644,80 @@ table.grid th.num {
   padding: 1px;
   font-size: inherit;
   width: auto;
+}
+
+/* ---------- スタッフカラー選択（30色スウォッチ） ---------- */
+.color-swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  max-width: 320px;
+}
+
+.color-swatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  padding: 0;
+}
+
+/* ---------- デバッグ依頼（掲示板） ---------- */
+.debug-thread-messages {
+  max-height: 360px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  margin: 10px 0;
+  background: #f7f8fa;
+}
+
+.debug-message {
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+}
+
+.debug-message.admin {
+  background: #eaf2ff;
+  border-color: #cfe0ff;
+}
+
+.debug-message-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.debug-message-head .btn {
+  margin-left: auto;
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+.debug-message-body {
+  font-size: 14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.debug-message-image {
+  max-width: 100%;
+  max-height: 240px;
+  border-radius: 6px;
+  margin-top: 6px;
+  display: block;
+}
+
+.debug-message-file {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--blue);
 }

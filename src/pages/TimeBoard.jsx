@@ -8,7 +8,7 @@ import TimeInput10 from "../components/TimeInput10.jsx";
 import { overlayClose } from "../modalUtils.js";
 
 export default function TimeBoard() {
-  const { stores, staff, menus, options, ready } = useApp();
+  const { stores, staff, menus, options, coupons, ready } = useApp();
   const [date, setDate] = useState(todayStr());
   const [records, setRecords] = useState([]);
   const [shifts, setShifts] = useState([]);
@@ -123,6 +123,19 @@ export default function TimeBoard() {
     }
   };
 
+  // タイムボード上でドラッグして時間・担当を変更した時の確定処理
+  const handleMove = async (record, patch) => {
+    const updated = { ...record, ...patch };
+    setRecords((prev) => prev.map((x) => (x.id === record.id ? updated : x)));
+    try {
+      const saved = await api.saveReception(updated);
+      setRecords((prev) => prev.map((x) => (x.id === saved.id ? saved : x)));
+    } catch (e) {
+      alert(`移動失敗: ${e.message}`);
+      load();
+    }
+  };
+
   const del = async () => {
     if (!confirm("この予約を削除しますか？")) return;
     setBusy(true);
@@ -171,6 +184,7 @@ export default function TimeBoard() {
           date={date}
           onSelect={setSel}
           onSelectBreak={(b) => setBreakModal({ editing: b })}
+          onMove={handleMove}
           hourWidth={80}
         />
       )}
@@ -291,6 +305,7 @@ export default function TimeBoard() {
           staff={staff}
           menus={menus}
           options={options}
+          coupons={coupons}
           workingStaffIds={workingStaffIds}
           onClose={() => setNewOpen(false)}
           onSaved={(saved) => {

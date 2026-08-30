@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "../App.jsx";
-import { PAYMENTS, api, todayStr } from "../api.js";
+import { PAYMENTS, api, staffDisplayName, todayStr } from "../api.js";
 import NewReceptionModal from "../components/NewReceptionModal.jsx";
 import SignaturePad from "../components/SignaturePad.jsx";
 import TimeInput10 from "../components/TimeInput10.jsx";
@@ -55,7 +55,7 @@ function emptyMeta(date) {
 }
 
 export default function ReceptionList() {
-  const { stores, staff, menus, options, ready } = useApp();
+  const { stores, staff, menus, options, coupons, ready } = useApp();
   const [date, setDate] = useState(todayStr());
   const [records, setRecords] = useState([]);
   const [shifts, setShifts] = useState([]);
@@ -469,7 +469,7 @@ export default function ReceptionList() {
                           <option value="">未定</option>
                           {assignableStaff(r).map((s) => (
                             <option key={s.id} value={s.id}>
-                              {s.name}
+                              {staffDisplayName(s)}
                             </option>
                           ))}
                         </select>
@@ -657,6 +657,7 @@ export default function ReceptionList() {
           staff={staff}
           menus={menus}
           options={options}
+          coupons={coupons}
           workingStaffIds={workingStaffIds}
           onClose={() => setNewOpen(false)}
           onSaved={(saved) => {

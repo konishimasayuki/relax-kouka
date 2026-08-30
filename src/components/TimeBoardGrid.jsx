@@ -1,9 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   courseColorHex,
   courseOnlyBoardLabel,
   optionLabel,
   staffColor,
+  staffDisplayName,
   totalMinutes,
 } from "../api.js";
 
@@ -11,6 +12,7 @@ const START_HOUR = 11;
 const END_HOUR = 24; // 表示ラベルは 11〜23
 const TRAVEL_MIN = 20;
 const STAFF_COL_W = 96;
+const ROW_H = 52; // .tb-row の高さ（styles.cssと一致させること）
 
 function toMin(hhmm) {
   if (!hhmm) return null;
@@ -57,13 +59,100 @@ export default function TimeBoardGrid({
   date,
   onSelect,
   onSelectBreak,
+  onMove,
   hourWidth = 56,
   hideShiftLabel = false,
 }) {
   const HOUR_W = hourWidth;
   const MIN_W = HOUR_W / 60;
 
-  const staffName = (id) => staff.find((s) => s.id === id)?.name || "?";
+  // ---- ドラッグで時間・担当を変更する機能 ----
+  // 少し（HOLD_MS）押さえてから動かすとドラッグ、それより早く指/マウスを離すとクリック（編集）扱いにする。
+  const HOLD_MS = 220;
+  const MOVE_THRESHOLD = 6; // これ以上動いたらクリックではなくドラッグ候補とみなす
+  const dragRef = useRef(null);
+  const [drag, setDrag] = useState(null);
+
+  const findRecord = (id) => records.find((r) => r.id === id);
+
+  const handleBlockPointerDown = (e, r) => {
+    e.stopPropagation();
+    const rowIndex = staffIdsToday.indexOf(r.staffId); // 見つからなければ-1（＝未定行）
+    const info = {
+      recordId: r.id,
+      startX: e.clientX,
+      startY: e.clientY,
+      origStartMin: toMin(r.startTime),
+      origRowIndex: rowIndex,
+      dxPx: 0,
+      dyPx: 0,
+      active: false,
+      moved: false,
+    };
+    info.timer = setTimeout(() => {
+      if (dragRef.current && dragRef.current.recordId === r.id && !dragRef.current.moved) {
+        dragRef.current = { ...dragRef.current, active: true };
+        setDrag(dragRef.current);
+      }
+    }, HOLD_MS);
+    dragRef.current = info;
+    try {
+      e.target.setPointerCapture(e.pointerId);
+    } catch {
+      // Safariなど一部環境でsetPointerCaptureが使えない場合は無視して続行
+    }
+  };
+
+  const handleBlockPointerMove = (e) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const dx = e.clientX - d.startX;
+    const dy = e.clientY - d.startY;
+    if (!d.active) {
+      if (Math.abs(dx) > MOVE_THRESHOLD || Math.abs(dy) > MOVE_THRESHOLD) {
+        // 保持時間が経つ前に動いた＝ドラッグにはせず、スクロール等の邪魔もしないようキャンセル
+        clearTimeout(d.timer);
+        dragRef.current = null;
+        setDrag(null);
+      }
+      return;
+    }
+    dragRef.current = { ...d, dxPx: dx, dyPx: dy, moved: true };
+    setDrag(dragRef.current);
+  };
+
+  const handleBlockPointerUp = () => {
+    const d = dragRef.current;
+    if (!d) return;
+    clearTimeout(d.timer);
+    dragRef.current = null;
+    const rec = findRecord(d.recordId);
+    if (d.active && d.moved) {
+      if (rec) {
+        const deltaMin = Math.round(d.dxPx / MIN_W / 10) * 10;
+        const newStartMin = Math.max(START_HOUR * 60, d.origStartMin + deltaMin);
+        const rowDelta = Math.round(d.dyPx / ROW_H);
+        let newRowIndex = d.origRowIndex + rowDelta;
+        newRowIndex = Math.max(-1, Math.min(staffIdsToday.length - 1, newRowIndex));
+        const newStaffId = newRowIndex === -1 ? "" : staffIdsToday[newRowIndex];
+        if (newStartMin !== d.origStartMin || newStaffId !== rec.staffId) {
+          onMove?.(rec, { startTime: minToHHMM(newStartMin), staffId: newStaffId });
+        }
+      }
+    } else if (!d.moved && rec) {
+      // 素早いクリック（ドラッグにならなかった）＝編集モーダルを開く
+      onSelect?.(rec);
+    }
+    setDrag(null);
+  };
+
+  const dragTransform = (recordId) =>
+    drag && drag.recordId === recordId && drag.active
+      ? { transform: `translate(${drag.dxPx}px, ${drag.dyPx}px)`, opacity: 0.85, zIndex: 20 }
+      : {};
+
+
+  const staffName = (id) => staffDisplayName(staff.find((s) => s.id === id)) || "?";
   const buildingOf = (storeId) => stores.find((s) => s.id === storeId)?.building || "";
 
   // 本店＝ここが移動の起点・終点になる。isHomeフラグを優先し、
@@ -166,6 +255,30 @@ export default function TimeBoardGrid({
     [records],
   );
 
+  // 担当未定の予約が時間帯で重なる場合、段を分けて縦に並べる（貪欲法でレーン割り当て）
+  const unassignedLaneOf = useMemo(() => {
+    const map = new Map();
+    const laneEnds = [];
+    for (const r of unassignedApps) {
+      const s = toMin(r.startTime);
+      const e = s + (totalMinutes(r.course) || 60);
+      let placed = false;
+      for (let i = 0; i < laneEnds.length; i++) {
+        if (laneEnds[i] <= s) {
+          laneEnds[i] = e;
+          map.set(r.id, i);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        laneEnds.push(e);
+        map.set(r.id, laneEnds.length - 1);
+      }
+    }
+    return { map, laneCount: laneEnds.length || 1 };
+  }, [unassignedApps]);
+
   const hours = [];
   for (let h = START_HOUR; h < END_HOUR; h++) hours.push(h);
   const totalMin = (END_HOUR - START_HOUR) * 60;
@@ -219,7 +332,13 @@ export default function TimeBoardGrid({
                 {!hideShiftLabel && (
                   <span className="b-store">{shiftRangeLabel(staffId)}</span>
                 )}
-                <span className="b-name">{staffName(staffId)}</span>
+                <span className="b-name">
+                  <span
+                    className="b-name-dot"
+                    style={{ background: staffColor(staffId, staff) }}
+                  />
+                  {staffName(staffId)}
+                </span>
               </div>
               <div className="tb-lane" style={{ width: laneW }}>
                 {offDuty.map((o, i) => (
@@ -264,12 +383,16 @@ export default function TimeBoardGrid({
                   const optionColor = courseColorHex(r.course?.optionColor) || courseColor;
                   const courseLbl = courseOnlyBoardLabel(r.course);
                   const optionLbl = optionLabel(r.course);
+                  const dragStyle = dragTransform(r.id);
                   return [
                     <div
                       className="tb-block"
                       key={`${r.id}-c`}
-                      style={blockStyle(start, courseMins, courseColor)}
-                      onClick={() => onSelect?.(r)}
+                      style={{ ...blockStyle(start, courseMins, courseColor), ...dragStyle }}
+                      onPointerDown={(e) => handleBlockPointerDown(e, r)}
+                      onPointerMove={handleBlockPointerMove}
+                      onPointerUp={handleBlockPointerUp}
+                      onPointerCancel={handleBlockPointerUp}
                     >
                       <div className="bl-course">{courseLbl}</div>
                       <div className="bl-name">{r.customerName}様</div>
@@ -278,8 +401,14 @@ export default function TimeBoardGrid({
                       <div
                         className="tb-block"
                         key={`${r.id}-o`}
-                        style={blockStyle(start + courseMins, optionMins, optionColor)}
-                        onClick={() => onSelect?.(r)}
+                        style={{
+                          ...blockStyle(start + courseMins, optionMins, optionColor),
+                          ...dragStyle,
+                        }}
+                        onPointerDown={(e) => handleBlockPointerDown(e, r)}
+                        onPointerMove={handleBlockPointerMove}
+                        onPointerUp={handleBlockPointerUp}
+                        onPointerCancel={handleBlockPointerUp}
                       >
                         <div className="bl-course">{optionLbl}</div>
                       </div>
@@ -292,7 +421,7 @@ export default function TimeBoardGrid({
         })}
 
         {unassignedApps.length > 0 && (
-          <div className="tb-row">
+          <div className="tb-row" style={{ height: ROW_H * unassignedLaneOf.laneCount }}>
             <div className="tb-bed" style={{ width: STAFF_COL_W }}>
               <span className="b-name muted">未定</span>
             </div>
@@ -314,12 +443,22 @@ export default function TimeBoardGrid({
                 const optionColor = courseColorHex(r.course?.optionColor) || courseColor;
                 const courseLbl = courseOnlyBoardLabel(r.course);
                 const optionLbl = optionLabel(r.course);
+                const lane = unassignedLaneOf.map.get(r.id) || 0;
+                const laneStyle = { top: lane * ROW_H + 4, height: ROW_H - 8 };
+                const dragStyle = dragTransform(r.id);
                 return [
                   <div
                     className="tb-block"
                     key={`${r.id}-c`}
-                    style={blockStyle(start, courseMins, courseColor)}
-                    onClick={() => onSelect?.(r)}
+                    style={{
+                      ...blockStyle(start, courseMins, courseColor),
+                      ...laneStyle,
+                      ...dragStyle,
+                    }}
+                    onPointerDown={(e) => handleBlockPointerDown(e, r)}
+                    onPointerMove={handleBlockPointerMove}
+                    onPointerUp={handleBlockPointerUp}
+                    onPointerCancel={handleBlockPointerUp}
                   >
                     <div className="bl-course">{courseLbl}</div>
                     <div className="bl-name">{r.customerName}様</div>
@@ -328,8 +467,15 @@ export default function TimeBoardGrid({
                     <div
                       className="tb-block"
                       key={`${r.id}-o`}
-                      style={blockStyle(start + courseMins, optionMins, optionColor)}
-                      onClick={() => onSelect?.(r)}
+                      style={{
+                        ...blockStyle(start + courseMins, optionMins, optionColor),
+                        ...laneStyle,
+                        ...dragStyle,
+                      }}
+                      onPointerDown={(e) => handleBlockPointerDown(e, r)}
+                      onPointerMove={handleBlockPointerMove}
+                      onPointerUp={handleBlockPointerUp}
+                      onPointerCancel={handleBlockPointerUp}
                     >
                       <div className="bl-course">{optionLbl}</div>
                     </div>

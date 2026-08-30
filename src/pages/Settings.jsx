@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useApp } from "../App.jsx";
-import { api } from "../api.js";
+import { api, STAFF_COLOR_PALETTE, staffColor } from "../api.js";
 import { overlayClose } from "../modalUtils.js";
 
 const emptyStore = {
@@ -15,10 +15,12 @@ const emptyStore = {
 const emptyStaff = {
   id: "",
   name: "",
+  nickname: "",
   loginId: "",
   password: "",
   gender: "女",
   birthday: "",
+  color: "",
   facial: false,
   pregnancyFoot: false,
   pregnancyHead: false,
@@ -30,6 +32,7 @@ const emptyStaff = {
 const emptyFortuneStaff = { id: "", name: "", loginId: "", password: "" };
 const emptyMaterial = { id: "", name: "", unit: "個", order: 0, genreId: "" };
 const emptyGenre = { id: "", name: "" };
+const emptyCoupon = { id: "", name: "", discountAmount: 0 };
 
 // orderで並び替え。未設定（既存データ）は元の配列順を維持しつつ末尾扱いにする
 function sortMaterials(list) {
@@ -53,6 +56,8 @@ export default function Settings() {
   const [materialForm, setMaterialForm] = useState(null);
   const [genreList, setGenreList] = useState([]);
   const [genreForm, setGenreForm] = useState(null);
+  const [couponList, setCouponList] = useState([]);
+  const [couponForm, setCouponForm] = useState(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -66,6 +71,9 @@ export default function Settings() {
     }
     if (tab === "materialGenre") {
       api.materialGenres().then(setGenreList).catch(() => {});
+    }
+    if (tab === "coupon") {
+      api.coupons().then(setCouponList).catch(() => {});
     }
   }, [tab]);
 
@@ -219,6 +227,28 @@ export default function Settings() {
 
   const genreName = (id) => genreList.find((g) => g.id === id)?.name || "";
 
+  const reloadCoupons = () => api.coupons().then(setCouponList);
+
+  const saveCoupon = async () => {
+    if (!couponForm.name.trim()) return alert("クーポン名を入力してください");
+    setBusy(true);
+    try {
+      await api.saveCoupon(couponForm);
+      await reloadCoupons();
+      setCouponForm(null);
+    } catch (e) {
+      alert(`保存失敗: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const delCoupon = async (id) => {
+    if (!confirm("このクーポンを削除しますか？")) return;
+    await api.deleteCoupon(id);
+    await reloadCoupons();
+  };
+
   return (
     <div>
       <div className="page-head">
@@ -255,6 +285,12 @@ export default function Settings() {
           onClick={() => setTab("materialGenre")}
         >
           資材ジャンル登録
+        </button>
+        <button
+          className={tab === "coupon" ? "btn sm" : "btn sm gray"}
+          onClick={() => setTab("coupon")}
+        >
+          クーポン登録
         </button>
       </div>
 
@@ -303,7 +339,18 @@ export default function Settings() {
             <div className="card" key={s.id}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ flex: 1 }}>
+                  <span
+                    style={{
+                      display: "inline-block",
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      background: staffColor(s.id, staff),
+                      marginRight: 6,
+                    }}
+                  />
                   <strong>{s.name}</strong>{" "}
+                  {s.nickname && <span className="muted">（{s.nickname}）</span>}{" "}
                   <span className="pill gray">{s.gender}</span>{" "}
                   {s.isAdmin && <span className="pill">管理者</span>}{" "}
                   {s.facial && <span className="pill">F可</span>}{" "}
@@ -439,6 +486,37 @@ export default function Settings() {
         </div>
       )}
 
+      {tab === "coupon" && (
+        <div>
+          <div className="toolbar">
+            <button className="btn sm" onClick={() => setCouponForm({ ...emptyCoupon })}>
+              ＋ クーポンを追加
+            </button>
+          </div>
+          {couponList.length === 0 && <div className="empty">クーポンが登録されていません</div>}
+          {couponList.map((c) => (
+            <div className="card" key={c.id}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <strong>{c.name}</strong>
+                  <div className="muted" style={{ fontSize: 13 }}>
+                    割引額: {Number(c.discountAmount || 0).toLocaleString("ja-JP")}円
+                  </div>
+                </div>
+                <button className="btn sm ghost" onClick={() => setCouponForm({ ...c })}>
+                  編集
+                </button>
+                {isAdminUser && (
+                  <button className="btn sm danger" onClick={() => delCoupon(c.id)}>
+                    削除
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {storeForm && (
         <div className="modal-overlay" onClick={overlayClose(() => setStoreForm(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -528,6 +606,41 @@ export default function Settings() {
                 value={staffForm.name}
                 onChange={(e) => setStaffForm({ ...staffForm, name: e.target.value })}
               />
+            </div>
+            <div className="field">
+              <label>ニックネーム（タイムボード・受付一覧表での表示名。未設定なら氏名を表示）</label>
+              <input
+                value={staffForm.nickname}
+                onChange={(e) => setStaffForm({ ...staffForm, nickname: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label>スタッフカラー（タイムボードで名前の左に表示）</label>
+              <div className="color-swatch-grid">
+                {STAFF_COLOR_PALETTE.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    className="color-swatch"
+                    style={{
+                      background: c,
+                      outline: staffForm.color === c ? "3px solid #1c1c1c" : "none",
+                      outlineOffset: 2,
+                    }}
+                    onClick={() => setStaffForm({ ...staffForm, color: c })}
+                  />
+                ))}
+              </div>
+              {staffForm.color && (
+                <button
+                  type="button"
+                  className="btn sm ghost"
+                  style={{ marginTop: 8 }}
+                  onClick={() => setStaffForm({ ...staffForm, color: "" })}
+                >
+                  未設定に戻す（自動割り当て）
+                </button>
+              )}
             </div>
             <div className="row">
               <div className="field">
@@ -777,6 +890,40 @@ export default function Settings() {
                 キャンセル
               </button>
               <button className="btn" onClick={saveGenre} disabled={busy}>
+                保存
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {couponForm && (
+        <div className="modal-overlay" onClick={overlayClose(() => setCouponForm(null))}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>{couponForm.id ? "クーポンを編集" : "クーポンを追加"}</h3>
+            <div className="field">
+              <label>クーポン名</label>
+              <input
+                value={couponForm.name}
+                onChange={(e) => setCouponForm({ ...couponForm, name: e.target.value })}
+                placeholder="例：楽天トラベル"
+              />
+            </div>
+            <div className="field">
+              <label>割引金額</label>
+              <input
+                type="number"
+                value={couponForm.discountAmount}
+                onChange={(e) =>
+                  setCouponForm({ ...couponForm, discountAmount: Number(e.target.value) || 0 })
+                }
+              />
+            </div>
+            <div className="modal-actions">
+              <button className="btn gray" onClick={() => setCouponForm(null)}>
+                キャンセル
+              </button>
+              <button className="btn" onClick={saveCoupon} disabled={busy}>
                 保存
               </button>
             </div>

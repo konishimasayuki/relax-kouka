@@ -142,6 +142,18 @@ export default function BoardView() {
     }
   };
 
+  // タイムボード上でドラッグして時間・担当を変更した時の確定処理
+  const handleMove = async (record, patch) => {
+    const updated = { ...record, ...patch };
+    setRecords((prev) => prev.map((x) => (x.id === record.id ? updated : x)));
+    try {
+      const saved = await api.saveReception(updated);
+      setRecords((prev) => prev.map((x) => (x.id === saved.id ? saved : x)));
+    } catch (e) {
+      alert(`移動失敗: ${e.message}`);
+    }
+  };
+
   const del = async () => {
     if (!confirm("この予約を削除しますか？")) return;
     setBusy(true);
@@ -182,6 +194,7 @@ export default function BoardView() {
             shifts={shifts}
             date={date}
             onSelect={setSel}
+            onMove={handleMove}
             hourWidth={140}
             hideShiftLabel
           />

@@ -23,6 +23,9 @@ function emptyForm(date, storeId) {
       optionDisplayName: "",
       optionMinutes: "",
       optionColor: "",
+      couponId: "",
+      couponName: "",
+      couponDiscount: 0,
     },
     nominate: false,
     pregnancy: false,
@@ -40,7 +43,7 @@ function emptyForm(date, storeId) {
 
 /**
  * 新規受付登録モーダル。
- * props: date, stores, staff, menus, options, workingStaffIds(Set), onClose(), onSaved(record)
+ * props: date, stores, staff, menus, options, coupons, workingStaffIds(Set), onClose(), onSaved(record)
  */
 export default function NewReceptionModal({
   date,
@@ -48,6 +51,7 @@ export default function NewReceptionModal({
   staff,
   menus,
   options,
+  coupons = [],
   workingStaffIds,
   onClose,
   onSaved,
@@ -58,6 +62,14 @@ export default function NewReceptionModal({
   const menusFor = () => menus.filter((m) => m.storeId === form.storeId);
   const optionsFor = () => options.filter((o) => o.storeId === form.storeId);
   const assignable = staff.filter((s) => s.active && workingStaffIds.has(s.id));
+
+  // コース料金＋オプション料金－クーポン割引額（0円未満にはしない）
+  const computeAmount = (menuId, optionId, couponId) => {
+    const menuPrice = menus.find((m) => m.id === menuId)?.price || 0;
+    const optionPrice = options.find((o) => o.id === optionId)?.price || 0;
+    const discount = coupons.find((c) => c.id === couponId)?.discountAmount || 0;
+    return Math.max(0, menuPrice + optionPrice - discount);
+  };
 
   const changeStore = (storeId) => {
     setForm({
@@ -75,18 +87,20 @@ export default function NewReceptionModal({
         optionDisplayName: "",
         optionMinutes: "",
         optionColor: "",
+        couponId: "",
+        couponName: "",
+        couponDiscount: 0,
       },
     });
   };
 
   const selectMenu = (menuId) => {
     const m = menusFor().find((x) => x.id === menuId);
-    const optionPrice = options.find((o) => o.id === form.course.optionId)?.price || 0;
     if (!m) {
       setForm({
         ...form,
         course: { ...form.course, menuId: "", name: "", displayName: "", minutes: "", color: "" },
-        amount: optionPrice,
+        amount: computeAmount("", form.course.optionId, form.course.couponId),
       });
       return;
     }
@@ -100,13 +114,12 @@ export default function NewReceptionModal({
         minutes: m.minutes,
         color: m.color,
       },
-      amount: m.price + optionPrice,
+      amount: computeAmount(m.id, form.course.optionId, form.course.couponId),
     });
   };
 
   const selectOption = (optionId) => {
     const o = optionsFor().find((x) => x.id === optionId);
-    const menuPrice = menus.find((m) => m.id === form.course.menuId)?.price || 0;
     if (!o) {
       setForm({
         ...form,
@@ -118,7 +131,7 @@ export default function NewReceptionModal({
           optionMinutes: "",
           optionColor: "",
         },
-        amount: menuPrice,
+        amount: computeAmount(form.course.menuId, "", form.course.couponId),
       });
       return;
     }
@@ -132,7 +145,24 @@ export default function NewReceptionModal({
         optionMinutes: o.minutes,
         optionColor: o.color,
       },
-      amount: menuPrice + o.price,
+      amount: computeAmount(form.course.menuId, o.id, form.course.couponId),
+    });
+  };
+
+  const selectCoupon = (couponId) => {
+    const c = coupons.find((x) => x.id === couponId);
+    if (!c) {
+      setForm({
+        ...form,
+        course: { ...form.course, couponId: "", couponName: "", couponDiscount: 0 },
+        amount: computeAmount(form.course.menuId, form.course.optionId, ""),
+      });
+      return;
+    }
+    setForm({
+      ...form,
+      course: { ...form.course, couponId: c.id, couponName: c.name, couponDiscount: c.discountAmount },
+      amount: computeAmount(form.course.menuId, form.course.optionId, c.id),
     });
   };
 
@@ -256,6 +286,24 @@ export default function NewReceptionModal({
             <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
               合計施術時間：{totalMin}分
             </div>
+          )}
+        </div>
+
+        <div className="field">
+          <label>クーポン</label>
+          {coupons.length === 0 ? (
+            <div className="muted" style={{ fontSize: 13 }}>
+              クーポンは登録されていません（設定タブで登録できます）
+            </div>
+          ) : (
+            <select value={form.course.couponId} onChange={(e) => selectCoupon(e.target.value)}>
+              <option value="">なし</option>
+              {coupons.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}（-{Number(c.discountAmount || 0).toLocaleString("ja-JP")}円）
+                </option>
+              ))}
+            </select>
           )}
         </div>
 
