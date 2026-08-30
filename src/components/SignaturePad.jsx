@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { overlayClose } from "../modalUtils.js";
 
 /**
  * 指（タッチ）・マウス対応のシンプルな署名パッド。
@@ -68,7 +69,7 @@ export default function SignaturePad({ initialValue, onSave, onClose }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={overlayClose(onClose)}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <h3>サイン</h3>
         <canvas

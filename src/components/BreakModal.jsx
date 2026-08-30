@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api } from "../api.js";
 import TimeInput10 from "./TimeInput10.jsx";
+import { overlayClose } from "../modalUtils.js";
 
 function emptyBreak(date, staffId) {
   return { id: "", date, staffId: staffId || "", start: "13:00", end: "13:30" };
@@ -46,7 +47,7 @@ export default function BreakModal({ date, staff, assignableStaffIds, editing, o
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={overlayClose(onClose)}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <h3>{form.id ? "休憩を編集" : "休憩を追加"}</h3>
 

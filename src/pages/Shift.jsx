@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
 import { api, staffColor, todayStr } from "../api.js";
 import TimeInput10 from "../components/TimeInput10.jsx";
+import { overlayClose } from "../modalUtils.js";
 
 const HOUR_START = 11;
 const HOUR_END = 24; // 表示ラベルは 11〜23
@@ -247,7 +248,7 @@ export default function Shift() {
     </div>
 
       {form && (
-        <div className="modal-overlay" onClick={() => setForm(null)}>
+        <div className="modal-overlay" onClick={overlayClose(() => setForm(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>{form.id ? "シフトを編集" : "シフトを追加"}</h3>
             <div className="field">

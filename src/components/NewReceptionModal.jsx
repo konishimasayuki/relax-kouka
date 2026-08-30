@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { PAYMENTS, api } from "../api.js";
 import TimeInput10 from "./TimeInput10.jsx";
+import { overlayClose } from "../modalUtils.js";
 
 function emptyForm(date, storeId) {
   return {
@@ -151,7 +152,7 @@ export default function NewReceptionModal({
   const totalMin = Number(form.course.minutes || 0) + Number(form.course.optionMinutes || 0);
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={overlayClose(onClose)}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <h3>新規受付</h3>
 

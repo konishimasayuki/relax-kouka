@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
 import { api, todayStr } from "../api.js";
+import { overlayClose } from "../modalUtils.js";
 
 function emptyOp(type, storeId) {
   return {
@@ -297,7 +298,7 @@ export default function Inventory() {
       )}
 
       {opForm && (
-        <div className="modal-overlay" onClick={() => setOpForm(null)}>
+        <div className="modal-overlay" onClick={overlayClose(() => setOpForm(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>
               {opForm.type === "purchase" && "仕入れ登録"}

@@ -4,6 +4,7 @@ import TimeBoardGrid from "../components/TimeBoardGrid.jsx";
 import TimeInput10 from "../components/TimeInput10.jsx";
 import Login from "./Login.jsx";
 import { loadSession, saveSession } from "../session.js";
+import { overlayClose } from "../modalUtils.js";
 
 const REFRESH_MS = 20000;
 
@@ -188,7 +189,7 @@ export default function BoardView() {
       </div>
 
       {sel && (
-        <div className="modal-overlay" onClick={() => setSel(null)}>
+        <div className="modal-overlay" onClick={overlayClose(() => setSel(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>{sel.customerName} 様</h3>
             <p className="muted" style={{ marginTop: -8 }}>

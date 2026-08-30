@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useApp } from "../App.jsx";
 import { COURSE_COLORS, api, yen } from "../api.js";
+import { overlayClose } from "../modalUtils.js";
 
 function emptyMenu(storeId) {
   return {
@@ -240,7 +241,7 @@ export default function Pricing() {
       )}
 
       {form && (
-        <div className="modal-overlay" onClick={() => setForm(null)}>
+        <div className="modal-overlay" onClick={overlayClose(() => setForm(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>{form.id ? "コースを編集" : "コースを追加"}</h3>
             <div className="field">
@@ -338,7 +339,7 @@ export default function Pricing() {
       )}
 
       {optionForm && (
-        <div className="modal-overlay" onClick={() => setOptionForm(null)}>
+        <div className="modal-overlay" onClick={overlayClose(() => setOptionForm(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>{optionForm.id ? "オプションを編集" : "オプションを追加"}</h3>
             <div className="field">

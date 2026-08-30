@@ -5,6 +5,7 @@ import BreakModal from "../components/BreakModal.jsx";
 import NewReceptionModal from "../components/NewReceptionModal.jsx";
 import TimeBoardGrid from "../components/TimeBoardGrid.jsx";
 import TimeInput10 from "../components/TimeInput10.jsx";
+import { overlayClose } from "../modalUtils.js";
 
 export default function TimeBoard() {
   const { stores, staff, menus, options, ready } = useApp();
@@ -175,7 +176,7 @@ export default function TimeBoard() {
       )}
 
       {sel && (
-        <div className="modal-overlay" onClick={() => setSel(null)}>
+        <div className="modal-overlay" onClick={overlayClose(() => setSel(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>{sel.customerName} 様</h3>
             <p className="muted" style={{ marginTop: -8 }}>

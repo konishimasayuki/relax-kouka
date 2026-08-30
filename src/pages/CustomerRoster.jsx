@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
 import { api } from "../api.js";
+import { overlayClose } from "../modalUtils.js";
 
 const empty = {
   id: "",
@@ -130,7 +131,7 @@ export default function CustomerRoster() {
       )}
 
       {form && (
-        <div className="modal-overlay" onClick={() => setForm(null)}>
+        <div className="modal-overlay" onClick={overlayClose(() => setForm(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>{form.id ? "顧客を編集" : "顧客を追加"}</h3>
             <div className="row">

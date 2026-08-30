@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
 import { api, todayStr } from "../api.js";
 import TimeInput10 from "../components/TimeInput10.jsx";
+import { overlayClose } from "../modalUtils.js";
 
 const WEEK_LABEL = ["日", "月", "火", "水", "木", "金", "土"];
 
@@ -439,7 +440,7 @@ export default function Fortune() {
       </div>
 
       {shiftForm && (
-        <div className="modal-overlay" onClick={() => setShiftForm(null)}>
+        <div className="modal-overlay" onClick={overlayClose(() => setShiftForm(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>{shiftForm.id ? "シフトを編集" : "シフトを追加"}</h3>
             <div className="field">
@@ -498,7 +499,7 @@ export default function Fortune() {
       )}
 
       {resForm && (
-        <div className="modal-overlay" onClick={() => setResForm(null)}>
+        <div className="modal-overlay" onClick={overlayClose(() => setResForm(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>{resForm.id ? "予約を編集" : "予約を追加"}</h3>
             <div className="row">

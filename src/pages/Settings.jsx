@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useApp } from "../App.jsx";
 import { api } from "../api.js";
+import { overlayClose } from "../modalUtils.js";
 
 const emptyStore = {
   id: "",
@@ -439,7 +440,7 @@ export default function Settings() {
       )}
 
       {storeForm && (
-        <div className="modal-overlay" onClick={() => setStoreForm(null)}>
+        <div className="modal-overlay" onClick={overlayClose(() => setStoreForm(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>{storeForm.id ? "店舗を編集" : "店舗を追加"}</h3>
             <div className="field">
@@ -518,7 +519,7 @@ export default function Settings() {
       )}
 
       {staffForm && (
-        <div className="modal-overlay" onClick={() => setStaffForm(null)}>
+        <div className="modal-overlay" onClick={overlayClose(() => setStaffForm(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>{staffForm.id ? "スタッフを編集" : "スタッフを追加"}</h3>
             <div className="field">
@@ -663,7 +664,7 @@ export default function Settings() {
       )}
 
       {fortuneStaffForm && (
-        <div className="modal-overlay" onClick={() => setFortuneStaffForm(null)}>
+        <div className="modal-overlay" onClick={overlayClose(() => setFortuneStaffForm(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>{fortuneStaffForm.id ? "占いスタッフを編集" : "占いスタッフを追加"}</h3>
             <div className="field">
@@ -709,7 +710,7 @@ export default function Settings() {
       )}
 
       {materialForm && (
-        <div className="modal-overlay" onClick={() => setMaterialForm(null)}>
+        <div className="modal-overlay" onClick={overlayClose(() => setMaterialForm(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>{materialForm.id ? "資材を編集" : "資材を追加"}</h3>
             <div className="field">
@@ -760,7 +761,7 @@ export default function Settings() {
       )}
 
       {genreForm && (
-        <div className="modal-overlay" onClick={() => setGenreForm(null)}>
+        <div className="modal-overlay" onClick={overlayClose(() => setGenreForm(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>{genreForm.id ? "ジャンルを編集" : "ジャンルを追加"}</h3>
             <div className="field">
