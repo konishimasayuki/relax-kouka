@@ -58,6 +58,36 @@ function colorOf(staffId, staffList) {
   return FORTUNE_COLORS[idx < 0 ? 0 : idx % FORTUNE_COLORS.length];
 }
 
+// ---- 占いタイムボード用（マッサージ側のタイムボードとは完全に別実装・移動ロジックなし） ----
+const FTB_HOUR_START = 11;
+const FTB_HOUR_END = 24; // 表示ラベルは 11〜23
+const FTB_HOUR_W = 70;
+const FTB_MIN_W = FTB_HOUR_W / 60;
+const FTB_STAFF_COL_W = 88;
+
+function toMin(hhmm) {
+  if (!hhmm) return null;
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function ftbComputeOffDuty(ranges, dayStart, dayEnd) {
+  if (!ranges.length) return [];
+  const sorted = [...ranges]
+    .map((r) => ({ start: Math.max(r.start, dayStart), end: Math.min(r.end, dayEnd) }))
+    .filter((r) => r.start < r.end)
+    .sort((a, b) => a.start - b.start);
+  if (!sorted.length) return [{ start: dayStart, end: dayEnd }];
+  const segments = [];
+  let cursor = dayStart;
+  for (const r of sorted) {
+    if (r.start > cursor) segments.push({ start: cursor, end: r.start });
+    cursor = Math.max(cursor, r.end);
+  }
+  if (cursor < dayEnd) segments.push({ start: cursor, end: dayEnd });
+  return segments;
+}
+
 export default function Fortune() {
   const [staffList, setStaffList] = useState([]);
   const [shifts, setShifts] = useState([]);
@@ -149,6 +179,42 @@ export default function Fortune() {
     [reservations],
   );
 
+  // ---- 占いタイムボード（当日分）----
+  const todaysShifts = useMemo(() => shifts.filter((s) => s.date === date), [shifts, date]);
+  const staffIdsToday = useMemo(() => {
+    const earliest = {};
+    for (const s of todaysShifts) {
+      const m = toMin(s.start);
+      if (earliest[s.staffId] === undefined || m < earliest[s.staffId]) earliest[s.staffId] = m;
+    }
+    for (const r of view) {
+      if (!r.staffId || !r.startTime) continue;
+      const m = toMin(r.startTime);
+      if (earliest[r.staffId] === undefined || m < earliest[r.staffId]) earliest[r.staffId] = m;
+    }
+    return Object.entries(earliest)
+      .sort((a, b) => a[1] - b[1])
+      .map(([id]) => id);
+  }, [todaysShifts, view]);
+
+  const ftbHours = [];
+  for (let h = FTB_HOUR_START; h < FTB_HOUR_END; h++) ftbHours.push(h);
+  const ftbTotalMin = (FTB_HOUR_END - FTB_HOUR_START) * 60;
+  const ftbLaneW = ftbTotalMin * FTB_MIN_W;
+  const ftbGridMarks = [];
+  for (let m = 0; m <= ftbTotalMin; m += 10) {
+    ftbGridMarks.push({ pos: m * FTB_MIN_W, major: m % 60 === 0 });
+  }
+  const ftbBlockStyle = (startMin, minutes, color) => ({
+    left: (startMin - FTB_HOUR_START * 60) * FTB_MIN_W,
+    width: Math.max(minutes * FTB_MIN_W - 2, 10),
+    background: color,
+  });
+  const ftbFillStyle = (startMin, endMin) => ({
+    left: (startMin - FTB_HOUR_START * 60) * FTB_MIN_W,
+    width: Math.max((endMin - startMin) * FTB_MIN_W, 0),
+  });
+
   const saveReservation = async () => {
     if (!resForm.customerName.trim()) return alert("お客様名を入力してください");
     setBusy(true);
@@ -173,6 +239,84 @@ export default function Fortune() {
     <div>
       <div className="page-head">
         <h2>杉の泉</h2>
+      </div>
+
+      {/* ---- 本日のタイムボード（占い専用・移動ロジックなし） ---- */}
+      <div className="card">
+        <strong>タイムボード</strong>
+        <div className="toolbar" style={{ marginTop: 8 }}>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        </div>
+
+        {staffIdsToday.length === 0 ? (
+          <div className="empty">本日出勤予定のスタッフがいません（下のシフト表で登録してください）</div>
+        ) : (
+          <div className="tb-scroll">
+            <div className="tb" style={{ minWidth: FTB_STAFF_COL_W + ftbLaneW }}>
+              <div className="tb-hours">
+                <div className="tb-bedcol" style={{ width: FTB_STAFF_COL_W, height: 33 }} />
+                {ftbHours.map((h) => (
+                  <div className="tb-hour" key={h} style={{ width: FTB_HOUR_W }}>
+                    {h}
+                  </div>
+                ))}
+              </div>
+
+              {staffIdsToday.map((staffId) => {
+                const ranges = todaysShifts
+                  .filter((s) => s.staffId === staffId)
+                  .map((s) => ({ start: toMin(s.start), end: toMin(s.end) }));
+                const offDuty = ftbComputeOffDuty(
+                  ranges,
+                  FTB_HOUR_START * 60,
+                  FTB_HOUR_END * 60,
+                );
+                const apps = view.filter((r) => r.staffId === staffId && r.startTime);
+                return (
+                  <div className="tb-row" key={staffId}>
+                    <div className="tb-bed" style={{ width: FTB_STAFF_COL_W }}>
+                      <span className="b-name">{staffName(staffId)}</span>
+                    </div>
+                    <div className="tb-lane" style={{ width: ftbLaneW }}>
+                      {offDuty.map((o, i) => (
+                        <div
+                          className="tb-offduty"
+                          key={`o${i}`}
+                          style={ftbFillStyle(o.start, o.end)}
+                        />
+                      ))}
+                      {ftbGridMarks.map((g, i) => (
+                        <div
+                          className={g.major ? "tb-gridline" : "tb-gridline-minor"}
+                          key={i}
+                          style={{ left: g.pos }}
+                        />
+                      ))}
+                      {apps.map((r) => {
+                        const start = toMin(r.startTime);
+                        return (
+                          <div
+                            className="tb-block"
+                            key={r.id}
+                            style={ftbBlockStyle(
+                              start,
+                              r.minutes || 30,
+                              colorOf(staffId, staffList),
+                            )}
+                            onClick={() => setResForm({ ...r })}
+                          >
+                            <div className="bl-course">{r.minutes}分</div>
+                            <div className="bl-name">{r.customerName}様</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ---- シフト表（カレンダー形式） ---- */}
