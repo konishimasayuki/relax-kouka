@@ -51,6 +51,7 @@ export default function TimeBoardGrid({
   onSelect,
   onSelectBreak,
   hourWidth = 56,
+  hideShiftLabel = false,
 }) {
   const HOUR_W = hourWidth;
   const MIN_W = HOUR_W / 60;
@@ -208,8 +209,10 @@ export default function TimeBoardGrid({
           };
           return (
             <div className="tb-row" key={staffId}>
-              <div className="tb-bed" style={{ width: STAFF_COL_W }}>
-                <span className="b-store">{shiftRangeLabel(staffId)}</span>
+              <div className={`tb-bed ${hideShiftLabel ? "no-shift-label" : ""}`} style={{ width: STAFF_COL_W }}>
+                {!hideShiftLabel && (
+                  <span className="b-store">{shiftRangeLabel(staffId)}</span>
+                )}
                 <span className="b-name">{staffName(staffId)}</span>
               </div>
               <div className="tb-lane" style={{ width: laneW }}>

@@ -502,6 +502,9 @@ table.grid th.num {
 
 /* ---------- タイムボード ---------- */
 .tb-scroll {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   border: 1px solid var(--border);
@@ -835,6 +838,8 @@ table.grid th.num {
   background: #fff;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .board-head {
@@ -849,8 +854,33 @@ table.grid th.num {
 
 .board-body {
   flex: 1;
-  overflow: auto;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 8px 10px;
+  box-sizing: border-box;
+}
+
+/* 出勤時間ラベルを非表示にした分、スタッフ名を拡大表示する（別ウィンドウ表示） */
+.tb-bed.no-shift-label {
+  justify-content: center;
+}
+
+.tb-bed.no-shift-label .b-name {
+  font-size: 16px;
+}
+
+/* 別ウィンドウ（サイネージ）表示：文字を1.2倍に拡大 */
+.board-body .tb-block .bl-course {
+  font-size: 13px;
+}
+
+.board-body .tb-block.travel {
+  font-size: 12px;
+}
+
+.board-body .tb-block.break {
+  font-size: 12px;
 }
 
 /* ---------- シフト画面（スマホ表示調整） ---------- */

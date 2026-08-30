@@ -182,6 +182,7 @@ export default function BoardView() {
             date={date}
             onSelect={setSel}
             hourWidth={140}
+            hideShiftLabel
           />
         </div>
       </div>
