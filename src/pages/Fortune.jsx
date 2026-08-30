@@ -246,6 +246,9 @@ export default function Fortune() {
         <strong>タイムボード</strong>
         <div className="toolbar" style={{ marginTop: 8 }}>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <button className="btn sm" onClick={() => setResForm(emptyReservation(date))}>
+            ＋ 予約追加
+          </button>
         </div>
 
         {staffIdsToday.length === 0 ? (
@@ -319,6 +322,61 @@ export default function Fortune() {
         )}
       </div>
 
+      {/* ---- 予約管理 ---- */}
+      <div className="card">
+        <strong>予約管理</strong>
+        <div className="toolbar" style={{ marginTop: 8 }}>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <button className="btn sm" onClick={() => setResForm(emptyReservation(date))}>
+            ＋ 予約追加
+          </button>
+        </div>
+
+        {loadingRes ? (
+          <div className="empty">読み込み中…</div>
+        ) : view.length === 0 ? (
+          <div className="empty">この日の予約はありません</div>
+        ) : (
+          <div className="table-wrap">
+            <table className="grid">
+              <thead>
+                <tr>
+                  <th>時間</th>
+                  <th>お客様名</th>
+                  <th>電話番号</th>
+                  <th className="num">分</th>
+                  <th className="num">料金</th>
+                  <th>担当</th>
+                  <th>メモ</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {view.map((r) => (
+                  <tr key={r.id}>
+                    <td>{r.startTime}</td>
+                    <td>{r.customerName}</td>
+                    <td>{r.phone}</td>
+                    <td className="num">{r.minutes}</td>
+                    <td className="num">{Number(r.price || 0).toLocaleString("ja-JP")}</td>
+                    <td>{staffName(r.staffId)}</td>
+                    <td>{r.memo}</td>
+                    <td>
+                      <button className="btn sm ghost" onClick={() => setResForm({ ...r })}>
+                        編集
+                      </button>{" "}
+                      <button className="btn sm danger" onClick={() => delReservation(r.id)}>
+                        削除
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       {/* ---- シフト表（カレンダー形式） ---- */}
       <div className="card">
         <strong>シフト表</strong>
@@ -378,61 +436,6 @@ export default function Fortune() {
             );
           })}
         </div>
-      </div>
-
-      {/* ---- 予約管理 ---- */}
-      <div className="card">
-        <strong>予約管理</strong>
-        <div className="toolbar" style={{ marginTop: 8 }}>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          <button className="btn sm" onClick={() => setResForm(emptyReservation(date))}>
-            ＋ 予約追加
-          </button>
-        </div>
-
-        {loadingRes ? (
-          <div className="empty">読み込み中…</div>
-        ) : view.length === 0 ? (
-          <div className="empty">この日の予約はありません</div>
-        ) : (
-          <div className="table-wrap">
-            <table className="grid">
-              <thead>
-                <tr>
-                  <th>時間</th>
-                  <th>お客様名</th>
-                  <th>電話番号</th>
-                  <th className="num">分</th>
-                  <th className="num">料金</th>
-                  <th>担当</th>
-                  <th>メモ</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {view.map((r) => (
-                  <tr key={r.id}>
-                    <td>{r.startTime}</td>
-                    <td>{r.customerName}</td>
-                    <td>{r.phone}</td>
-                    <td className="num">{r.minutes}</td>
-                    <td className="num">{Number(r.price || 0).toLocaleString("ja-JP")}</td>
-                    <td>{staffName(r.staffId)}</td>
-                    <td>{r.memo}</td>
-                    <td>
-                      <button className="btn sm ghost" onClick={() => setResForm({ ...r })}>
-                        編集
-                      </button>{" "}
-                      <button className="btn sm danger" onClick={() => delReservation(r.id)}>
-                        削除
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
 
       {shiftForm && (
