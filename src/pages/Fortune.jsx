@@ -84,7 +84,7 @@ function ftbComputeOffDuty(ranges, dayStart, dayEnd) {
     if (r.start > cursor) segments.push({ start: cursor, end: r.start });
     cursor = Math.max(cursor, r.end);
   }
-  if (cursor < dayEnd) segments.push({ start: cursor, end: dayEnd });
+  // シフト終了後は残業の可能性があるため灰色にしない
   return segments;
 }
 

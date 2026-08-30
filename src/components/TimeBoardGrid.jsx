@@ -252,7 +252,10 @@ export default function TimeBoardGrid({
                 {apps.map((r) => {
                   const start = toMin(r.startTime);
                   const mins = totalMinutes(r.course) || 60;
-                  const color = courseColorHex(r.course?.color) || staffColor(r.staffId, staff);
+                  const color =
+                    courseColorHex(r.course?.optionColor) ||
+                    courseColorHex(r.course?.color) ||
+                    staffColor(r.staffId, staff);
                   const label = courseBoardLabel(r.course);
                   return (
                     <div
@@ -288,7 +291,10 @@ export default function TimeBoardGrid({
               {unassignedApps.map((r) => {
                 const start = toMin(r.startTime);
                 const mins = totalMinutes(r.course) || 60;
-                const color = courseColorHex(r.course?.color) || staffColor(r.staffId, staff);
+                const color =
+                  courseColorHex(r.course?.optionColor) ||
+                  courseColorHex(r.course?.color) ||
+                  staffColor(r.staffId, staff);
                 const label = courseBoardLabel(r.course);
                 return (
                   <div
