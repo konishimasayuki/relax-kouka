@@ -153,6 +153,20 @@ export function courseBoardLabel(course) {
   return courseLabel(course); // courseLabel側で既にオプションを含んでいる
 }
 
+// タイムボードはコースとオプションを別々の枠に分けて表示するため、
+// オプション部分を含まない「コース単体」のラベルが必要
+export function courseOnlyBoardLabel(course) {
+  if (!course) return "";
+  if (course.displayName?.trim()) return course.displayName.trim();
+  if (course.freeText?.trim()) return course.freeText.trim();
+  const parts = (course.parts || [])
+    .map((p) => COURSE_PARTS.find((x) => x.key === p)?.label)
+    .filter(Boolean)
+    .join("");
+  const base = `${course.name || ""}${course.minutes || ""}`;
+  return parts ? `${base}(${parts})` : base;
+}
+
 // コース＋オプションの合計施術時間（分）
 export function totalMinutes(course) {
   return Number(course?.minutes || 0) + Number(course?.optionMinutes || 0);
