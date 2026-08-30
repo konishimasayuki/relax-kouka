@@ -19,7 +19,9 @@ const emptyStaff = {
   gender: "女",
   birthday: "",
   facial: false,
-  pregnancy: false,
+  pregnancyFoot: false,
+  pregnancyHead: false,
+  pregnancyMassage: false,
   isAdmin: false,
   active: true,
   commissionRate: 45,
@@ -304,7 +306,9 @@ export default function Settings() {
                   <span className="pill gray">{s.gender}</span>{" "}
                   {s.isAdmin && <span className="pill">管理者</span>}{" "}
                   {s.facial && <span className="pill">F可</span>}{" "}
-                  {s.pregnancy && <span className="pill green">妊婦可</span>}
+                  {s.pregnancyFoot && <span className="pill green">妊婦：足つぼ可</span>}{" "}
+                  {s.pregnancyHead && <span className="pill green">妊婦：ヘッド可</span>}{" "}
+                  {s.pregnancyMassage && <span className="pill green">妊婦：もみほぐし可</span>}
                   <div className="muted" style={{ fontSize: 13 }}>
                     ID: {s.loginId} ／ PW: {s.password} ／ 生年月日: {s.birthday || "—"}
                   </div>
@@ -599,15 +603,40 @@ export default function Settings() {
                   />
                   フェイシャル可
                 </label>
+              </div>
+            </div>
+            <div className="field">
+              <label>妊婦対応可能な施術</label>
+              <div className="checks">
                 <label className="check">
                   <input
                     type="checkbox"
-                    checked={staffForm.pregnancy}
+                    checked={staffForm.pregnancyFoot}
                     onChange={(e) =>
-                      setStaffForm({ ...staffForm, pregnancy: e.target.checked })
+                      setStaffForm({ ...staffForm, pregnancyFoot: e.target.checked })
                     }
                   />
-                  妊婦対応可
+                  足つぼ
+                </label>
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={staffForm.pregnancyHead}
+                    onChange={(e) =>
+                      setStaffForm({ ...staffForm, pregnancyHead: e.target.checked })
+                    }
+                  />
+                  ヘッド
+                </label>
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={staffForm.pregnancyMassage}
+                    onChange={(e) =>
+                      setStaffForm({ ...staffForm, pregnancyMassage: e.target.checked })
+                    }
+                  />
+                  もみほぐし
                 </label>
               </div>
             </div>

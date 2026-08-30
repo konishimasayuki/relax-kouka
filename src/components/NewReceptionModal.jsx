@@ -24,10 +24,13 @@ function emptyForm(date, storeId) {
       optionColor: "",
     },
     nominate: false,
+    pregnancy: false,
+    femalePreferred: false,
     staffId: "",
     startTime: "",
     payment: "現金",
     paymentNote: "",
+    receptionist: "",
     room: "",
     phone: "",
     amount: 0,
@@ -256,14 +259,32 @@ export default function NewReceptionModal({
         </div>
 
         <div className="field">
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={form.nominate}
-              onChange={(e) => setForm({ ...form, nominate: e.target.checked })}
-            />
-            指名
-          </label>
+          <div className="checks">
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={form.nominate}
+                onChange={(e) => setForm({ ...form, nominate: e.target.checked })}
+              />
+              指名
+            </label>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={form.pregnancy}
+                onChange={(e) => setForm({ ...form, pregnancy: e.target.checked })}
+              />
+              妊婦
+            </label>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={form.femalePreferred}
+                onChange={(e) => setForm({ ...form, femalePreferred: e.target.checked })}
+              />
+              女性希望
+            </label>
+          </div>
         </div>
 
         <div className="row">
@@ -308,6 +329,14 @@ export default function NewReceptionModal({
               />
             </div>
           )}
+        </div>
+
+        <div className="field">
+          <label>受付者</label>
+          <input
+            value={form.receptionist}
+            onChange={(e) => setForm({ ...form, receptionist: e.target.value })}
+          />
         </div>
 
         <div className="row">
