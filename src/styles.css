@@ -650,7 +650,12 @@ table.grid th.num {
   );
   color: #33404f;
   font-size: 10px;
+  font-weight: 700;
   opacity: 0.9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .tb-block.break {
