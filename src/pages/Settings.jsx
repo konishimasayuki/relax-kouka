@@ -61,6 +61,9 @@ export default function Settings() {
         .catch(() => {});
       api.materialGenres().then(setGenreList).catch(() => {});
     }
+    if (tab === "materialGenre") {
+      api.materialGenres().then(setGenreList).catch(() => {});
+    }
   }, [tab]);
 
   const saveStore = async () => {
