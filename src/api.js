@@ -73,6 +73,9 @@ export const api = {
       { method: "DELETE" },
     ),
 
+  signageConfig: () => req("signageConfig"),
+  saveSignageConfig: (c) => req("signageConfig", { method: "POST", body: JSON.stringify(c) }),
+
   payrollRates: () => req("payrollRates"),
   savePayrollRate: (r) => req("payrollRates", { method: "POST", body: JSON.stringify(r) }),
 

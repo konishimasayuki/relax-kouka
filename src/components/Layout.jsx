@@ -12,12 +12,13 @@ const MENU = [
   { key: "customers", label: "顧客名簿", ico: "👥" },
   { key: "pricing", label: "料金", ico: "💰" },
   { key: "settings", label: "設定", ico: "⚙️" },
+  { key: "signageSettings", label: "サイネージ設定", ico: "📺" },
   { key: "debugRequests", label: "デバッグ依頼", ico: "🛠️" },
 ];
 
 export default function Layout({ page, setPage, role, staffSession, isAdminUser, onLogout, children }) {
   const [open, setOpen] = useState(false);
-  const RESTRICTED = ["dashboard", "pricing", "customers", "settings", "debugRequests"];
+  const RESTRICTED = ["dashboard", "pricing", "customers", "settings", "signageSettings", "debugRequests"];
   let menu = MENU;
   if (role === "fortune") {
     menu = MENU.filter((m) => m.key === "fortune");

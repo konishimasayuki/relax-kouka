@@ -13,6 +13,7 @@ import Pricing from "./pages/Pricing.jsx";
 import ReceptionList from "./pages/ReceptionList.jsx";
 import Settings from "./pages/Settings.jsx";
 import Shift from "./pages/Shift.jsx";
+import SignageSettings from "./pages/SignageSettings.jsx";
 import TimeBoard from "./pages/TimeBoard.jsx";
 import { clearSession, loadSession, saveSession } from "./session.js";
 
@@ -31,6 +32,7 @@ const PAGES = {
   customers: CustomerRoster,
   pricing: Pricing,
   settings: Settings,
+  signageSettings: SignageSettings,
   debugRequests: DebugRequests,
 };
 
@@ -88,7 +90,7 @@ export default function App() {
   }, [role, refreshMaster]);
 
   // 管理者権限のないスタッフは、ダッシュボード／料金／顧客名簿／設定／デバッグ依頼に入れない
-  const RESTRICTED_PAGES = ["dashboard", "pricing", "customers", "settings", "debugRequests"];
+  const RESTRICTED_PAGES = ["dashboard", "pricing", "customers", "settings", "signageSettings", "debugRequests"];
   useEffect(() => {
     if (role === "fortune" && page !== "fortune") {
       setPage("fortune");

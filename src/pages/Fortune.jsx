@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
-import { api, todayStr } from "../api.js";
+import { addDays, api, todayStr } from "../api.js";
 import TimeInput10 from "../components/TimeInput10.jsx";
 import { overlayClose } from "../modalUtils.js";
 
@@ -85,7 +85,8 @@ function ftbComputeOffDuty(ranges, dayStart, dayEnd) {
     if (r.start > cursor) segments.push({ start: cursor, end: r.start });
     cursor = Math.max(cursor, r.end);
   }
-  // シフト終了後は残業の可能性があるため灰色にしない
+  // 杉の泉はシフト終了後も灰色にする（マッサージ側の「残業対応」とは別運用）
+  if (cursor < dayEnd) segments.push({ start: cursor, end: dayEnd });
   return segments;
 }
 
@@ -100,6 +101,22 @@ export default function Fortune() {
   const [reservations, setReservations] = useState([]);
   const [resForm, setResForm] = useState(null);
   const [loadingRes, setLoadingRes] = useState(false);
+  const [weekCounts, setWeekCounts] = useState({}); // date -> 件数（今日から7日分）
+
+  const loadWeekCounts = async () => {
+    const today = todayStr();
+    const dates = Array.from({ length: 7 }, (_, i) => addDays(today, i));
+    const results = await Promise.all(dates.map((d) => api.fortuneReservations(d)));
+    const map = {};
+    dates.forEach((d, i) => {
+      map[d] = results[i].length;
+    });
+    setWeekCounts(map);
+  };
+
+  useEffect(() => {
+    loadWeekCounts();
+  }, []);
 
   const loadStaffAndShifts = async () => {
     const [sf, sh] = await Promise.all([api.fortuneStaff(), api.fortuneShifts()]);
@@ -222,6 +239,7 @@ export default function Fortune() {
     try {
       await api.saveFortuneReservation(resForm);
       await loadReservations();
+      await loadWeekCounts();
       setResForm(null);
     } catch (e) {
       alert(`保存失敗: ${e.message}`);
@@ -234,6 +252,7 @@ export default function Fortune() {
     if (!confirm("この予約を削除しますか？")) return;
     await api.deleteFortuneReservation(id, date);
     await loadReservations();
+    await loadWeekCounts();
   };
 
   return (
@@ -331,6 +350,23 @@ export default function Fortune() {
           <button className="btn sm" onClick={() => setResForm(emptyReservation(date))}>
             ＋ 予約追加
           </button>
+        </div>
+
+        <div className="week-count-row">
+          {Array.from({ length: 7 }, (_, i) => addDays(todayStr(), i)).map((d) => {
+            const dd = new Date(d);
+            const label = `${dd.getMonth() + 1}/${dd.getDate()}(${WEEK_LABEL[dd.getDay()]})`;
+            return (
+              <button
+                key={d}
+                className={`week-count-badge ${d === date ? "active" : ""}`}
+                onClick={() => setDate(d)}
+              >
+                <span>{label}</span>
+                <strong>{weekCounts[d] ?? 0}件</strong>
+              </button>
+            );
+          })}
         </div>
 
         {loadingRes ? (
