@@ -1,4 +1,5 @@
-const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+// 24時（終了時刻に残業などで24:00を指定できるように）も選べるようにする
+const HOURS = [...Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")), "24"];
 const MINUTES = ["00", "10", "20", "30", "40", "50"];
 
 /**

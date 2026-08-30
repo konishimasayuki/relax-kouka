@@ -18,7 +18,9 @@ function minToHHMM(min) {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
-// シフト範囲の「隙間」＝受付不可（灰色表示）の区間を求める
+// シフト範囲の「隙間」＝受付不可（灰色表示）の区間を求める。
+// 出勤前や複数シフトの間は灰色にするが、シフト終了後は残業の可能性があるため
+// 灰色にしない（末尾の区間は追加しない）。
 function computeOffDuty(ranges, dayStart, dayEnd) {
   if (!ranges.length) return [];
   const sorted = [...ranges]
@@ -33,7 +35,6 @@ function computeOffDuty(ranges, dayStart, dayEnd) {
     if (r.start > cursor) segments.push({ start: cursor, end: r.start });
     cursor = Math.max(cursor, r.end);
   }
-  if (cursor < dayEnd) segments.push({ start: cursor, end: dayEnd });
   return segments;
 }
 
@@ -106,33 +107,32 @@ export default function TimeBoardGrid({
         .filter((r) => r.staffId === staffId && r.startTime)
         .sort((a, b) => toMin(a.startTime) - toMin(b.startTime));
 
-      // 本店以外の場所は、次の予約が同じ場所で連続する場合を除き、
-      // 施術が終わったらすぐ本店へ戻って待機する（前後20分の移動が発生する）
-      const travels = [];
-      let prevLocation = homeBuilding;
-      for (let i = 0; i < apps.length; i++) {
-        const r = apps[i];
+      // 本店以外の場所は、同じ建物が連続する「滞在」ごとにまとめ、
+      // その滞在の前後にだけ移動20分を入れる（連続中は移動なし）。
+      // 状態を引き継ぐ方式ではなく、滞在単位でグループ化してから
+      // 判定するため、担当変更や時間変更の編集後も必ず正しく再計算される。
+      const stays = [];
+      for (const r of apps) {
         const bld = buildingOf(r.storeId);
-        const startMin = toMin(r.startTime);
-
-        if (homeBuilding && bld !== prevLocation) {
-          travels.push({ start: startMin - TRAVEL_MIN, end: startMin });
-        }
-
-        const endMin = startMin + totalMinutes(r.course);
-        const next = apps[i + 1];
-        const nextBld = next ? buildingOf(next.storeId) : null;
-
-        if (homeBuilding && bld !== homeBuilding) {
-          if (!next || nextBld !== bld) {
-            // このステイを終えたら本店へ戻って待機
-            travels.push({ start: endMin, end: endMin + TRAVEL_MIN });
-            prevLocation = homeBuilding;
-          } else {
-            prevLocation = bld; // 同じ場所が連続するので待機せず継続
-          }
+        const last = stays[stays.length - 1];
+        if (last && last.building === bld) {
+          last.apps.push(r);
         } else {
-          prevLocation = bld;
+          stays.push({ building: bld, apps: [r] });
+        }
+      }
+
+      const travels = [];
+      if (homeBuilding) {
+        for (const stay of stays) {
+          if (stay.building === homeBuilding) continue;
+          const first = stay.apps[0];
+          const last = stay.apps[stay.apps.length - 1];
+          const firstStart = toMin(first.startTime);
+          const lastStart = toMin(last.startTime);
+          const lastEnd = lastStart + totalMinutes(last.course);
+          travels.push({ start: firstStart - TRAVEL_MIN, end: firstStart });
+          travels.push({ start: lastEnd, end: lastEnd + TRAVEL_MIN });
         }
       }
 
