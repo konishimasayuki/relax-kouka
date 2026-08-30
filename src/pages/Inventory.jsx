@@ -2,10 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
 import { api, todayStr } from "../api.js";
 
-function emptyMaterial() {
-  return { id: "", name: "", unit: "個" };
-}
-
 function emptyOp(type, storeId) {
   return {
     id: "",
@@ -31,7 +27,6 @@ export default function Inventory() {
   const [materials, setMaterials] = useState([]);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [materialForm, setMaterialForm] = useState(null);
   const [opForm, setOpForm] = useState(null);
   const [busy, setBusy] = useState(false);
 
@@ -61,26 +56,6 @@ export default function Inventory() {
   }, [logs]);
 
   const activeStores = stores.filter((s) => s.active !== false);
-
-  const saveMaterial = async () => {
-    if (!materialForm.name.trim()) return alert("資材名を入力してください");
-    setBusy(true);
-    try {
-      await api.saveMaterial(materialForm);
-      await load();
-      setMaterialForm(null);
-    } catch (e) {
-      alert(`保存失敗: ${e.message}`);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const delMaterial = async (id) => {
-    if (!confirm("この資材を削除しますか？（履歴は残ります）")) return;
-    await api.deleteMaterial(id);
-    await load();
-  };
 
   const saveOp = async () => {
     if (!opForm.materialId) return alert("資材を選択してください");
@@ -165,8 +140,12 @@ export default function Inventory() {
       </div>
 
       <div className="toolbar">
-        <button className="btn sm" onClick={() => setMaterialForm(emptyMaterial())}>
-          ＋ 資材登録
+        <button
+          className="btn danger"
+          style={{ fontSize: 16, fontWeight: 700, padding: "12px 20px" }}
+          onClick={() => setOpForm(emptyOp("use", stores[0]?.id))}
+        >
+          − 使用
         </button>
         <button
           className="btn sm ghost"
@@ -174,15 +153,15 @@ export default function Inventory() {
         >
           ＋ 仕入れ
         </button>
-        <button className="btn sm ghost" onClick={() => setOpForm(emptyOp("use", stores[0]?.id))}>
-          − 使用
-        </button>
         <button
           className="btn sm ghost"
           onClick={() => setOpForm(emptyOp("transfer", stores[0]?.id))}
         >
           ⇄ 店舗間移動
         </button>
+      </div>
+      <div className="muted" style={{ fontSize: 12, marginTop: -6, marginBottom: 8 }}>
+        資材の新規登録・編集は「設定 → 資材登録」から行ってください。
       </div>
 
       {loading ? (
@@ -202,7 +181,6 @@ export default function Inventory() {
                   </th>
                 ))}
                 <th className="num">合計</th>
-                <th />
               </tr>
             </thead>
             <tbody>
@@ -220,16 +198,6 @@ export default function Inventory() {
                     ))}
                     <td className="num">
                       <strong>{total}</strong>
-                    </td>
-                    <td>
-                      <button className="btn sm ghost" onClick={() => setMaterialForm({ ...m })}>
-                        編集
-                      </button>{" "}
-                      {isAdminUser && (
-                        <button className="btn sm danger" onClick={() => delMaterial(m.id)}>
-                          削除
-                        </button>
-                      )}
                     </td>
                   </tr>
                 );
@@ -286,38 +254,6 @@ export default function Inventory() {
               ))}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {materialForm && (
-        <div className="modal-overlay" onClick={() => setMaterialForm(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>{materialForm.id ? "資材を編集" : "資材を追加"}</h3>
-            <div className="field">
-              <label>資材名</label>
-              <input
-                value={materialForm.name}
-                onChange={(e) => setMaterialForm({ ...materialForm, name: e.target.value })}
-                placeholder="例：オイル（大瓶）"
-              />
-            </div>
-            <div className="field">
-              <label>単位</label>
-              <input
-                value={materialForm.unit}
-                onChange={(e) => setMaterialForm({ ...materialForm, unit: e.target.value })}
-                placeholder="例：本 / 個 / 枚"
-              />
-            </div>
-            <div className="modal-actions">
-              <button className="btn gray" onClick={() => setMaterialForm(null)}>
-                キャンセル
-              </button>
-              <button className="btn" onClick={saveMaterial} disabled={busy}>
-                保存
-              </button>
-            </div>
-          </div>
         </div>
       )}
 

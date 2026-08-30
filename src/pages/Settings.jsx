@@ -25,6 +25,7 @@ const emptyStaff = {
   commissionRate: 45,
 };
 const emptyFortuneStaff = { id: "", name: "", loginId: "", password: "" };
+const emptyMaterial = { id: "", name: "", unit: "個" };
 
 export default function Settings() {
   const { stores, staff, refreshMaster, isAdminUser } = useApp();
@@ -33,10 +34,13 @@ export default function Settings() {
   const [staffForm, setStaffForm] = useState(null);
   const [fortuneStaffList, setFortuneStaffList] = useState([]);
   const [fortuneStaffForm, setFortuneStaffForm] = useState(null);
+  const [materialList, setMaterialList] = useState([]);
+  const [materialForm, setMaterialForm] = useState(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (tab === "fortuneStaff") api.fortuneStaff().then(setFortuneStaffList).catch(() => {});
+    if (tab === "material") api.materials().then(setMaterialList).catch(() => {});
   }, [tab]);
 
   const saveStore = async () => {
@@ -111,6 +115,28 @@ export default function Settings() {
     await reloadFortuneStaff();
   };
 
+  const reloadMaterials = () => api.materials().then(setMaterialList);
+
+  const saveMaterial = async () => {
+    if (!materialForm.name.trim()) return alert("資材名を入力してください");
+    setBusy(true);
+    try {
+      await api.saveMaterial(materialForm);
+      await reloadMaterials();
+      setMaterialForm(null);
+    } catch (e) {
+      alert(`保存失敗: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const delMaterial = async (id) => {
+    if (!confirm("この資材を削除しますか？（履歴は残ります）")) return;
+    await api.deleteMaterial(id);
+    await reloadMaterials();
+  };
+
   return (
     <div>
       <div className="page-head">
@@ -135,6 +161,12 @@ export default function Settings() {
           onClick={() => setTab("fortuneStaff")}
         >
           スタッフ登録（占い）
+        </button>
+        <button
+          className={tab === "material" ? "btn sm" : "btn sm gray"}
+          onClick={() => setTab("material")}
+        >
+          資材登録
         </button>
       </div>
 
@@ -230,6 +262,37 @@ export default function Settings() {
                 </button>
                 {isAdminUser && (
                   <button className="btn sm danger" onClick={() => delFortuneStaff(s.id)}>
+                    削除
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === "material" && (
+        <div>
+          <div className="toolbar">
+            <button className="btn sm" onClick={() => setMaterialForm({ ...emptyMaterial })}>
+              ＋ 資材を追加
+            </button>
+          </div>
+          {materialList.length === 0 && <div className="empty">資材が登録されていません</div>}
+          {materialList.map((m) => (
+            <div className="card" key={m.id}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <strong>{m.name}</strong>
+                  <div className="muted" style={{ fontSize: 13 }}>
+                    単位: {m.unit}
+                  </div>
+                </div>
+                <button className="btn sm ghost" onClick={() => setMaterialForm({ ...m })}>
+                  編集
+                </button>
+                {isAdminUser && (
+                  <button className="btn sm danger" onClick={() => delMaterial(m.id)}>
                     削除
                   </button>
                 )}
@@ -477,6 +540,38 @@ export default function Settings() {
                 キャンセル
               </button>
               <button className="btn" onClick={saveFortuneStaff} disabled={busy}>
+                保存
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {materialForm && (
+        <div className="modal-overlay" onClick={() => setMaterialForm(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>{materialForm.id ? "資材を編集" : "資材を追加"}</h3>
+            <div className="field">
+              <label>資材名</label>
+              <input
+                value={materialForm.name}
+                onChange={(e) => setMaterialForm({ ...materialForm, name: e.target.value })}
+                placeholder="例：オイル（大瓶）"
+              />
+            </div>
+            <div className="field">
+              <label>単位</label>
+              <input
+                value={materialForm.unit}
+                onChange={(e) => setMaterialForm({ ...materialForm, unit: e.target.value })}
+                placeholder="例：本 / 個 / 枚"
+              />
+            </div>
+            <div className="modal-actions">
+              <button className="btn gray" onClick={() => setMaterialForm(null)}>
+                キャンセル
+              </button>
+              <button className="btn" onClick={saveMaterial} disabled={busy}>
                 保存
               </button>
             </div>
