@@ -25,6 +25,7 @@ const TYPE_LABEL = {
 export default function Inventory() {
   const { stores, isAdminUser } = useApp();
   const [materials, setMaterials] = useState([]);
+  const [genres, setGenres] = useState([]);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [opForm, setOpForm] = useState(null);
@@ -33,8 +34,16 @@ export default function Inventory() {
   const load = async () => {
     setLoading(true);
     try {
-      const [mt, lg] = await Promise.all([api.materials(), api.stockLogs()]);
-      setMaterials(mt);
+      const [mt, gn, lg] = await Promise.all([
+        api.materials(),
+        api.materialGenres(),
+        api.stockLogs(),
+      ]);
+      const sorted = [...mt]
+        .map((m, i) => ({ ...m, _idx: i }))
+        .sort((a, b) => (a.order ?? a._idx) - (b.order ?? b._idx));
+      setMaterials(sorted);
+      setGenres(gn);
       setLogs(lg);
     } finally {
       setLoading(false);
@@ -56,6 +65,18 @@ export default function Inventory() {
   }, [logs]);
 
   const activeStores = stores.filter((s) => s.active !== false);
+
+  // ジャンルごとにグループ化（未設定は最後に「その他」としてまとめる）
+  const groupedMaterials = useMemo(() => {
+    const groups = genres.map((g) => ({
+      id: g.id,
+      name: g.name,
+      items: materials.filter((m) => m.genreId === g.id),
+    }));
+    const others = materials.filter((m) => !m.genreId || !genres.some((g) => g.id === m.genreId));
+    if (others.length) groups.push({ id: "__none__", name: "その他", items: others });
+    return groups.filter((g) => g.items.length > 0);
+  }, [materials, genres]);
 
   const saveOp = async () => {
     if (!opForm.materialId) return alert("資材を選択してください");
@@ -169,42 +190,60 @@ export default function Inventory() {
       ) : materials.length === 0 ? (
         <div className="empty">資材が登録されていません</div>
       ) : (
-        <div className="table-wrap">
-          <table className="grid">
-            <thead>
-              <tr>
-                <th>資材名</th>
-                <th>単位</th>
-                {activeStores.map((s) => (
-                  <th key={s.id} className="num">
-                    {s.name}
-                  </th>
-                ))}
-                <th className="num">合計</th>
-              </tr>
-            </thead>
-            <tbody>
-              {materials.map((m) => {
-                const perStore = stockMap[m.id] || {};
-                const total = activeStores.reduce((s, st) => s + (perStore[st.id] || 0), 0);
-                return (
-                  <tr key={m.id}>
-                    <td>{m.name}</td>
-                    <td>{m.unit}</td>
+        groupedMaterials.map((group) => (
+          <div key={group.id} style={{ marginBottom: 18 }}>
+            <div className="muted" style={{ fontWeight: 700, marginBottom: 6 }}>
+              {group.name}
+            </div>
+            <div className="table-wrap">
+              <table className="grid">
+                <thead>
+                  <tr>
+                    <th>資材名</th>
+                    <th>単位</th>
                     {activeStores.map((s) => (
-                      <td key={s.id} className="num">
-                        {perStore[s.id] || 0}
-                      </td>
+                      <th key={s.id} className="num">
+                        {s.name}
+                      </th>
                     ))}
-                    <td className="num">
-                      <strong>{total}</strong>
-                    </td>
+                    <th className="num">合計</th>
+                    <th />
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody>
+                  {group.items.map((m) => {
+                    const perStore = stockMap[m.id] || {};
+                    const total = activeStores.reduce((s, st) => s + (perStore[st.id] || 0), 0);
+                    return (
+                      <tr key={m.id}>
+                        <td>{m.name}</td>
+                        <td>{m.unit}</td>
+                        {activeStores.map((s) => (
+                          <td key={s.id} className="num">
+                            {perStore[s.id] || 0}
+                          </td>
+                        ))}
+                        <td className="num">
+                          <strong>{total}</strong>
+                        </td>
+                        <td>
+                          <button
+                            className="btn sm danger"
+                            onClick={() =>
+                              setOpForm({ ...emptyOp("use", stores[0]?.id), materialId: m.id })
+                            }
+                          >
+                            − 使用
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))
       )}
 
       <div className="page-head" style={{ marginTop: 20 }}>
@@ -273,10 +312,14 @@ export default function Inventory() {
                 onChange={(e) => setOpForm({ ...opForm, materialId: e.target.value })}
               >
                 <option value="">選択してください</option>
-                {materials.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}（{m.unit}）
-                  </option>
+                {groupedMaterials.map((group) => (
+                  <optgroup key={group.id} label={group.name}>
+                    {group.items.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}（{m.unit}）
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </div>

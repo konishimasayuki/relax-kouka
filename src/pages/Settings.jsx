@@ -25,7 +25,19 @@ const emptyStaff = {
   commissionRate: 45,
 };
 const emptyFortuneStaff = { id: "", name: "", loginId: "", password: "" };
-const emptyMaterial = { id: "", name: "", unit: "個" };
+const emptyMaterial = { id: "", name: "", unit: "個", order: 0, genreId: "" };
+const emptyGenre = { id: "", name: "" };
+
+// orderで並び替え。未設定（既存データ）は元の配列順を維持しつつ末尾扱いにする
+function sortMaterials(list) {
+  return [...list]
+    .map((m, i) => ({ ...m, _idx: i }))
+    .sort((a, b) => {
+      const ao = a.order ?? a._idx;
+      const bo = b.order ?? b._idx;
+      return ao - bo;
+    });
+}
 
 export default function Settings() {
   const { stores, staff, refreshMaster, isAdminUser } = useApp();
@@ -36,11 +48,19 @@ export default function Settings() {
   const [fortuneStaffForm, setFortuneStaffForm] = useState(null);
   const [materialList, setMaterialList] = useState([]);
   const [materialForm, setMaterialForm] = useState(null);
+  const [genreList, setGenreList] = useState([]);
+  const [genreForm, setGenreForm] = useState(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (tab === "fortuneStaff") api.fortuneStaff().then(setFortuneStaffList).catch(() => {});
-    if (tab === "material") api.materials().then(setMaterialList).catch(() => {});
+    if (tab === "material") {
+      api
+        .materials()
+        .then((list) => setMaterialList(sortMaterials(list)))
+        .catch(() => {});
+      api.materialGenres().then(setGenreList).catch(() => {});
+    }
   }, [tab]);
 
   const saveStore = async () => {
@@ -115,13 +135,23 @@ export default function Settings() {
     await reloadFortuneStaff();
   };
 
-  const reloadMaterials = () => api.materials().then(setMaterialList);
+  const reloadMaterials = () =>
+    api.materials().then((list) => setMaterialList(sortMaterials(list)));
 
   const saveMaterial = async () => {
     if (!materialForm.name.trim()) return alert("資材名を入力してください");
     setBusy(true);
     try {
-      await api.saveMaterial(materialForm);
+      // 新規追加時は末尾に並ぶよう、現在の最大orderの次の値を割り当てる
+      const payload = materialForm.id
+        ? materialForm
+        : {
+            ...materialForm,
+            order: materialList.length
+              ? Math.max(...materialList.map((m, i) => m.order ?? i)) + 1
+              : 0,
+          };
+      await api.saveMaterial(payload);
       await reloadMaterials();
       setMaterialForm(null);
     } catch (e) {
@@ -136,6 +166,52 @@ export default function Settings() {
     await api.deleteMaterial(id);
     await reloadMaterials();
   };
+
+  // 隣同士のorderを入れ替えて並び替える
+  const moveMaterial = async (index, direction) => {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= materialList.length) return;
+    const a = materialList[index];
+    const b = materialList[targetIndex];
+    const aOrder = a.order ?? index;
+    const bOrder = b.order ?? targetIndex;
+    setBusy(true);
+    try {
+      await Promise.all([
+        api.saveMaterial({ ...a, order: bOrder }),
+        api.saveMaterial({ ...b, order: aOrder }),
+      ]);
+      await reloadMaterials();
+    } catch (e) {
+      alert(`並び替え失敗: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const reloadGenres = () => api.materialGenres().then(setGenreList);
+
+  const saveGenre = async () => {
+    if (!genreForm.name.trim()) return alert("ジャンル名を入力してください");
+    setBusy(true);
+    try {
+      await api.saveMaterialGenre(genreForm);
+      await reloadGenres();
+      setGenreForm(null);
+    } catch (e) {
+      alert(`保存失敗: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const delGenre = async (id) => {
+    if (!confirm("このジャンルを削除しますか？（該当資材のジャンルは未設定に戻ります）")) return;
+    await api.deleteMaterialGenre(id);
+    await reloadGenres();
+  };
+
+  const genreName = (id) => genreList.find((g) => g.id === id)?.name || "";
 
   return (
     <div>
@@ -167,6 +243,12 @@ export default function Settings() {
           onClick={() => setTab("material")}
         >
           資材登録
+        </button>
+        <button
+          className={tab === "materialGenre" ? "btn sm" : "btn sm gray"}
+          onClick={() => setTab("materialGenre")}
+        >
+          資材ジャンル登録
         </button>
       </div>
 
@@ -279,11 +361,30 @@ export default function Settings() {
             </button>
           </div>
           {materialList.length === 0 && <div className="empty">資材が登録されていません</div>}
-          {materialList.map((m) => (
+          {materialList.map((m, i) => (
             <div className="card" key={m.id}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <button
+                    className="btn sm gray"
+                    style={{ padding: "2px 8px" }}
+                    onClick={() => moveMaterial(i, -1)}
+                    disabled={i === 0 || busy}
+                  >
+                    ▲
+                  </button>
+                  <button
+                    className="btn sm gray"
+                    style={{ padding: "2px 8px" }}
+                    onClick={() => moveMaterial(i, 1)}
+                    disabled={i === materialList.length - 1 || busy}
+                  >
+                    ▼
+                  </button>
+                </div>
                 <div style={{ flex: 1 }}>
-                  <strong>{m.name}</strong>
+                  <strong>{m.name}</strong>{" "}
+                  {m.genreId && <span className="pill">{genreName(m.genreId)}</span>}
                   <div className="muted" style={{ fontSize: 13 }}>
                     単位: {m.unit}
                   </div>
@@ -293,6 +394,34 @@ export default function Settings() {
                 </button>
                 {isAdminUser && (
                   <button className="btn sm danger" onClick={() => delMaterial(m.id)}>
+                    削除
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === "materialGenre" && (
+        <div>
+          <div className="toolbar">
+            <button className="btn sm" onClick={() => setGenreForm({ ...emptyGenre })}>
+              ＋ ジャンルを追加
+            </button>
+          </div>
+          {genreList.length === 0 && <div className="empty">ジャンルが登録されていません</div>}
+          {genreList.map((g) => (
+            <div className="card" key={g.id}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <strong>{g.name}</strong>
+                </div>
+                <button className="btn sm ghost" onClick={() => setGenreForm({ ...g })}>
+                  編集
+                </button>
+                {isAdminUser && (
+                  <button className="btn sm danger" onClick={() => delGenre(g.id)}>
                     削除
                   </button>
                 )}
@@ -567,11 +696,54 @@ export default function Settings() {
                 placeholder="例：本 / 個 / 枚"
               />
             </div>
+            <div className="field">
+              <label>ジャンル</label>
+              <select
+                value={materialForm.genreId || ""}
+                onChange={(e) => setMaterialForm({ ...materialForm, genreId: e.target.value })}
+              >
+                <option value="">未設定</option>
+                {genreList.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+              {genreList.length === 0 && (
+                <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                  ※ ジャンルは「資材ジャンル登録」タブで先に登録してください
+                </div>
+              )}
+            </div>
             <div className="modal-actions">
               <button className="btn gray" onClick={() => setMaterialForm(null)}>
                 キャンセル
               </button>
               <button className="btn" onClick={saveMaterial} disabled={busy}>
+                保存
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {genreForm && (
+        <div className="modal-overlay" onClick={() => setGenreForm(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>{genreForm.id ? "ジャンルを編集" : "ジャンルを追加"}</h3>
+            <div className="field">
+              <label>ジャンル名</label>
+              <input
+                value={genreForm.name}
+                onChange={(e) => setGenreForm({ ...genreForm, name: e.target.value })}
+                placeholder="例：オイル類 / タオル類 / 消耗品"
+              />
+            </div>
+            <div className="modal-actions">
+              <button className="btn gray" onClick={() => setGenreForm(null)}>
+                キャンセル
+              </button>
+              <button className="btn" onClick={saveGenre} disabled={busy}>
                 保存
               </button>
             </div>

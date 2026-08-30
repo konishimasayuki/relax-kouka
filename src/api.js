@@ -85,6 +85,11 @@ export const api = {
   saveMaterial: (m) => req("materials", { method: "POST", body: JSON.stringify(m) }),
   deleteMaterial: (id) => req(`materials?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
 
+  materialGenres: () => req("materialGenres"),
+  saveMaterialGenre: (g) => req("materialGenres", { method: "POST", body: JSON.stringify(g) }),
+  deleteMaterialGenre: (id) =>
+    req(`materialGenres?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
+
   stockLogs: () => req("stockLogs"),
   saveStockLog: (l) => req("stockLogs", { method: "POST", body: JSON.stringify(l) }),
   deleteStockLog: (id) => req(`stockLogs?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
