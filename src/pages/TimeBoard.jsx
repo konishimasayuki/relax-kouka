@@ -20,6 +20,7 @@ export default function TimeBoard() {
   const [newOpen, setNewOpen] = useState(false);
   const [breakModal, setBreakModal] = useState(null); // { editing } | null
   const [attendanceModal, setAttendanceModal] = useState(null); // staffId | null
+  const [editCheckInTime, setEditCheckInTime] = useState(""); // 出勤モーダル内での編集値
 
   const load = async () => {
     setLoading(true);
@@ -219,6 +220,27 @@ export default function TimeBoard() {
     }
   };
 
+  // 出勤時刻を手動で編集して保存（保存後は打刻時刻順に自動で並び替わる）
+  const updateCheckIn = async (staffId, time) => {
+    if (!time) return;
+    const existing = attendance.find((a) => a.staffId === staffId && a.date === date);
+    try {
+      const saved = await api.saveAttendance({
+        id: existing?.id || "",
+        staffId,
+        date,
+        checkInTime: time,
+      });
+      setAttendance((prev) => {
+        const exists = prev.some((x) => x.id === saved.id);
+        return exists ? prev.map((x) => (x.id === saved.id ? saved : x)) : [...prev, saved];
+      });
+      setAttendanceModal(null);
+    } catch (e) {
+      alert(`更新失敗: ${e.message}`);
+    }
+  };
+
   const handleMove = async (record, patch) => {
     const updated = { ...record, ...patch };
     setRecords((prev) => prev.map((x) => (x.id === record.id ? updated : x)));
@@ -281,7 +303,11 @@ export default function TimeBoard() {
           onSelect={setSel}
           onSelectBreak={(b) => setBreakModal({ editing: b })}
           onMove={handleMove}
-          onStaffClick={(staffId) => setAttendanceModal(staffId)}
+          onStaffClick={(staffId) => {
+            const rec = attendance.find((a) => a.staffId === staffId && a.date === date);
+            setEditCheckInTime(rec?.checkInTime || "");
+            setAttendanceModal(staffId);
+          }}
           hourWidth={80}
         />
       )}
@@ -466,8 +492,11 @@ export default function TimeBoard() {
               return rec?.checkInTime ? (
                 <>
                   <p className="muted" style={{ marginTop: -6 }}>
-                    出勤時刻：{rec.checkInTime}
+                    出勤時刻を編集できます
                   </p>
+                  <div className="modal-actions" style={{ justifyContent: "center", marginBottom: 4 }}>
+                    <TimeInput10 value={editCheckInTime} onChange={setEditCheckInTime} />
+                  </div>
                   <div className="modal-actions">
                     <button className="btn gray" onClick={() => setAttendanceModal(null)}>
                       閉じる
@@ -478,19 +507,36 @@ export default function TimeBoard() {
                     >
                       出勤取消
                     </button>
+                    <button
+                      className="btn"
+                      disabled={!editCheckInTime || editCheckInTime === rec.checkInTime}
+                      onClick={() => updateCheckIn(attendanceModal, editCheckInTime)}
+                    >
+                      更新
+                    </button>
                   </div>
                 </>
               ) : (
                 <>
                   <p className="muted" style={{ marginTop: -6 }}>
-                    まだ出勤していません
+                    まだ出勤していません（時刻を指定して出勤にすることもできます）
                   </p>
+                  <div className="modal-actions" style={{ justifyContent: "center", marginBottom: 4 }}>
+                    <TimeInput10 value={editCheckInTime} onChange={setEditCheckInTime} />
+                  </div>
                   <div className="modal-actions">
                     <button className="btn gray" onClick={() => setAttendanceModal(null)}>
                       キャンセル
                     </button>
                     <button className="btn" onClick={() => checkIn(attendanceModal)}>
-                      出勤
+                      現在時刻で出勤
+                    </button>
+                    <button
+                      className="btn"
+                      disabled={!editCheckInTime}
+                      onClick={() => updateCheckIn(attendanceModal, editCheckInTime)}
+                    >
+                      指定時刻で出勤
                     </button>
                   </div>
                 </>
