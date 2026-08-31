@@ -48,6 +48,13 @@ export const api = {
   saveBreak: (b) => req("breaks", { method: "POST", body: JSON.stringify(b) }),
   deleteBreak: (id) => req(`breaks?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
 
+  attendance: (date) => req(`attendance?date=${encodeURIComponent(date)}`),
+  saveAttendance: (a) => req("attendance", { method: "POST", body: JSON.stringify(a) }),
+  deleteAttendance: (id, date) =>
+    req(`attendance?id=${encodeURIComponent(id)}&date=${encodeURIComponent(date)}`, {
+      method: "DELETE",
+    }),
+
   menus: () => req("menus"),
   saveMenu: (m) => req("menus", { method: "POST", body: JSON.stringify(m) }),
   deleteMenu: (id) => req(`menus?id=${encodeURIComponent(id)}`, { method: "DELETE" }),

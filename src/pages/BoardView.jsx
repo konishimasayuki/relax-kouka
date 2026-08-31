@@ -16,6 +16,7 @@ export default function BoardView() {
   const [options, setOptions] = useState([]);
   const [records, setRecords] = useState([]);
   const [shifts, setShifts] = useState([]);
+  const [attendance, setAttendance] = useState([]);
   const [now, setNow] = useState(() => new Date());
   const [sel, setSel] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -33,13 +34,14 @@ export default function BoardView() {
     const tick = async () => {
       try {
         const date = todayStr();
-        const [st, sf, mn, op, rec, sh] = await Promise.all([
+        const [st, sf, mn, op, rec, sh, att] = await Promise.all([
           api.stores(),
           api.staff(),
           api.menus(),
           api.options(),
           api.reception(date),
           api.shifts(),
+          api.attendance(date),
         ]);
         if (!alive) return;
         setStores(st);
@@ -48,6 +50,7 @@ export default function BoardView() {
         setOptions(op);
         setRecords(rec);
         setShifts(sh);
+        setAttendance(att);
         setNow(new Date());
       } catch {
         // 表示専用画面のため、通信エラーは静かに無視して次回更新を待つ
@@ -192,11 +195,11 @@ export default function BoardView() {
             staff={staff}
             records={records}
             shifts={shifts}
+            attendance={attendance}
             date={date}
             onSelect={setSel}
             onMove={handleMove}
             hourWidth={140}
-            hideShiftLabel
           />
         </div>
       </div>

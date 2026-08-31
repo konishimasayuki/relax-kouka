@@ -56,12 +56,13 @@ export default function TimeBoardGrid({
   records,
   shifts,
   breaks = [],
+  attendance = [],
   date,
   onSelect,
   onSelectBreak,
   onMove,
+  onStaffClick,
   hourWidth = 56,
-  hideShiftLabel = false,
 }) {
   const HOUR_W = hourWidth;
   const MIN_W = HOUR_W / 60;
@@ -166,6 +167,14 @@ export default function TimeBoardGrid({
 
   const todaysShifts = useMemo(() => shifts.filter((s) => s.date === date), [shifts, date]);
   const todaysBreaks = useMemo(() => breaks.filter((b) => b.date === date), [breaks, date]);
+  // staffId -> 出勤打刻時刻("HH:MM")
+  const attendanceMap = useMemo(() => {
+    const map = {};
+    for (const a of attendance) {
+      if (a.date === date && a.checkInTime) map[a.staffId] = a.checkInTime;
+    }
+    return map;
+  }, [attendance, date]);
 
   // 出勤するスタッフ = 本日シフトのあるスタッフ ∪ 本日予約が入っているスタッフ（早い順）
   const staffIdsToday = useMemo(() => {
@@ -179,18 +188,21 @@ export default function TimeBoardGrid({
       const m = toMin(r.startTime);
       if (earliest[r.staffId] === undefined || m < earliest[r.staffId]) earliest[r.staffId] = m;
     }
+    // 並び順は「シフト開始時刻」が第一優先。
+    // 同じシフト開始時刻のメンバー内でのみ、実際の出勤打刻が早い人を上に持ってくる。
+    // （15時シフトの人が早く来ても、11時シフトの人を追い越すことはない）
     return Object.entries(earliest)
-      .sort((a, b) => a[1] - b[1])
+      .sort((a, b) => {
+        if (a[1] !== b[1]) return a[1] - b[1];
+        const aIn = attendanceMap[a[0]];
+        const bIn = attendanceMap[b[0]];
+        if (aIn && bIn) return toMin(aIn) - toMin(bIn);
+        if (aIn) return -1; // 出勤済みは未出勤より上
+        if (bIn) return 1;
+        return 0;
+      })
       .map(([id]) => id);
-  }, [todaysShifts, records]);
-
-  const shiftRangeLabel = (staffId) => {
-    const list = todaysShifts.filter((s) => s.staffId === staffId);
-    if (list.length === 0) return "";
-    const start = Math.min(...list.map((s) => toMin(s.start)));
-    const end = Math.max(...list.map((s) => toMin(s.end)));
-    return `${minToHHMM(start)}-${minToHHMM(end)}`;
-  };
+  }, [todaysShifts, records, attendanceMap]);
 
   // スタッフごとの予約一覧 ＋ 移動ブロック ＋ シフト外（灰色）区間
   const dataByStaff = useMemo(() => {
@@ -328,9 +340,13 @@ export default function TimeBoardGrid({
           };
           return (
             <div className="tb-row" key={staffId}>
-              <div className={`tb-bed ${hideShiftLabel ? "no-shift-label" : ""}`} style={{ width: STAFF_COL_W }}>
-                {!hideShiftLabel && (
-                  <span className="b-store">{shiftRangeLabel(staffId)}</span>
+              <div
+                className={`tb-bed ${attendanceMap[staffId] ? "" : "not-checked-in"}`}
+                style={{ width: STAFF_COL_W }}
+                onClick={() => onStaffClick?.(staffId)}
+              >
+                {attendanceMap[staffId] && (
+                  <span className="b-store">出勤 {attendanceMap[staffId]}</span>
                 )}
                 <span className="b-name">
                   <span

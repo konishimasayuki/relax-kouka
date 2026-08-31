@@ -13,23 +13,27 @@ export default function TimeBoard() {
   const [records, setRecords] = useState([]);
   const [shifts, setShifts] = useState([]);
   const [breaks, setBreaks] = useState([]);
+  const [attendance, setAttendance] = useState([]);
   const [loading, setLoading] = useState(false);
   const [sel, setSel] = useState(null);
   const [busy, setBusy] = useState(false);
   const [newOpen, setNewOpen] = useState(false);
   const [breakModal, setBreakModal] = useState(null); // { editing } | null
+  const [attendanceModal, setAttendanceModal] = useState(null); // staffId | null
 
   const load = async () => {
     setLoading(true);
     try {
-      const [rec, sh, br] = await Promise.all([
+      const [rec, sh, br, att] = await Promise.all([
         api.reception(date),
         api.shifts(),
         api.breaks(),
+        api.attendance(date),
       ]);
       setRecords(rec);
       setShifts(sh);
       setBreaks(br);
+      setAttendance(att);
     } finally {
       setLoading(false);
     }
@@ -124,6 +128,41 @@ export default function TimeBoard() {
   };
 
   // タイムボード上でドラッグして時間・担当を変更した時の確定処理
+  // 出勤打刻（現在時刻を記録）／打刻の取り消し
+  const checkIn = async (staffId) => {
+    const d = new Date();
+    const time = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    const existing = attendance.find((a) => a.staffId === staffId && a.date === date);
+    try {
+      const saved = await api.saveAttendance({
+        id: existing?.id || "",
+        staffId,
+        date,
+        checkInTime: time,
+      });
+      setAttendance((prev) => {
+        const exists = prev.some((x) => x.id === saved.id);
+        return exists ? prev.map((x) => (x.id === saved.id ? saved : x)) : [...prev, saved];
+      });
+      setAttendanceModal(null);
+    } catch (e) {
+      alert(`出勤登録失敗: ${e.message}`);
+    }
+  };
+
+  const cancelCheckIn = async (staffId) => {
+    const existing = attendance.find((a) => a.staffId === staffId && a.date === date);
+    if (!existing) return;
+    if (!confirm("出勤時刻を取り消しますか？")) return;
+    try {
+      await api.deleteAttendance(existing.id, date);
+      setAttendance((prev) => prev.filter((x) => x.id !== existing.id));
+      setAttendanceModal(null);
+    } catch (e) {
+      alert(`取消失敗: ${e.message}`);
+    }
+  };
+
   const handleMove = async (record, patch) => {
     const updated = { ...record, ...patch };
     setRecords((prev) => prev.map((x) => (x.id === record.id ? updated : x)));
@@ -181,10 +220,12 @@ export default function TimeBoard() {
           records={records}
           shifts={shifts}
           breaks={breaks}
+          attendance={attendance}
           date={date}
           onSelect={setSel}
           onSelectBreak={(b) => setBreakModal({ editing: b })}
           onMove={handleMove}
+          onStaffClick={(staffId) => setAttendanceModal(staffId)}
           hourWidth={80}
         />
       )}
@@ -313,6 +354,51 @@ export default function TimeBoard() {
             setNewOpen(false);
           }}
         />
+      )}
+
+      {attendanceModal && (
+        <div className="modal-overlay" onClick={overlayClose(() => setAttendanceModal(null))}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>{staff.find((s) => s.id === attendanceModal)?.name}</h3>
+            {(() => {
+              const rec = attendance.find(
+                (a) => a.staffId === attendanceModal && a.date === date,
+              );
+              return rec?.checkInTime ? (
+                <>
+                  <p className="muted" style={{ marginTop: -6 }}>
+                    出勤時刻：{rec.checkInTime}
+                  </p>
+                  <div className="modal-actions">
+                    <button className="btn gray" onClick={() => setAttendanceModal(null)}>
+                      閉じる
+                    </button>
+                    <button
+                      className="btn danger"
+                      onClick={() => cancelCheckIn(attendanceModal)}
+                    >
+                      出勤取消
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="muted" style={{ marginTop: -6 }}>
+                    まだ出勤していません
+                  </p>
+                  <div className="modal-actions">
+                    <button className="btn gray" onClick={() => setAttendanceModal(null)}>
+                      キャンセル
+                    </button>
+                    <button className="btn" onClick={() => checkIn(attendanceModal)}>
+                      出勤
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </div>
       )}
 
       {breakModal && (

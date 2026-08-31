@@ -875,12 +875,18 @@ table.grid th.num {
 }
 
 /* 出勤時間ラベルを非表示にした分、スタッフ名を拡大表示する（別ウィンドウ表示） */
-.tb-bed.no-shift-label {
-  justify-content: center;
+/* 未出勤（出勤打刻がまだ）のスタッフは名前欄を灰色にする */
+.tb-bed.not-checked-in {
+  background: #e2e6ea;
+  color: #7a8590;
 }
 
-.tb-bed.no-shift-label .b-name {
-  font-size: 16px;
+.tb-bed.not-checked-in .b-name {
+  color: #7a8590;
+}
+
+.tb-bed {
+  cursor: pointer;
 }
 
 /* 別ウィンドウ（サイネージ）表示：文字を1.2倍に拡大 */
