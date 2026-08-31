@@ -8,7 +8,7 @@ import TimeInput10 from "../components/TimeInput10.jsx";
 import { overlayClose } from "../modalUtils.js";
 
 export default function TimeBoard() {
-  const { stores, staff, menus, options, coupons, ready } = useApp();
+  const { stores, staff, menus, options, coupons, extensions, ready } = useApp();
   const [date, setDate] = useState(todayStr());
   const [records, setRecords] = useState([]);
   const [shifts, setShifts] = useState([]);
@@ -58,59 +58,115 @@ export default function TimeBoard() {
 
   const menusFor = (r) => sortByOrder(menus.filter((m) => m.storeId === r?.storeId));
   const optionsFor = (r) => sortByOrder(options.filter((o) => o.storeId === r?.storeId));
+  const extensionsFor = (r) => sortByOrder(extensions.filter((e) => e.storeId === r?.storeId));
 
   const updateSel = (patch) => setSel((prev) => ({ ...prev, ...patch }));
 
+  // コース料金＋オプション料金＋延長料金－クーポン割引額（0円未満にはしない）
+  const computeAmount = (menuId, optionId, couponId, extensionId) => {
+    const menuPrice = menus.find((m) => m.id === menuId)?.price || 0;
+    const optionPrice = options.find((o) => o.id === optionId)?.price || 0;
+    const extensionPrice = extensions.find((e) => e.id === extensionId)?.price || 0;
+    const discount = coupons.find((c) => c.id === couponId)?.discountAmount || 0;
+    return Math.max(0, menuPrice + optionPrice + extensionPrice - discount);
+  };
+
   const selectMenu = (menuId) => {
     const m = menusFor(sel).find((x) => x.id === menuId);
-    const optionPrice = options.find((o) => o.id === sel.course?.optionId)?.price || 0;
+    const cur = sel.course || {};
     if (!m) {
       updateSel({
-        course: { ...sel.course, menuId: "", name: "", displayName: "", minutes: "", color: "" },
-        amount: optionPrice,
+        course: { ...cur, menuId: "", name: "", displayName: "", minutes: "", color: "" },
+        amount: computeAmount("", cur.optionId, cur.couponId, cur.extensionId),
       });
       return;
     }
     updateSel({
       course: {
-        ...sel.course,
+        ...cur,
         menuId: m.id,
         name: m.name,
         displayName: m.displayName,
         minutes: m.minutes,
         color: m.color,
       },
-      amount: m.price + optionPrice,
+      amount: computeAmount(m.id, cur.optionId, cur.couponId, cur.extensionId),
     });
   };
 
   const selectOption = (optionId) => {
     const o = optionsFor(sel).find((x) => x.id === optionId);
-    const menuPrice = menus.find((m) => m.id === sel.course?.menuId)?.price || 0;
+    const cur = sel.course || {};
     if (!o) {
       updateSel({
         course: {
-          ...sel.course,
+          ...cur,
           optionId: "",
           optionName: "",
           optionDisplayName: "",
           optionMinutes: "",
           optionColor: "",
         },
-        amount: menuPrice,
+        amount: computeAmount(cur.menuId, "", cur.couponId, cur.extensionId),
       });
       return;
     }
     updateSel({
       course: {
-        ...sel.course,
+        ...cur,
         optionId: o.id,
         optionName: o.name,
         optionDisplayName: o.displayName,
         optionMinutes: o.minutes,
         optionColor: o.color,
       },
-      amount: menuPrice + o.price,
+      amount: computeAmount(cur.menuId, o.id, cur.couponId, cur.extensionId),
+    });
+  };
+
+  const selectCoupon = (couponId) => {
+    const cp = coupons.find((x) => x.id === couponId);
+    const cur = sel.course || {};
+    if (!cp) {
+      updateSel({
+        course: { ...cur, couponId: "", couponName: "", couponDiscount: 0 },
+        amount: computeAmount(cur.menuId, cur.optionId, "", cur.extensionId),
+      });
+      return;
+    }
+    updateSel({
+      course: { ...cur, couponId: cp.id, couponName: cp.name, couponDiscount: cp.discountAmount },
+      amount: computeAmount(cur.menuId, cur.optionId, cp.id, cur.extensionId),
+    });
+  };
+
+  const selectExtension = (extensionId) => {
+    const ex = extensionsFor(sel).find((x) => x.id === extensionId);
+    const cur = sel.course || {};
+    if (!ex) {
+      updateSel({
+        course: {
+          ...cur,
+          extensionId: "",
+          extensionName: "",
+          extensionDisplayName: "",
+          extensionMinutes: "",
+          extensionColor: "",
+        },
+        amount: computeAmount(cur.menuId, cur.optionId, cur.couponId, ""),
+      });
+      return;
+    }
+    updateSel({
+      course: {
+        ...cur,
+        extensionId: ex.id,
+        extensionName: ex.name,
+        extensionDisplayName: ex.displayName,
+        extensionMinutes: ex.minutes,
+        extensionColor: ex.color,
+      },
+      amount: computeAmount(cur.menuId, cur.optionId, cur.couponId, ex.id),
     });
   };
 
@@ -265,6 +321,48 @@ export default function TimeBoard() {
               </select>
             </div>
 
+            <div className="field">
+              <label>クーポン</label>
+              {coupons.length === 0 ? (
+                <div className="muted" style={{ fontSize: 13 }}>
+                  クーポンは登録されていません
+                </div>
+              ) : (
+                <select
+                  value={sel.course?.couponId || ""}
+                  onChange={(e) => selectCoupon(e.target.value)}
+                >
+                  <option value="">なし</option>
+                  {coupons.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}（-{Number(c.discountAmount || 0).toLocaleString("ja-JP")}円）
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div className="field">
+              <label>延長</label>
+              {extensionsFor(sel).length === 0 ? (
+                <div className="muted" style={{ fontSize: 13 }}>
+                  この店舗の延長料金は登録されていません
+                </div>
+              ) : (
+                <select
+                  value={sel.course?.extensionId || ""}
+                  onChange={(e) => selectExtension(e.target.value)}
+                >
+                  <option value="">なし</option>
+                  {extensionsFor(sel).map((e) => (
+                    <option key={e.id} value={e.id}>
+                      {e.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
             <div className="row">
               <div className="field">
                 <label>担当</label>
@@ -347,6 +445,7 @@ export default function TimeBoard() {
           menus={menus}
           options={options}
           coupons={coupons}
+          extensions={extensions}
           workingStaffIds={workingStaffIds}
           onClose={() => setNewOpen(false)}
           onSaved={(saved) => {

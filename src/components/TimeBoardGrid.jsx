@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import {
   courseColorHex,
   courseOnlyBoardLabel,
+  extensionLabel,
   optionLabel,
   staffColor,
   staffDisplayName,
@@ -397,8 +398,11 @@ export default function TimeBoardGrid({
                   const courseColor =
                     courseColorHex(r.course?.color) || staffColor(r.staffId, staff);
                   const optionColor = courseColorHex(r.course?.optionColor) || courseColor;
+                  const extensionMins = Number(r.course?.extensionMinutes || 0);
+                  const extensionColor = courseColorHex(r.course?.extensionColor) || courseColor;
                   const courseLbl = courseOnlyBoardLabel(r.course);
                   const optionLbl = optionLabel(r.course);
+                  const extensionLbl = extensionLabel(r.course);
                   const dragStyle = dragTransform(r.id);
                   return [
                     <div
@@ -429,6 +433,26 @@ export default function TimeBoardGrid({
                         <div className="bl-course">{optionLbl}</div>
                       </div>
                     ),
+                    extensionMins > 0 && (
+                      <div
+                        className="tb-block"
+                        key={`${r.id}-e`}
+                        style={{
+                          ...blockStyle(
+                            start + courseMins + optionMins,
+                            extensionMins,
+                            extensionColor,
+                          ),
+                          ...dragStyle,
+                        }}
+                        onPointerDown={(e) => handleBlockPointerDown(e, r)}
+                        onPointerMove={handleBlockPointerMove}
+                        onPointerUp={handleBlockPointerUp}
+                        onPointerCancel={handleBlockPointerUp}
+                      >
+                        <div className="bl-course">{extensionLbl}</div>
+                      </div>
+                    ),
                   ];
                 })}
               </div>
@@ -457,8 +481,11 @@ export default function TimeBoardGrid({
                 const courseColor =
                   courseColorHex(r.course?.color) || staffColor(r.staffId, staff);
                 const optionColor = courseColorHex(r.course?.optionColor) || courseColor;
+                const extensionMins = Number(r.course?.extensionMinutes || 0);
+                const extensionColor = courseColorHex(r.course?.extensionColor) || courseColor;
                 const courseLbl = courseOnlyBoardLabel(r.course);
                 const optionLbl = optionLabel(r.course);
+                const extensionLbl = extensionLabel(r.course);
                 const lane = unassignedLaneOf.map.get(r.id) || 0;
                 const laneStyle = { top: lane * ROW_H + 4, height: ROW_H - 8 };
                 const dragStyle = dragTransform(r.id);
@@ -494,6 +521,27 @@ export default function TimeBoardGrid({
                       onPointerCancel={handleBlockPointerUp}
                     >
                       <div className="bl-course">{optionLbl}</div>
+                    </div>
+                  ),
+                  extensionMins > 0 && (
+                    <div
+                      className="tb-block"
+                      key={`${r.id}-e`}
+                      style={{
+                        ...blockStyle(
+                          start + courseMins + optionMins,
+                          extensionMins,
+                          extensionColor,
+                        ),
+                        ...laneStyle,
+                        ...dragStyle,
+                      }}
+                      onPointerDown={(e) => handleBlockPointerDown(e, r)}
+                      onPointerMove={handleBlockPointerMove}
+                      onPointerUp={handleBlockPointerUp}
+                      onPointerCancel={handleBlockPointerUp}
+                    >
+                      <div className="bl-course">{extensionLbl}</div>
                     </div>
                   ),
                 ];

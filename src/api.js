@@ -63,6 +63,10 @@ export const api = {
   saveOption: (o) => req("options", { method: "POST", body: JSON.stringify(o) }),
   deleteOption: (id) => req(`options?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
 
+  extensions: () => req("extensions"),
+  saveExtension: (e) => req("extensions", { method: "POST", body: JSON.stringify(e) }),
+  deleteExtension: (id) => req(`extensions?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
+
   coupons: () => req("coupons"),
   saveCoupon: (c) => req("coupons", { method: "POST", body: JSON.stringify(c) }),
   deleteCoupon: (id) => req(`coupons?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
@@ -153,6 +157,12 @@ export function optionLabel(course) {
   return course.optionDisplayName?.trim() || course.optionName;
 }
 
+// コースに紐づく延長の表示名（未選択なら空文字）
+export function extensionLabel(course) {
+  if (!course?.extensionName) return "";
+  return course.extensionDisplayName?.trim() || course.extensionName;
+}
+
 export function courseLabel(course) {
   if (!course) return "";
   let base;
@@ -196,7 +206,11 @@ export function courseOnlyBoardLabel(course) {
 
 // コース＋オプションの合計施術時間（分）
 export function totalMinutes(course) {
-  return Number(course?.minutes || 0) + Number(course?.optionMinutes || 0);
+  return (
+    Number(course?.minutes || 0) +
+    Number(course?.optionMinutes || 0) +
+    Number(course?.extensionMinutes || 0)
+  );
 }
 
 // ---- 日付ユーティリティ ----

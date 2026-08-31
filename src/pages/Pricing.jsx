@@ -16,6 +16,19 @@ function emptyMenu(storeId) {
   };
 }
 
+function emptyExtension(storeId) {
+  return {
+    id: "",
+    storeId: storeId || "",
+    name: "",
+    displayName: "",
+    minutes: 10,
+    price: 0,
+    color: "blue",
+    order: 0,
+  };
+}
+
 function emptyOption(storeId) {
   return {
     id: "",
@@ -30,11 +43,12 @@ function emptyOption(storeId) {
 }
 
 export default function Pricing() {
-  const { stores, menus, options, refreshMaster, isAdminUser } = useApp();
+  const { stores, menus, options, extensions, refreshMaster, isAdminUser } = useApp();
   const [storeId, setStoreId] = useState("");
   const [tab, setTab] = useState("course");
   const [form, setForm] = useState(null);
   const [optionForm, setOptionForm] = useState(null);
+  const [extensionForm, setExtensionForm] = useState(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -43,6 +57,7 @@ export default function Pricing() {
 
   const list = sortByOrder(menus.filter((m) => m.storeId === storeId));
   const optionList = sortByOrder(options.filter((o) => o.storeId === storeId));
+  const extensionList = sortByOrder(extensions.filter((e) => e.storeId === storeId));
 
   // 隣同士のorderを入れ替えて並び替える
   const moveMenu = async (index, dir) => {
@@ -81,6 +96,53 @@ export default function Pricing() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const moveExtension = async (index, dir) => {
+    const target = index + dir;
+    if (target < 0 || target >= extensionList.length) return;
+    const a = extensionList[index];
+    const b = extensionList[target];
+    setBusy(true);
+    try {
+      await Promise.all([
+        api.saveExtension({ ...a, order: b.order ?? target }),
+        api.saveExtension({ ...b, order: a.order ?? index }),
+      ]);
+      await refreshMaster();
+    } catch (e) {
+      alert(`並び替え失敗: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const saveExtension = async () => {
+    if (!extensionForm.name.trim()) return alert("延長名を入力してください");
+    setBusy(true);
+    try {
+      const payload = extensionForm.id
+        ? extensionForm
+        : {
+            ...extensionForm,
+            order: extensionList.length
+              ? Math.max(...extensionList.map((e, i) => e.order ?? i)) + 1
+              : 0,
+          };
+      await api.saveExtension(payload);
+      await refreshMaster();
+      setExtensionForm(null);
+    } catch (e) {
+      alert(`保存失敗: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const delExtension = async (id) => {
+    if (!confirm("この延長料金を削除しますか？")) return;
+    await api.deleteExtension(id);
+    await refreshMaster();
   };
 
   const save = async () => {
@@ -162,6 +224,12 @@ export default function Pricing() {
           onClick={() => setTab("option")}
         >
           オプション
+        </button>
+        <button
+          className={tab === "extension" ? "btn sm" : "btn sm gray"}
+          onClick={() => setTab("extension")}
+        >
+          延長
         </button>
       </div>
 
@@ -316,6 +384,85 @@ export default function Pricing() {
           )}
           <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
             ※ オプションは受付登録時にコースへ追加でき、時間・料金がコースに合算されます（例：40分コース＋20分オプション＝60分施術）。
+          </div>
+        </div>
+      )}
+
+      {tab === "extension" && (
+        <div>
+          <div className="toolbar">
+            <button className="btn sm" onClick={() => setExtensionForm(emptyExtension(storeId))}>
+              ＋ 延長を追加
+            </button>
+          </div>
+
+          {extensionList.length === 0 ? (
+            <div className="empty">この店舗の延長料金がまだ登録されていません</div>
+          ) : (
+            <div className="table-wrap">
+              <table className="grid">
+                <thead>
+                  <tr>
+                    <th>色</th>
+                    <th>延長名</th>
+                    <th>表示名</th>
+                    <th className="num">時間</th>
+                    <th className="num">料金</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {extensionList.map((e, i) => (
+                    <tr key={e.id}>
+                      <td>
+                        <span
+                          style={{
+                            display: "inline-block",
+                            width: 14,
+                            height: 14,
+                            borderRadius: 4,
+                            background: colorOf(e.color)?.hex || "#999",
+                          }}
+                        />
+                      </td>
+                      <td>{e.name}</td>
+                      <td>{e.displayName || <span className="muted">—</span>}</td>
+                      <td className="num">{e.minutes}分</td>
+                      <td className="num">{yen(e.price)}</td>
+                      <td>
+                        <button
+                          className="btn sm gray"
+                          style={{ padding: "2px 8px" }}
+                          onClick={() => moveExtension(i, -1)}
+                          disabled={i === 0 || busy}
+                        >
+                          ▲
+                        </button>{" "}
+                        <button
+                          className="btn sm gray"
+                          style={{ padding: "2px 8px" }}
+                          onClick={() => moveExtension(i, 1)}
+                          disabled={i === extensionList.length - 1 || busy}
+                        >
+                          ▼
+                        </button>{" "}
+                        <button className="btn sm ghost" onClick={() => setExtensionForm({ ...e })}>
+                          編集
+                        </button>{" "}
+                        {isAdminUser && (
+                          <button className="btn sm danger" onClick={() => delExtension(e.id)}>
+                            削除
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+            ※ 延長は受付登録時にコースへ追加でき、時間・料金がコースに合算されます。
           </div>
         </div>
       )}
@@ -513,6 +660,112 @@ export default function Pricing() {
                 キャンセル
               </button>
               <button className="btn" onClick={saveOption} disabled={busy}>
+                保存
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {extensionForm && (
+        <div className="modal-overlay" onClick={overlayClose(() => setExtensionForm(null))}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>{extensionForm.id ? "延長を編集" : "延長を追加"}</h3>
+            <div className="field">
+              <label>店舗</label>
+              <select
+                value={extensionForm.storeId}
+                onChange={(e) => setExtensionForm({ ...extensionForm, storeId: e.target.value })}
+              >
+                {stores.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label>延長名</label>
+              <input
+                value={extensionForm.name}
+                onChange={(e) => setExtensionForm({ ...extensionForm, name: e.target.value })}
+                placeholder="例：10分延長"
+              />
+            </div>
+            <div className="field">
+              <label>表示名（タイムボードに表示する名前）</label>
+              <input
+                value={extensionForm.displayName}
+                onChange={(e) =>
+                  setExtensionForm({ ...extensionForm, displayName: e.target.value })
+                }
+                placeholder="例：延長（空欄なら延長名を表示）"
+              />
+            </div>
+            <div className="row">
+              <div className="field">
+                <label>時間（分）</label>
+                <input
+                  type="number"
+                  value={extensionForm.minutes}
+                  onChange={(e) =>
+                    setExtensionForm({ ...extensionForm, minutes: Number(e.target.value) })
+                  }
+                />
+              </div>
+              <div className="field">
+                <label>料金</label>
+                <input
+                  type="number"
+                  value={extensionForm.price}
+                  onChange={(e) =>
+                    setExtensionForm({ ...extensionForm, price: Number(e.target.value) })
+                  }
+                />
+              </div>
+            </div>
+            <div className="field">
+              <label>色（タイムボードの表示色）</label>
+              <div className="checks">
+                {COURSE_COLORS.map((c) => (
+                  <label
+                    className="check"
+                    key={c.key}
+                    style={{
+                      border:
+                        extensionForm.color === c.key
+                          ? `2px solid ${c.hex}`
+                          : "1px solid var(--border)",
+                      borderRadius: 8,
+                      padding: "4px 10px",
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="extension-color"
+                      checked={extensionForm.color === c.key}
+                      onChange={() => setExtensionForm({ ...extensionForm, color: c.key })}
+                    />
+                    <span
+                      style={{
+                        display: "inline-block",
+                        width: 12,
+                        height: 12,
+                        borderRadius: 3,
+                        background: c.hex,
+                        marginRight: 2,
+                      }}
+                    />
+                    {c.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="btn gray" onClick={() => setExtensionForm(null)}>
+                キャンセル
+              </button>
+              <button className="btn" onClick={saveExtension} disabled={busy}>
                 保存
               </button>
             </div>

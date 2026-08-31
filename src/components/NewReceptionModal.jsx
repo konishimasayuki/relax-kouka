@@ -26,6 +26,11 @@ function emptyForm(date, storeId) {
       couponId: "",
       couponName: "",
       couponDiscount: 0,
+      extensionId: "",
+      extensionName: "",
+      extensionDisplayName: "",
+      extensionMinutes: "",
+      extensionColor: "",
     },
     nominate: false,
     pregnancy: false,
@@ -43,7 +48,7 @@ function emptyForm(date, storeId) {
 
 /**
  * 新規受付登録モーダル。
- * props: date, stores, staff, menus, options, coupons, workingStaffIds(Set), onClose(), onSaved(record)
+ * props: date, stores, staff, menus, options, coupons, extensions, workingStaffIds(Set), onClose(), onSaved(record)
  */
 export default function NewReceptionModal({
   date,
@@ -52,6 +57,7 @@ export default function NewReceptionModal({
   menus,
   options,
   coupons = [],
+  extensions = [],
   workingStaffIds,
   onClose,
   onSaved,
@@ -61,14 +67,16 @@ export default function NewReceptionModal({
 
   const menusFor = () => sortByOrder(menus.filter((m) => m.storeId === form.storeId));
   const optionsFor = () => sortByOrder(options.filter((o) => o.storeId === form.storeId));
+  const extensionsFor = () => sortByOrder(extensions.filter((e) => e.storeId === form.storeId));
   const assignable = staff.filter((s) => s.active && workingStaffIds.has(s.id));
 
   // コース料金＋オプション料金－クーポン割引額（0円未満にはしない）
-  const computeAmount = (menuId, optionId, couponId) => {
+  const computeAmount = (menuId, optionId, couponId, extensionId) => {
     const menuPrice = menus.find((m) => m.id === menuId)?.price || 0;
     const optionPrice = options.find((o) => o.id === optionId)?.price || 0;
+    const extensionPrice = extensions.find((e) => e.id === extensionId)?.price || 0;
     const discount = coupons.find((c) => c.id === couponId)?.discountAmount || 0;
-    return Math.max(0, menuPrice + optionPrice - discount);
+    return Math.max(0, menuPrice + optionPrice + extensionPrice - discount);
   };
 
   const changeStore = (storeId) => {
@@ -90,6 +98,11 @@ export default function NewReceptionModal({
         couponId: "",
         couponName: "",
         couponDiscount: 0,
+        extensionId: "",
+        extensionName: "",
+        extensionDisplayName: "",
+        extensionMinutes: "",
+        extensionColor: "",
       },
     });
   };
@@ -100,7 +113,7 @@ export default function NewReceptionModal({
       setForm({
         ...form,
         course: { ...form.course, menuId: "", name: "", displayName: "", minutes: "", color: "" },
-        amount: computeAmount("", form.course.optionId, form.course.couponId),
+        amount: computeAmount("", form.course.optionId, form.course.couponId, form.course.extensionId),
       });
       return;
     }
@@ -114,7 +127,7 @@ export default function NewReceptionModal({
         minutes: m.minutes,
         color: m.color,
       },
-      amount: computeAmount(m.id, form.course.optionId, form.course.couponId),
+      amount: computeAmount(m.id, form.course.optionId, form.course.couponId, form.course.extensionId),
     });
   };
 
@@ -131,7 +144,7 @@ export default function NewReceptionModal({
           optionMinutes: "",
           optionColor: "",
         },
-        amount: computeAmount(form.course.menuId, "", form.course.couponId),
+        amount: computeAmount(form.course.menuId, "", form.course.couponId, form.course.extensionId),
       });
       return;
     }
@@ -145,7 +158,7 @@ export default function NewReceptionModal({
         optionMinutes: o.minutes,
         optionColor: o.color,
       },
-      amount: computeAmount(form.course.menuId, o.id, form.course.couponId),
+      amount: computeAmount(form.course.menuId, o.id, form.course.couponId, form.course.extensionId),
     });
   };
 
@@ -155,14 +168,45 @@ export default function NewReceptionModal({
       setForm({
         ...form,
         course: { ...form.course, couponId: "", couponName: "", couponDiscount: 0 },
-        amount: computeAmount(form.course.menuId, form.course.optionId, ""),
+        amount: computeAmount(form.course.menuId, form.course.optionId, "", form.course.extensionId),
       });
       return;
     }
     setForm({
       ...form,
       course: { ...form.course, couponId: c.id, couponName: c.name, couponDiscount: c.discountAmount },
-      amount: computeAmount(form.course.menuId, form.course.optionId, c.id),
+      amount: computeAmount(form.course.menuId, form.course.optionId, c.id, form.course.extensionId),
+    });
+  };
+
+  const selectExtension = (extensionId) => {
+    const e = extensionsFor().find((x) => x.id === extensionId);
+    if (!e) {
+      setForm({
+        ...form,
+        course: {
+          ...form.course,
+          extensionId: "",
+          extensionName: "",
+          extensionDisplayName: "",
+          extensionMinutes: "",
+          extensionColor: "",
+        },
+        amount: computeAmount(form.course.menuId, form.course.optionId, form.course.couponId, ""),
+      });
+      return;
+    }
+    setForm({
+      ...form,
+      course: {
+        ...form.course,
+        extensionId: e.id,
+        extensionName: e.name,
+        extensionDisplayName: e.displayName,
+        extensionMinutes: e.minutes,
+        extensionColor: e.color,
+      },
+      amount: computeAmount(form.course.menuId, form.course.optionId, form.course.couponId, e.id),
     });
   };
 
@@ -179,7 +223,10 @@ export default function NewReceptionModal({
     }
   };
 
-  const totalMin = Number(form.course.minutes || 0) + Number(form.course.optionMinutes || 0);
+  const totalMin =
+    Number(form.course.minutes || 0) +
+    Number(form.course.optionMinutes || 0) +
+    Number(form.course.extensionMinutes || 0);
 
   return (
     <div className="modal-overlay" onClick={overlayClose(onClose)}>
@@ -301,6 +348,27 @@ export default function NewReceptionModal({
               {coupons.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}（-{Number(c.discountAmount || 0).toLocaleString("ja-JP")}円）
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        <div className="field">
+          <label>延長</label>
+          {extensionsFor().length === 0 ? (
+            <div className="muted" style={{ fontSize: 13 }}>
+              この店舗の延長料金は登録されていません
+            </div>
+          ) : (
+            <select
+              value={form.course.extensionId}
+              onChange={(e) => selectExtension(e.target.value)}
+            >
+              <option value="">なし</option>
+              {extensionsFor().map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.name}
                 </option>
               ))}
             </select>

@@ -55,7 +55,7 @@ function emptyMeta(date) {
 }
 
 export default function ReceptionList() {
-  const { stores, staff, menus, options, coupons, ready } = useApp();
+  const { stores, staff, menus, options, coupons, extensions, ready } = useApp();
   const [date, setDate] = useState(todayStr());
   const [records, setRecords] = useState([]);
   const [shifts, setShifts] = useState([]);
@@ -659,6 +659,7 @@ export default function ReceptionList() {
           menus={menus}
           options={options}
           coupons={coupons}
+          extensions={extensions}
           workingStaffIds={workingStaffIds}
           onClose={() => setNewOpen(false)}
           onSaved={(saved) => {
