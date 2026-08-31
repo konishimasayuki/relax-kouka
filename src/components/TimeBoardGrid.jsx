@@ -168,11 +168,11 @@ export default function TimeBoardGrid({
 
   const todaysShifts = useMemo(() => shifts.filter((s) => s.date === date), [shifts, date]);
   const todaysBreaks = useMemo(() => breaks.filter((b) => b.date === date), [breaks, date]);
-  // staffId -> 出勤打刻時刻("HH:MM")
+  // staffId -> { checkInTime, leaveTime }
   const attendanceMap = useMemo(() => {
     const map = {};
     for (const a of attendance) {
-      if (a.date === date && a.checkInTime) map[a.staffId] = a.checkInTime;
+      if (a.date === date) map[a.staffId] = { checkInTime: a.checkInTime, leaveTime: a.leaveTime };
     }
     return map;
   }, [attendance, date]);
@@ -195,8 +195,8 @@ export default function TimeBoardGrid({
     return Object.entries(earliest)
       .sort((a, b) => {
         if (a[1] !== b[1]) return a[1] - b[1];
-        const aIn = attendanceMap[a[0]];
-        const bIn = attendanceMap[b[0]];
+        const aIn = attendanceMap[a[0]]?.checkInTime;
+        const bIn = attendanceMap[b[0]]?.checkInTime;
         if (aIn && bIn) return toMin(aIn) - toMin(bIn);
         if (aIn) return -1; // 出勤済みは未出勤より上
         if (bIn) return 1;
@@ -249,6 +249,13 @@ export default function TimeBoardGrid({
         .map((s) => ({ start: toMin(s.start), end: toMin(s.end) }));
       const offDuty = computeOffDuty(ranges, dayStart, dayEnd);
 
+      // 途中退勤した場合は、退勤時刻以降を明示的に灰色にする
+      const leaveTime = attendanceMap[staffId]?.leaveTime;
+      if (leaveTime) {
+        const leaveMin = toMin(leaveTime);
+        if (leaveMin < dayEnd) offDuty.push({ start: Math.max(leaveMin, dayStart), end: dayEnd });
+      }
+
       const staffBreaks = todaysBreaks
         .filter((b) => b.staffId === staffId)
         .sort((a, b) => toMin(a.start) - toMin(b.start));
@@ -257,7 +264,7 @@ export default function TimeBoardGrid({
     }
     return out;
     // eslint-disable-next-line
-  }, [staffIdsToday, records, todaysShifts, todaysBreaks, homeBuilding, stores]);
+  }, [staffIdsToday, records, todaysShifts, todaysBreaks, homeBuilding, stores, attendanceMap]);
 
   // 担当未定の予約（タイムボード最下段に表示）
   const unassignedApps = useMemo(
@@ -342,12 +349,12 @@ export default function TimeBoardGrid({
           return (
             <div className="tb-row" key={staffId}>
               <div
-                className={`tb-bed ${attendanceMap[staffId] ? "" : "not-checked-in"}`}
+                className={`tb-bed ${attendanceMap[staffId]?.checkInTime ? "" : "not-checked-in"}`}
                 style={{ width: STAFF_COL_W }}
                 onClick={() => onStaffClick?.(staffId)}
               >
-                {attendanceMap[staffId] && (
-                  <span className="b-store">出勤 {attendanceMap[staffId]}</span>
+                {attendanceMap[staffId]?.checkInTime && (
+                  <span className="b-store">出勤 {attendanceMap[staffId].checkInTime}</span>
                 )}
                 <span className="b-name">
                   <span
