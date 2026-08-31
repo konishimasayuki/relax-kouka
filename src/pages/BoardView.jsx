@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PAYMENTS, api, todayStr } from "../api.js";
+import { PAYMENTS, api, sortByOrder, todayStr } from "../api.js";
 import TimeBoardGrid from "../components/TimeBoardGrid.jsx";
 import TimeInput10 from "../components/TimeInput10.jsx";
 import Login from "./Login.jsx";
@@ -74,8 +74,8 @@ export default function BoardView() {
   const assignableStaff = (r) =>
     staff.filter((s) => s.active && (workingStaffIds.has(s.id) || s.id === r?.staffId));
 
-  const menusFor = (r) => menus.filter((m) => m.storeId === r?.storeId);
-  const optionsFor = (r) => options.filter((o) => o.storeId === r?.storeId);
+  const menusFor = (r) => sortByOrder(menus.filter((m) => m.storeId === r?.storeId));
+  const optionsFor = (r) => sortByOrder(options.filter((o) => o.storeId === r?.storeId));
 
   const updateSel = (patch) => setSel((prev) => ({ ...prev, ...patch }));
 

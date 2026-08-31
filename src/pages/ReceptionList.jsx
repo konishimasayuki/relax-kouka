@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "../App.jsx";
-import { PAYMENTS, api, staffDisplayName, todayStr } from "../api.js";
+import { PAYMENTS, api, sortByOrder, staffDisplayName, todayStr } from "../api.js";
 import NewReceptionModal from "../components/NewReceptionModal.jsx";
 import SignaturePad from "../components/SignaturePad.jsx";
 import TimeInput10 from "../components/TimeInput10.jsx";
@@ -166,7 +166,8 @@ export default function ReceptionList() {
   const assignableStaff = (r) =>
     staff.filter((s) => s.active && (workingStaffIds.has(s.id) || s.id === r?.staffId));
 
-  const menusFor = (r) => menus.filter((m) => m.storeId === (r?.storeId || stores[0]?.id));
+  const menusFor = (r) =>
+    sortByOrder(menus.filter((m) => m.storeId === (r?.storeId || stores[0]?.id)));
   const shortStoreLabel = (s) => `${s.building || ""}${s.floor || ""}` || s.name;
 
   // ---- 紙の受付表の再現用 ----

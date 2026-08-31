@@ -286,3 +286,11 @@ export function staffColor(staffId, staffList) {
 export function staffDisplayName(s) {
   return s?.nickname?.trim() || s?.name || "";
 }
+
+// コース・オプションの並び順。料金タブで設定したorder順を優先し、
+// 未設定（既存データ）は元の並び順を保ったまま後ろに回す。
+export function sortByOrder(list) {
+  return [...list]
+    .map((x, i) => ({ ...x, _idx: i }))
+    .sort((a, b) => (a.order ?? a._idx) - (b.order ?? b._idx));
+}

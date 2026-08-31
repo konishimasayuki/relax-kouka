@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
-import { PAYMENTS, api, todayStr } from "../api.js";
+import { PAYMENTS, api, sortByOrder, todayStr } from "../api.js";
 import BreakModal from "../components/BreakModal.jsx";
 import NewReceptionModal from "../components/NewReceptionModal.jsx";
 import TimeBoardGrid from "../components/TimeBoardGrid.jsx";
@@ -56,8 +56,8 @@ export default function TimeBoard() {
   const assignableStaff = (r) =>
     staff.filter((s) => s.active && (workingStaffIds.has(s.id) || s.id === r?.staffId));
 
-  const menusFor = (r) => menus.filter((m) => m.storeId === r?.storeId);
-  const optionsFor = (r) => options.filter((o) => o.storeId === r?.storeId);
+  const menusFor = (r) => sortByOrder(menus.filter((m) => m.storeId === r?.storeId));
+  const optionsFor = (r) => sortByOrder(options.filter((o) => o.storeId === r?.storeId));
 
   const updateSel = (patch) => setSel((prev) => ({ ...prev, ...patch }));
 

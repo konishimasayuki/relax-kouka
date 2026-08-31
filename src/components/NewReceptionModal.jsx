@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PAYMENTS, api } from "../api.js";
+import { PAYMENTS, api, sortByOrder } from "../api.js";
 import TimeInput10 from "./TimeInput10.jsx";
 import { overlayClose } from "../modalUtils.js";
 
@@ -59,8 +59,8 @@ export default function NewReceptionModal({
   const [form, setForm] = useState(() => emptyForm(date, stores[0]?.id));
   const [busy, setBusy] = useState(false);
 
-  const menusFor = () => menus.filter((m) => m.storeId === form.storeId);
-  const optionsFor = () => options.filter((o) => o.storeId === form.storeId);
+  const menusFor = () => sortByOrder(menus.filter((m) => m.storeId === form.storeId));
+  const optionsFor = () => sortByOrder(options.filter((o) => o.storeId === form.storeId));
   const assignable = staff.filter((s) => s.active && workingStaffIds.has(s.id));
 
   // コース料金＋オプション料金－クーポン割引額（0円未満にはしない）

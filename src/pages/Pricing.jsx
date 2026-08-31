@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useApp } from "../App.jsx";
-import { COURSE_COLORS, api, yen } from "../api.js";
+import { COURSE_COLORS, api, sortByOrder, yen } from "../api.js";
 import { overlayClose } from "../modalUtils.js";
 
 function emptyMenu(storeId) {
@@ -12,6 +12,7 @@ function emptyMenu(storeId) {
     minutes: 60,
     price: 0,
     color: "blue",
+    order: 0,
   };
 }
 
@@ -24,6 +25,7 @@ function emptyOption(storeId) {
     minutes: 10,
     price: 0,
     color: "blue",
+    order: 0,
   };
 }
 
@@ -39,19 +41,57 @@ export default function Pricing() {
     if (stores.length && !storeId) setStoreId(stores[0].id);
   }, [stores, storeId]);
 
-  const list = menus
-    .filter((m) => m.storeId === storeId)
-    .sort((a, b) => (a.minutes || 0) - (b.minutes || 0));
+  const list = sortByOrder(menus.filter((m) => m.storeId === storeId));
+  const optionList = sortByOrder(options.filter((o) => o.storeId === storeId));
 
-  const optionList = options
-    .filter((o) => o.storeId === storeId)
-    .sort((a, b) => (a.minutes || 0) - (b.minutes || 0));
+  // 隣同士のorderを入れ替えて並び替える
+  const moveMenu = async (index, dir) => {
+    const target = index + dir;
+    if (target < 0 || target >= list.length) return;
+    const a = list[index];
+    const b = list[target];
+    setBusy(true);
+    try {
+      await Promise.all([
+        api.saveMenu({ ...a, order: b.order ?? target }),
+        api.saveMenu({ ...b, order: a.order ?? index }),
+      ]);
+      await refreshMaster();
+    } catch (e) {
+      alert(`並び替え失敗: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const moveOption = async (index, dir) => {
+    const target = index + dir;
+    if (target < 0 || target >= optionList.length) return;
+    const a = optionList[index];
+    const b = optionList[target];
+    setBusy(true);
+    try {
+      await Promise.all([
+        api.saveOption({ ...a, order: b.order ?? target }),
+        api.saveOption({ ...b, order: a.order ?? index }),
+      ]);
+      await refreshMaster();
+    } catch (e) {
+      alert(`並び替え失敗: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const save = async () => {
     if (!form.name.trim()) return alert("コース名を入力してください");
     setBusy(true);
     try {
-      await api.saveMenu(form);
+      // 新規追加時は末尾に並ぶよう、現在の最大orderの次の値を割り当てる
+      const payload = form.id
+        ? form
+        : { ...form, order: list.length ? Math.max(...list.map((m, i) => m.order ?? i)) + 1 : 0 };
+      await api.saveMenu(payload);
       await refreshMaster();
       setForm(null);
     } catch (e) {
@@ -71,7 +111,15 @@ export default function Pricing() {
     if (!optionForm.name.trim()) return alert("オプション名を入力してください");
     setBusy(true);
     try {
-      await api.saveOption(optionForm);
+      const payload = optionForm.id
+        ? optionForm
+        : {
+            ...optionForm,
+            order: optionList.length
+              ? Math.max(...optionList.map((o, i) => o.order ?? i)) + 1
+              : 0,
+          };
+      await api.saveOption(payload);
       await refreshMaster();
       setOptionForm(null);
     } catch (e) {
@@ -141,7 +189,7 @@ export default function Pricing() {
                   </tr>
                 </thead>
                 <tbody>
-                  {list.map((m) => (
+                  {list.map((m, i) => (
                     <tr key={m.id}>
                       <td>
                         <span
@@ -159,6 +207,22 @@ export default function Pricing() {
                       <td className="num">{m.minutes}分</td>
                       <td className="num">{yen(m.price)}</td>
                       <td>
+                        <button
+                          className="btn sm gray"
+                          style={{ padding: "2px 8px" }}
+                          onClick={() => moveMenu(i, -1)}
+                          disabled={i === 0 || busy}
+                        >
+                          ▲
+                        </button>{" "}
+                        <button
+                          className="btn sm gray"
+                          style={{ padding: "2px 8px" }}
+                          onClick={() => moveMenu(i, 1)}
+                          disabled={i === list.length - 1 || busy}
+                        >
+                          ▼
+                        </button>{" "}
                         <button className="btn sm ghost" onClick={() => setForm({ ...m })}>
                           編集
                         </button>{" "}
@@ -201,7 +265,7 @@ export default function Pricing() {
                   </tr>
                 </thead>
                 <tbody>
-                  {optionList.map((o) => (
+                  {optionList.map((o, i) => (
                     <tr key={o.id}>
                       <td>
                         <span
@@ -219,6 +283,22 @@ export default function Pricing() {
                       <td className="num">{o.minutes}分</td>
                       <td className="num">{yen(o.price)}</td>
                       <td>
+                        <button
+                          className="btn sm gray"
+                          style={{ padding: "2px 8px" }}
+                          onClick={() => moveOption(i, -1)}
+                          disabled={i === 0 || busy}
+                        >
+                          ▲
+                        </button>{" "}
+                        <button
+                          className="btn sm gray"
+                          style={{ padding: "2px 8px" }}
+                          onClick={() => moveOption(i, 1)}
+                          disabled={i === optionList.length - 1 || busy}
+                        >
+                          ▼
+                        </button>{" "}
                         <button className="btn sm ghost" onClick={() => setOptionForm({ ...o })}>
                           編集
                         </button>{" "}
