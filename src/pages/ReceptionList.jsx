@@ -173,7 +173,9 @@ export default function ReceptionList() {
   // ---- 紙の受付表の再現用 ----
   const [yy, mm, dd] = date.split("-").map(Number);
   const youbi = "日月火水木金土"[new Date(yy, mm - 1, dd).getDay()];
-  const sheetRows = Math.max(20, view.length);
+  // 紙の様式に合わせて最低20行を確保しつつ、
+  // 行が埋まっても続けて入力できるよう、常に3行の空白行を余らせる
+  const sheetRows = Math.max(20, view.length + 3);
   const cashList = view.filter((r) => r.payment === "現金");
   const roomList = view.filter((r) => r.payment === "部屋付け");
   const creditList = view.filter((r) => r.payment === "クレジット");

@@ -101,11 +101,11 @@ export default function Fortune() {
   const [reservations, setReservations] = useState([]);
   const [resForm, setResForm] = useState(null);
   const [loadingRes, setLoadingRes] = useState(false);
-  const [weekCounts, setWeekCounts] = useState({}); // date -> 件数（今日から7日分）
+  const [weekCounts, setWeekCounts] = useState({}); // date -> 件数（今日から14日分）
 
   const loadWeekCounts = async () => {
     const today = todayStr();
-    const dates = Array.from({ length: 7 }, (_, i) => addDays(today, i));
+    const dates = Array.from({ length: 14 }, (_, i) => addDays(today, i));
     const results = await Promise.all(dates.map((d) => api.fortuneReservations(d)));
     const map = {};
     dates.forEach((d, i) => {
@@ -353,7 +353,7 @@ export default function Fortune() {
         </div>
 
         <div className="week-count-row">
-          {Array.from({ length: 7 }, (_, i) => addDays(todayStr(), i)).map((d) => {
+          {Array.from({ length: 14 }, (_, i) => addDays(todayStr(), i)).map((d) => {
             const dd = new Date(d);
             const label = `${dd.getMonth() + 1}/${dd.getDate()}(${WEEK_LABEL[dd.getDay()]})`;
             return (
