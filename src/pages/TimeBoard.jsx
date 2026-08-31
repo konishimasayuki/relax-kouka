@@ -230,6 +230,7 @@ export default function TimeBoard() {
         staffId,
         date,
         checkInTime: time,
+        leaveTime: existing?.leaveTime || "",
       });
       setAttendance((prev) => {
         const exists = prev.some((x) => x.id === saved.id);
@@ -238,6 +239,34 @@ export default function TimeBoard() {
       setAttendanceModal(null);
     } catch (e) {
       alert(`更新失敗: ${e.message}`);
+    }
+  };
+
+  // 途中退勤（現在時刻を記録。以降の時間帯はタイムボード上で灰色になる）
+  const leaveEarly = async (staffId) => {
+    const existing = attendance.find((a) => a.staffId === staffId && a.date === date);
+    if (!existing?.checkInTime) return;
+    const d = new Date();
+    const time = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    try {
+      const saved = await api.saveAttendance({ ...existing, leaveTime: time });
+      setAttendance((prev) => prev.map((x) => (x.id === saved.id ? saved : x)));
+      setAttendanceModal(null);
+    } catch (e) {
+      alert(`途中退勤登録失敗: ${e.message}`);
+    }
+  };
+
+  const cancelLeave = async (staffId) => {
+    const existing = attendance.find((a) => a.staffId === staffId && a.date === date);
+    if (!existing?.leaveTime) return;
+    try {
+      const saved = await api.saveAttendance({ ...existing, leaveTime: "" });
+      setAttendance((prev) => prev.map((x) => (x.id === saved.id ? saved : x)));
+      setAttendanceModal(null);
+    } catch (e) {
+      alert(`取消失敗: ${e.message}`);
+
     }
   };
 
@@ -489,22 +518,45 @@ export default function TimeBoard() {
               const rec = attendance.find(
                 (a) => a.staffId === attendanceModal && a.date === date,
               );
-              return rec?.checkInTime ? (
+              if (!rec?.checkInTime) {
+                // 未出勤：現在時刻での出勤のみ
+                return (
+                  <>
+                    <p className="muted" style={{ marginTop: -6 }}>
+                      まだ出勤していません
+                    </p>
+                    <div className="modal-actions">
+                      <button className="btn gray" onClick={() => setAttendanceModal(null)}>
+                        キャンセル
+                      </button>
+                      <button className="btn" onClick={() => checkIn(attendanceModal)}>
+                        出勤
+                      </button>
+                    </div>
+                  </>
+                );
+              }
+              return (
                 <>
                   <p className="muted" style={{ marginTop: -6 }}>
                     出勤時刻を編集できます
                   </p>
-                  <div className="modal-actions" style={{ justifyContent: "center", marginBottom: 4 }}>
+                  <div
+                    className="modal-actions"
+                    style={{ justifyContent: "center", marginBottom: 4 }}
+                  >
                     <TimeInput10 value={editCheckInTime} onChange={setEditCheckInTime} />
                   </div>
+                  {rec.leaveTime && (
+                    <p className="muted" style={{ marginTop: 0 }}>
+                      途中退勤：{rec.leaveTime}
+                    </p>
+                  )}
                   <div className="modal-actions">
                     <button className="btn gray" onClick={() => setAttendanceModal(null)}>
                       閉じる
                     </button>
-                    <button
-                      className="btn danger"
-                      onClick={() => cancelCheckIn(attendanceModal)}
-                    >
+                    <button className="btn danger" onClick={() => cancelCheckIn(attendanceModal)}>
                       出勤取消
                     </button>
                     <button
@@ -515,29 +567,16 @@ export default function TimeBoard() {
                       更新
                     </button>
                   </div>
-                </>
-              ) : (
-                <>
-                  <p className="muted" style={{ marginTop: -6 }}>
-                    まだ出勤していません（時刻を指定して出勤にすることもできます）
-                  </p>
-                  <div className="modal-actions" style={{ justifyContent: "center", marginBottom: 4 }}>
-                    <TimeInput10 value={editCheckInTime} onChange={setEditCheckInTime} />
-                  </div>
                   <div className="modal-actions">
-                    <button className="btn gray" onClick={() => setAttendanceModal(null)}>
-                      キャンセル
-                    </button>
-                    <button className="btn" onClick={() => checkIn(attendanceModal)}>
-                      現在時刻で出勤
-                    </button>
-                    <button
-                      className="btn"
-                      disabled={!editCheckInTime}
-                      onClick={() => updateCheckIn(attendanceModal, editCheckInTime)}
-                    >
-                      指定時刻で出勤
-                    </button>
+                    {rec.leaveTime ? (
+                      <button className="btn gray" onClick={() => cancelLeave(attendanceModal)}>
+                        途中退勤を取消
+                      </button>
+                    ) : (
+                      <button className="btn danger" onClick={() => leaveEarly(attendanceModal)}>
+                        途中退勤
+                      </button>
+                    )}
                   </div>
                 </>
               );
