@@ -58,6 +58,13 @@ export default function Settings() {
   const [genreForm, setGenreForm] = useState(null);
   const [couponList, setCouponList] = useState([]);
   const [couponForm, setCouponForm] = useState(null);
+  const [notifyConfig, setNotifyConfig] = useState({
+    lineToken: "",
+    massageGroupId: "",
+    fortuneGroupId: "",
+  });
+  const [notifyBusy, setNotifyBusy] = useState(false);
+  const [notifySaved, setNotifySaved] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -75,7 +82,37 @@ export default function Settings() {
     if (tab === "coupon") {
       api.coupons().then(setCouponList).catch(() => {});
     }
+    if (tab === "notify") {
+      api.notifyConfig().then(setNotifyConfig).catch(() => {});
+    }
   }, [tab]);
+
+  const saveNotifyConfig = async () => {
+    setNotifyBusy(true);
+    setNotifySaved(false);
+    try {
+      const saved = await api.saveNotifyConfig(notifyConfig);
+      setNotifyConfig(saved);
+      setNotifySaved(true);
+      setTimeout(() => setNotifySaved(false), 2000);
+    } catch (e) {
+      alert(`保存失敗: ${e.message}`);
+    } finally {
+      setNotifyBusy(false);
+    }
+  };
+
+  const sendTestNotify = async (target) => {
+    setNotifyBusy(true);
+    try {
+      await api.testNotify(target);
+      alert("テスト送信しました。LINEグループを確認してください。");
+    } catch (e) {
+      alert(`送信失敗: ${e.message}`);
+    } finally {
+      setNotifyBusy(false);
+    }
+  };
 
   const saveStore = async () => {
     if (!storeForm.name.trim()) return alert("店舗名を入力してください");
@@ -291,6 +328,12 @@ export default function Settings() {
           onClick={() => setTab("coupon")}
         >
           クーポン登録
+        </button>
+        <button
+          className={tab === "notify" ? "btn sm" : "btn sm gray"}
+          onClick={() => setTab("notify")}
+        >
+          通知設定
         </button>
       </div>
 
@@ -514,6 +557,80 @@ export default function Settings() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {tab === "notify" && (
+        <div>
+          <div className="card">
+            <div className="field">
+              <label>LINEトークン（チャネルアクセストークン）</label>
+              <input
+                type="text"
+                value={notifyConfig.lineToken}
+                onChange={(e) =>
+                  setNotifyConfig({ ...notifyConfig, lineToken: e.target.value })
+                }
+                placeholder="LINE Developersで発行したチャネルアクセストークン"
+              />
+            </div>
+
+            <div className="field">
+              <label>マッサージ予約通知先LINEグループ（グループID）</label>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  type="text"
+                  style={{ flex: 1 }}
+                  value={notifyConfig.massageGroupId}
+                  onChange={(e) =>
+                    setNotifyConfig({ ...notifyConfig, massageGroupId: e.target.value })
+                  }
+                  placeholder="C から始まるグループID"
+                />
+                <button
+                  className="btn sm ghost"
+                  disabled={notifyBusy}
+                  onClick={() => sendTestNotify("massage")}
+                >
+                  テスト送信
+                </button>
+              </div>
+            </div>
+
+            <div className="field">
+              <label>占い予約通知先LINEグループ（グループID）</label>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  type="text"
+                  style={{ flex: 1 }}
+                  value={notifyConfig.fortuneGroupId}
+                  onChange={(e) =>
+                    setNotifyConfig({ ...notifyConfig, fortuneGroupId: e.target.value })
+                  }
+                  placeholder="C から始まるグループID"
+                />
+                <button
+                  className="btn sm ghost"
+                  disabled={notifyBusy}
+                  onClick={() => sendTestNotify("fortune")}
+                >
+                  テスト送信
+                </button>
+              </div>
+            </div>
+
+            <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.7 }}>
+              マッサージの通知には「希望日時・お名前・お電話番号・お部屋番号・メニュー・オプション・金額」を含めます（テスト送信ではサンプル内容が届きます）。
+              予約が入った際の自動送信は今後実装予定で、現時点では設定の保存とテスト送信のみです。
+            </p>
+
+            <div className="modal-actions" style={{ justifyContent: "flex-start" }}>
+              <button className="btn" disabled={notifyBusy} onClick={saveNotifyConfig}>
+                保存
+              </button>
+              {notifySaved && <span className="muted">保存しました</span>}
+            </div>
+          </div>
         </div>
       )}
 
