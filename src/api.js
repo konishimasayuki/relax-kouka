@@ -87,6 +87,10 @@ export const api = {
   signageConfig: () => req("signageConfig"),
   saveSignageConfig: (c) => req("signageConfig", { method: "POST", body: JSON.stringify(c) }),
 
+  notifyConfig: () => req("notifyConfig"),
+  saveNotifyConfig: (c) => req("notifyConfig", { method: "POST", body: JSON.stringify(c) }),
+  testNotify: (target) => req("notifyTest", { method: "POST", body: JSON.stringify({ target }) }),
+
   payrollRates: () => req("payrollRates"),
   savePayrollRate: (r) => req("payrollRates", { method: "POST", body: JSON.stringify(r) }),
 
