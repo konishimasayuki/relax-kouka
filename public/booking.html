@@ -613,8 +613,10 @@
     border-color: #5A4FB0;
   }
 
-  .fortune-row { display: flex; gap: 10px; }
-  .fortune-row .fortune-field-group { flex: 1; }
+  .fortune-row { display: flex; flex-direction: column; gap: 14px; }
+  .fortune-row .fortune-field-group { width: 100%; }
+  .fortune-row .fortune-field-group select,
+  .fortune-row .fortune-field-group input { width: 100%; box-sizing: border-box; }
 
   .fortune-submit-wrap { padding: 6px 0 22px; }
   .fortune-submit {
@@ -848,11 +850,11 @@
     <div class="fortune-row">
       <div class="fortune-field-group">
         <label>ご希望日</label>
-        <input type="date" id="fDate">
+        <input type="text" id="fDate" inputmode="numeric" placeholder="例：9/5">
       </div>
       <div class="fortune-field-group">
         <label>ご希望時間</label>
-        <input type="time" id="fTime">
+        <input type="text" id="fTime" inputmode="numeric" placeholder="例：14:30">
       </div>
     </div>
 
