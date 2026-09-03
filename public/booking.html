@@ -658,7 +658,7 @@
   }
   .loading-sub {
     font-family: 'Shippori Mincho', serif;
-    font-size: 13px;
+    font-size: 19.5px;
     letter-spacing: .38em;
     color: #8a7250;
     text-transform: uppercase;
@@ -1588,11 +1588,11 @@
 
   // ---- ローディング画面 ----
   // ページの全リソース（大きなメニュー画像など）の読み込みが終わり、
-  // かつ最低限のロゴ演出が見える時間（900ms）が経過してから消す
+  // かつ最低限のロゴ演出が見える時間（2900ms）が経過してから消す
   (function hideLoadingScreen() {
     const screen = document.getElementById("loadingScreen");
     if (!screen) return;
-    const minDelay = new Promise((resolve) => setTimeout(resolve, 900));
+    const minDelay = new Promise((resolve) => setTimeout(resolve, 2900));
     const pageLoaded = document.readyState === "complete"
       ? Promise.resolve()
       : new Promise((resolve) => window.addEventListener("load", resolve, { once: true }));
