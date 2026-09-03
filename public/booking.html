@@ -779,7 +779,7 @@
   <div class="fortune-stars"></div>
 
   <div class="fortune-logo">
-    <svg viewBox="0 0 200 90" fill="none">
+    <svg viewBox="0 -6 200 96" fill="none">
       <path d="M20 78 A80 80 0 0 1 180 78" stroke="#b088e8" stroke-width="7" stroke-linecap="round"/>
       <path d="M32 78 A68 68 0 0 1 168 78" stroke="#6fa8dc" stroke-width="7" stroke-linecap="round"/>
       <path d="M44 78 A56 56 0 0 1 156 78" stroke="#5fc9a8" stroke-width="7" stroke-linecap="round"/>
@@ -853,7 +853,7 @@
 
     <div class="fortune-field-group">
       <label>ご希望日</label>
-      <input type="date" id="fDate">
+      <select id="fDate"></select>
     </div>
     <div class="fortune-field-group">
       <label>ご希望時間</label>
@@ -900,7 +900,7 @@
 <div class="fortune-wrap" id="fortuneDoneWrap" style="display:none;">
   <div class="fortune-stars"></div>
   <div class="fortune-logo" style="padding-bottom:0;">
-    <svg viewBox="0 0 200 90" fill="none">
+    <svg viewBox="0 -6 200 96" fill="none">
       <path d="M20 78 A80 80 0 0 1 180 78" stroke="#b088e8" stroke-width="7" stroke-linecap="round"/>
       <path d="M32 78 A68 68 0 0 1 168 78" stroke="#6fa8dc" stroke-width="7" stroke-linecap="round"/>
       <path d="M44 78 A56 56 0 0 1 156 78" stroke="#5fc9a8" stroke-width="7" stroke-linecap="round"/>
@@ -1081,6 +1081,29 @@
         const mm = String(m).padStart(2, "0");
         opts.push(`<option value="${hh}:${mm}">${hh}:${mm}</option>`);
       }
+    }
+    sel.innerHTML = opts.join("");
+  })();
+
+  // 占いの「ご希望日」セレクトを本日から60日分生成
+  // （ネイティブの type="date" 入力は端末によって表示幅が崩れることがあるため選択式にしている）
+  (function buildFortuneDateOptions() {
+    const sel = document.getElementById("fDate");
+    if (!sel) return;
+    const youbi = ["日","月","火","水","木","金","土"];
+    const opts = [`<option value="">選択してください</option>`];
+    const base = new Date();
+    for (let i = 0; i < 60; i++) {
+      const d = new Date(base);
+      d.setDate(base.getDate() + i);
+      const y = d.getFullYear();
+      const m = d.getMonth() + 1;
+      const day = d.getDate();
+      const iso = `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      const label = i === 0 ? `本日 ${m}/${day}（${youbi[d.getDay()]}）`
+        : i === 1 ? `明日 ${m}/${day}（${youbi[d.getDay()]}）`
+        : `${m}/${day}（${youbi[d.getDay()]}）`;
+      opts.push(`<option value="${iso}">${label}</option>`);
     }
     sel.innerHTML = opts.join("");
   })();
