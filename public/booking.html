@@ -1258,7 +1258,7 @@
     const store = STORES[currentStore];
     document.documentElement.style.setProperty("--menu-accent", store.color.chip);
     document.getElementById("msecTitle").textContent = `${store.label}　${store.sub}`;
-    document.getElementById("msecNote").innerHTML = `営業時間 ${store.hours}／${store.tel}<br>${store.note}`;
+    document.getElementById("msecNote").innerHTML = `${store.tel}`;
 
     const carousel = document.getElementById("carousel");
     carousel.innerHTML = store.flyers.map(fl => `
