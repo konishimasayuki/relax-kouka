@@ -36,6 +36,12 @@ function RequestCard({ r, onToggleStatus, onDelete, canDelete }) {
             <br />
             お電話番号: {r.phone || "-"}
             <br />
+            {r.email && (
+              <>
+                メール: {r.email}
+                <br />
+              </>
+            )}
             お部屋番号: {r.room || "-"}
             <br />
             {isMassage ? (
