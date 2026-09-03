@@ -3,6 +3,7 @@ import { useState } from "react";
 const MENU = [
   { key: "dashboard", label: "ダッシュボード", ico: "📊" },
   { key: "timeboard", label: "タイムボード", ico: "🗓️" },
+  { key: "bookingRequests", label: "予約申請(デモ)", ico: "📮" },
   { key: "reception", label: "受付一覧表", ico: "📋" },
   { key: "shift", label: "シフト", ico: "🕒" },
   { key: "inventory", label: "在庫管理", ico: "📦" },
@@ -21,7 +22,7 @@ export default function Layout({ page, setPage, role, staffSession, isAdminUser,
   const RESTRICTED = ["dashboard", "pricing", "customers", "settings", "signageSettings", "debugRequests"];
   let menu = MENU;
   if (role === "fortune") {
-    menu = MENU.filter((m) => m.key === "fortune");
+    menu = MENU.filter((m) => m.key === "fortune" || m.key === "bookingRequests");
   } else if (role === "staff" && !isAdminUser) {
     menu = MENU.filter((m) => !RESTRICTED.includes(m.key));
   }
