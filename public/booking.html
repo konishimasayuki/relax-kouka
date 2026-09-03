@@ -610,17 +610,18 @@
     background: rgba(10, 6, 20, 0.6);
     z-index: 999;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     padding: 24px 16px;
-    animation: promoFadeIn .25s ease;
+    animation: promoBackdropFadeIn .25s ease;
   }
   .promo-overlay.hidden { display: none; }
-  @keyframes promoFadeIn {
+  @keyframes promoBackdropFadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
   }
   .promo-modal {
+    animation: promoDropDown .35s cubic-bezier(.22,1,.36,1);
     position: relative;
     width: 100%;
     max-width: 320px;
@@ -629,6 +630,10 @@
     box-shadow: 0 20px 60px rgba(0,0,0,0.5);
     padding-bottom: 22px;
     text-align: center;
+  }
+  @keyframes promoDropDown {
+    from { transform: translateY(-40px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
   }
   .promo-close {
     position: absolute;
