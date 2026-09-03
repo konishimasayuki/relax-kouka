@@ -742,7 +742,7 @@
       <input type="tel" id="custPhone" placeholder="090-1234-5678">
     </div>
     <div class="field-group">
-      <label>メールアドレス（任意）</label>
+      <label>メールアドレス</label>
       <input type="email" id="custEmail" placeholder="example@mail.com">
     </div>
     <div class="field-group">
@@ -879,7 +879,7 @@
       <input type="tel" id="fPhone" placeholder="090-1234-5678">
     </div>
     <div class="fortune-field-group">
-      <label>メールアドレス（任意）</label>
+      <label>メールアドレス</label>
       <input type="email" id="fEmail" placeholder="example@mail.com">
     </div>
     <div class="fortune-field-group">
@@ -1183,9 +1183,10 @@
     document.getElementById("bottomBar").style.display = (n === 0 || n === 4) ? "none" : "block";
 
     // 空き状況（n===0）以外は「予約だけのページ」にするため、
-    // 上部のメニューカルーセル（チラシ）と下部の占いセクションを隠す
+    // 上部のメニューカルーセル（チラシ）・店舗選択チップと下部の占いセクションを隠す
     const hideExtras = n !== 0;
     document.getElementById("menuSection").style.display = hideExtras ? "none" : "block";
+    document.getElementById("storePicker").style.display = hideExtras ? "none" : "flex";
     document.querySelectorAll(".fortune-wrap").forEach(el => {
       el.style.display = hideExtras ? "none" : (el.id === "fortuneDoneWrap" ? "none" : "block");
     });
@@ -1226,8 +1227,12 @@
       const phone = document.getElementById("custPhone").value.trim();
       const email = document.getElementById("custEmail").value.trim();
       const room = document.getElementById("custRoom").value.trim();
-      if (!name || !phone || !room) {
-        alert("お名前・お電話番号・お部屋番号をご入力ください");
+      if (!name || !phone || !room || !email) {
+        alert("お名前・お電話番号・メールアドレス・お部屋番号をご入力ください");
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        alert("メールアドレスの形式が正しくありません");
         return;
       }
       const dayLabel = state.day === "today" ? "8/31（月）" : "9/1（火）";
@@ -1272,8 +1277,12 @@
     const room = document.getElementById("fRoom").value.trim();
     const date = document.getElementById("fDate").value;
     const time = document.getElementById("fTime").value;
-    if (!name || !phone || !room || !date || !time) {
-      alert("ご希望日・ご希望時間・お名前・お電話番号・お部屋番号をご入力ください");
+    if (!name || !phone || !room || !date || !time || !email) {
+      alert("ご希望日・ご希望時間・お名前・お電話番号・メールアドレス・お部屋番号をご入力ください");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      alert("メールアドレスの形式が正しくありません");
       return;
     }
     const courseSelect = document.getElementById("fCourse");
