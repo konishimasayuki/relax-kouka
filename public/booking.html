@@ -580,14 +580,30 @@
     position: relative;
     padding: 4px 0 22px;
     overflow: hidden;
-    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 32px, #000 calc(100% - 32px), transparent 100%);
-    mask-image: linear-gradient(90deg, transparent 0, #000 32px, #000 calc(100% - 32px), transparent 100%);
+  }
+  .fortune-gallery-wrap::before,
+  .fortune-gallery-wrap::after {
+    content: "";
+    position: absolute;
+    top: 4px;
+    bottom: 22px;
+    width: 32px;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .fortune-gallery-wrap::before {
+    left: 0;
+    background: linear-gradient(90deg, #1b1330, transparent);
+  }
+  .fortune-gallery-wrap::after {
+    right: 0;
+    background: linear-gradient(270deg, #1b1330, transparent);
   }
   .fortune-gallery-track {
     display: flex;
     gap: 12px;
     width: max-content;
-    animation: fortuneScroll 22.7s linear infinite;
+    animation: fortuneScroll 13s linear infinite;
   }
   .fortune-gallery-wrap:active .fortune-gallery-track { animation-play-state: paused; }
   .fortune-gallery-track img {
