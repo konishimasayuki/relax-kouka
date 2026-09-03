@@ -91,6 +91,12 @@ export const api = {
   saveNotifyConfig: (c) => req("notifyConfig", { method: "POST", body: JSON.stringify(c) }),
   testNotify: (target) => req("notifyTest", { method: "POST", body: JSON.stringify({ target }) }),
 
+  bookingRequests: () => req("bookingRequests"),
+  saveBookingRequest: (r) =>
+    req("bookingRequests", { method: "POST", body: JSON.stringify(r) }),
+  deleteBookingRequest: (id) =>
+    req(`bookingRequests?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
+
   payrollRates: () => req("payrollRates"),
   savePayrollRate: (r) => req("payrollRates", { method: "POST", body: JSON.stringify(r) }),
 
