@@ -1258,7 +1258,7 @@
     const store = STORES[currentStore];
     document.documentElement.style.setProperty("--menu-accent", store.color.chip);
     document.getElementById("msecTitle").textContent = `${store.label}　${store.sub}`;
-    document.getElementById("msecNote").innerHTML = `${store.tel}`;
+    document.getElementById("msecNote").innerHTML = "";
 
     const carousel = document.getElementById("carousel");
     carousel.innerHTML = store.flyers.map(fl => `
