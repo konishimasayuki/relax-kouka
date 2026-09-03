@@ -742,6 +742,10 @@
       <input type="tel" id="custPhone" placeholder="090-1234-5678">
     </div>
     <div class="field-group">
+      <label>メールアドレス（任意）</label>
+      <input type="email" id="custEmail" placeholder="example@mail.com">
+    </div>
+    <div class="field-group">
       <label>お部屋番号</label>
       <input type="text" id="custRoom" placeholder="例：705">
     </div>
@@ -847,15 +851,13 @@
       </select>
     </div>
 
-    <div class="fortune-row">
-      <div class="fortune-field-group">
-        <label>ご希望日</label>
-        <input type="text" id="fDate" inputmode="numeric" placeholder="例：9/5">
-      </div>
-      <div class="fortune-field-group">
-        <label>ご希望時間</label>
-        <input type="text" id="fTime" inputmode="numeric" placeholder="例：14:30">
-      </div>
+    <div class="fortune-field-group">
+      <label>ご希望日</label>
+      <input type="date" id="fDate">
+    </div>
+    <div class="fortune-field-group">
+      <label>ご希望時間</label>
+      <select id="fTime"></select>
     </div>
 
     <div class="fortune-field-group">
@@ -875,6 +877,10 @@
     <div class="fortune-field-group">
       <label>お電話番号</label>
       <input type="tel" id="fPhone" placeholder="090-1234-5678">
+    </div>
+    <div class="fortune-field-group">
+      <label>メールアドレス（任意）</label>
+      <input type="email" id="fEmail" placeholder="example@mail.com">
     </div>
     <div class="fortune-field-group">
       <label>お部屋番号</label>
@@ -1063,6 +1069,22 @@
 
   let state = { day:"today", slot:null, menu:null, option:"o0" };
 
+  // 占いの「ご希望時間」セレクトを 11:00〜23:00・10分刻みで生成
+  (function buildFortuneTimeOptions() {
+    const sel = document.getElementById("fTime");
+    if (!sel) return;
+    const opts = [`<option value="">--:--</option>`];
+    for (let h = 11; h <= 23; h++) {
+      for (let m = 0; m < 60; m += 10) {
+        if (h === 23 && m > 0) break; // 23:00 まで
+        const hh = String(h).padStart(2, "0");
+        const mm = String(m).padStart(2, "0");
+        opts.push(`<option value="${hh}:${mm}">${hh}:${mm}</option>`);
+      }
+    }
+    sel.innerHTML = opts.join("");
+  })();
+
   function renderSlots(listEl, slots, day) {
     listEl.innerHTML = slots.map(s => {
       const label = s.status === "open" ? "○ 空きあり" : s.status === "full" ? "× 満席" : "－ 受付終了";
@@ -1150,7 +1172,7 @@
     `;
   }
 
-  const stepTitles = ["メニューへ進む", "オプションへ進む", "内容を確認する", "この内容で予約を申請する"];
+  const stepTitles = ["オプションへ進む", "ご確認へ進む", "この内容で予約を申請する"];
 
   function goStep(n) {
     document.querySelectorAll(".screen").forEach(s => s.classList.remove("visible"));
@@ -1159,6 +1181,14 @@
     if (n < 4) document.querySelector(`.steps .step[data-step="${n}"]`).classList.add("active");
     document.getElementById("steps").style.display = n === 4 ? "none" : "flex";
     document.getElementById("bottomBar").style.display = (n === 0 || n === 4) ? "none" : "block";
+
+    // 空き状況（n===0）以外は「予約だけのページ」にするため、
+    // 上部のメニューカルーセル（チラシ）と下部の占いセクションを隠す
+    const hideExtras = n !== 0;
+    document.getElementById("menuSection").style.display = hideExtras ? "none" : "block";
+    document.querySelectorAll(".fortune-wrap").forEach(el => {
+      el.style.display = hideExtras ? "none" : (el.id === "fortuneDoneWrap" ? "none" : "block");
+    });
 
     if (n === 1) renderMenus();
     if (n === 2) renderOptions();
@@ -1194,6 +1224,7 @@
     else if (cur === 3) {
       const name = document.getElementById("custName").value.trim();
       const phone = document.getElementById("custPhone").value.trim();
+      const email = document.getElementById("custEmail").value.trim();
       const room = document.getElementById("custRoom").value.trim();
       if (!name || !phone || !room) {
         alert("お名前・お電話番号・お部屋番号をご入力ください");
@@ -1206,6 +1237,7 @@
         type: "massage",
         name,
         phone,
+        email,
         room,
         desiredDate: dayLabel,
         desiredTime: state.slot ? `${state.slot}〜` : "",
@@ -1236,9 +1268,10 @@
   function submitFortune() {
     const name = document.getElementById("fName").value.trim();
     const phone = document.getElementById("fPhone").value.trim();
+    const email = document.getElementById("fEmail").value.trim();
     const room = document.getElementById("fRoom").value.trim();
-    const date = document.getElementById("fDate").value.trim();
-    const time = document.getElementById("fTime").value.trim();
+    const date = document.getElementById("fDate").value;
+    const time = document.getElementById("fTime").value;
     if (!name || !phone || !room || !date || !time) {
       alert("ご希望日・ご希望時間・お名前・お電話番号・お部屋番号をご入力ください");
       return;
@@ -1250,6 +1283,7 @@
       type: "fortune",
       name,
       phone,
+      email,
       room,
       desiredDate: date,
       desiredTime: time,
