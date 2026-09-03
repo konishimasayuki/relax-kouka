@@ -1199,7 +1199,36 @@
         alert("お名前・お電話番号・お部屋番号をご入力ください");
         return;
       }
+      const dayLabel = state.day === "today" ? "8/31（月）" : "9/1（火）";
+      const menu = menus.find(m => m.id === state.menu);
+      const option = options.find(o => o.id === state.option);
+      submitBookingRequest({
+        type: "massage",
+        name,
+        phone,
+        room,
+        desiredDate: dayLabel,
+        desiredTime: state.slot ? `${state.slot}〜` : "",
+        menu: menu ? menu.name : "",
+        option: option ? option.name : "なし",
+        price: menu ? menu.price : "",
+      });
       goStep(4);
+    }
+  }
+
+  // 予約申請APIへの送信（失敗しても画面遷移はブロックしない：ネットワーク不調時にお客様を
+  // 足止めしないため。送信結果はコンソールにのみ記録する）
+  async function submitBookingRequest(payload) {
+    try {
+      const res = await fetch("/api/bookingRequests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (e) {
+      console.error("予約申請の送信に失敗しました", e);
     }
   }
 
@@ -1208,12 +1237,25 @@
     const name = document.getElementById("fName").value.trim();
     const phone = document.getElementById("fPhone").value.trim();
     const room = document.getElementById("fRoom").value.trim();
-    const date = document.getElementById("fDate").value;
-    const time = document.getElementById("fTime").value;
+    const date = document.getElementById("fDate").value.trim();
+    const time = document.getElementById("fTime").value.trim();
     if (!name || !phone || !room || !date || !time) {
       alert("ご希望日・ご希望時間・お名前・お電話番号・お部屋番号をご入力ください");
       return;
     }
+    const courseSelect = document.getElementById("fCourse");
+    const course = courseSelect.options[courseSelect.selectedIndex].text;
+    const people = document.getElementById("fPeople").value;
+    submitBookingRequest({
+      type: "fortune",
+      name,
+      phone,
+      room,
+      desiredDate: date,
+      desiredTime: time,
+      course,
+      people: `${people}名`,
+    });
     document.querySelectorAll(".fortune-wrap").forEach(el => el.style.display = "none");
     document.getElementById("fortuneDoneWrap").style.display = "block";
     window.scrollTo(0, document.body.scrollHeight);
