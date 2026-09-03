@@ -90,6 +90,7 @@ export const api = {
   notifyConfig: () => req("notifyConfig"),
   saveNotifyConfig: (c) => req("notifyConfig", { method: "POST", body: JSON.stringify(c) }),
   testNotify: (target) => req("notifyTest", { method: "POST", body: JSON.stringify({ target }) }),
+  testEmail: (to) => req("emailTest", { method: "POST", body: JSON.stringify({ to }) }),
 
   bookingRequests: () => req("bookingRequests"),
   saveBookingRequest: (r) =>
