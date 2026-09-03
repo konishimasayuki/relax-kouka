@@ -623,44 +623,59 @@
   .promo-modal {
     position: relative;
     width: 100%;
-    max-width: 420px;
-    max-height: 88vh;
-    overflow-y: auto;
-    border-radius: 22px;
+    max-width: 320px;
+    border-radius: 20px;
     background: radial-gradient(ellipse at top, #3d2a6b 0%, #1b1330 55%, #100b1e 100%);
     box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    padding-bottom: 18px;
+    padding-bottom: 22px;
+    text-align: center;
   }
   .promo-close {
     position: absolute;
-    top: 12px;
-    right: 12px;
-    width: 34px;
-    height: 34px;
+    top: 10px;
+    right: 10px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     border: none;
     background: rgba(255,255,255,0.15);
     color: #fff;
-    font-size: 18px;
+    font-size: 14px;
     line-height: 1;
     cursor: pointer;
     z-index: 2;
   }
   .promo-close:active { background: rgba(255,255,255,0.28); }
-  .promo-cta-wrap { padding: 4px 20px 4px; }
+  .promo-tag-wrap { padding: 0 20px; margin-bottom: 12px; }
+  .promo-tag {
+    display: inline-block;
+    background: #ffd76b;
+    color: #241a3d;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 6px 16px;
+    border-radius: 20px;
+  }
+  .promo-copy {
+    color: #e9e3fa;
+    font-size: 13px;
+    line-height: 1.7;
+    margin: 0 20px 16px;
+  }
+  .promo-cta-wrap { padding: 0 20px; }
   .promo-cta {
     width: 100%;
     border: none;
-    border-radius: 26px;
-    padding: 14px;
-    font-size: 14.5px;
+    border-radius: 24px;
+    padding: 12px;
+    font-size: 13.5px;
     font-weight: 700;
     font-family: inherit;
-    background: #ffd76b;
+    background: #fff;
     color: #241a3d;
     cursor: pointer;
   }
-  .promo-cta:active { background: #f0c94e; }
+  .promo-cta:active { background: #f0ece0; }
 
   .fortune-form-wrap {
     position: relative;
@@ -753,7 +768,7 @@
   <div class="promo-modal">
     <button class="promo-close" onclick="closePromo()">✕</button>
 
-    <div class="fortune-logo" style="padding-top:30px;">
+    <div class="fortune-logo" style="padding:30px 20px 4px;">
       <svg viewBox="0 -6 200 96" fill="none">
         <path d="M20 78 A80 80 0 0 1 180 78" stroke="#b088e8" stroke-width="7" stroke-linecap="round"/>
         <path d="M32 78 A68 68 0 0 1 168 78" stroke="#6fa8dc" stroke-width="7" stroke-linecap="round"/>
@@ -765,39 +780,11 @@
       <div class="f-sub">SUGINOIZUMI 占い部屋</div>
     </div>
 
-    <div class="fortune-price-wrap">
-      <div class="fortune-price-card">
-        <div class="fortune-price-row">
-          <div><div class="fp-name">お試し</div><div class="fp-time">20分</div></div>
-          <div class="fp-price">¥2,800</div>
-        </div>
-        <div class="fortune-price-row">
-          <div><div class="fp-name">レギュラー</div><div class="fp-time">30分</div></div>
-          <div class="fp-price">¥3,800</div>
-        </div>
-        <div class="fortune-price-row">
-          <div><div class="fp-name">レギュラー</div><div class="fp-time">40分</div></div>
-          <div class="fp-price">¥4,800</div>
-        </div>
-        <div class="fortune-price-row">
-          <div><div class="fp-name">じっくり</div><div class="fp-time">50分</div></div>
-          <div class="fp-price">¥5,800</div>
-        </div>
-        <div class="fortune-price-row">
-          <div><div class="fp-name">じっくり</div><div class="fp-time">60分</div></div>
-          <div class="fp-price">¥6,800</div>
-        </div>
-      </div>
+    <div class="promo-tag-wrap">
+      <span class="promo-tag">お試し20分 ¥2,800〜</span>
     </div>
 
-    <div class="fortune-ext-note">〈延長〉10分 <b>¥1,000</b>　※全て税込価格です</div>
-
-    <div class="fortune-badges">
-      <span class="fortune-badge">★ 人数制限なし</span>
-      <span class="fortune-badge">1人でも複数人でもOK</span>
-    </div>
-
-    <div class="fortune-gallery-wrap" id="promoGalleryWrap"></div>
+    <p class="promo-copy">人気の占い部屋がここにも。<br>お好きな時間にふらっとどうぞ。</p>
 
     <div class="promo-cta-wrap">
       <button class="promo-cta" onclick="goToFortune()">占いのご予約はこちら</button>
@@ -1491,28 +1478,17 @@
   goStep(0);
 
   // ---- 杉の泉アピールモーダル ----
+  // ※現在は確認用に毎回表示する設定。デザイン確定後は本来の
+  //   「一度閉じたら同一セッション中は再表示しない」挙動に戻す。
   (function initPromo() {
     const overlay = document.getElementById("promoOverlay");
-    const galleryWrap = document.getElementById("promoGalleryWrap");
-    const mainTrack = document.querySelector(".fortune-gallery-track");
-    if (mainTrack && galleryWrap) {
-      const clone = document.createElement("div");
-      clone.className = "fortune-gallery-track";
-      clone.style.animationDuration = "34s";
-      clone.innerHTML = mainTrack.innerHTML;
-      galleryWrap.appendChild(clone);
-    }
     if (!overlay) return;
-    try {
-      if (sessionStorage.getItem("promoDismissed") === "1") return;
-    } catch (e) { /* プライベートブラウズ等でsessionStorageが使えない場合は毎回表示 */ }
     setTimeout(() => overlay.classList.remove("hidden"), 700);
   })();
 
   function closePromo() {
     const overlay = document.getElementById("promoOverlay");
     if (overlay) overlay.classList.add("hidden");
-    try { sessionStorage.setItem("promoDismissed", "1"); } catch (e) {}
   }
 
   function goToFortune() {
