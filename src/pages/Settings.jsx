@@ -62,7 +62,10 @@ export default function Settings() {
     lineToken: "",
     massageGroupId: "",
     fortuneGroupId: "",
+    resendApiKey: "",
+    resendFromEmail: "",
   });
+  const [testEmailTo, setTestEmailTo] = useState("");
   const [notifyBusy, setNotifyBusy] = useState(false);
   const [notifySaved, setNotifySaved] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -107,6 +110,19 @@ export default function Settings() {
     try {
       await api.testNotify(target);
       alert("テスト送信しました。LINEグループを確認してください。");
+    } catch (e) {
+      alert(`送信失敗: ${e.message}`);
+    } finally {
+      setNotifyBusy(false);
+    }
+  };
+
+  const sendTestEmail = async () => {
+    if (!testEmailTo.trim()) return alert("テスト送信先メールアドレスを入力してください");
+    setNotifyBusy(true);
+    try {
+      await api.testEmail(testEmailTo.trim());
+      alert("テストメールを送信しました。受信箱を確認してください。");
     } catch (e) {
       alert(`送信失敗: ${e.message}`);
     } finally {
@@ -622,6 +638,61 @@ export default function Settings() {
             <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.7 }}>
               マッサージの通知には「希望日時・お名前・お電話番号・お部屋番号・メニュー・オプション・金額」を含めます（テスト送信ではサンプル内容が届きます）。
               予約が入った際の自動送信は今後実装予定で、現時点では設定の保存とテスト送信のみです。
+            </p>
+
+            <div className="modal-actions" style={{ justifyContent: "flex-start" }}>
+              <button className="btn" disabled={notifyBusy} onClick={saveNotifyConfig}>
+                保存
+              </button>
+              {notifySaved && <span className="muted">保存しました</span>}
+            </div>
+          </div>
+
+          <div className="card" style={{ marginTop: 16 }}>
+            <h3 style={{ fontSize: 15, margin: "0 0 14px" }}>メール通知（Resend）</h3>
+
+            <div className="field">
+              <label>Resend APIキー</label>
+              <input
+                type="text"
+                value={notifyConfig.resendApiKey}
+                onChange={(e) =>
+                  setNotifyConfig({ ...notifyConfig, resendApiKey: e.target.value })
+                }
+                placeholder="re_xxxxxxxxxxxxxxxx"
+              />
+            </div>
+
+            <div className="field">
+              <label>送信元メールアドレス</label>
+              <input
+                type="text"
+                value={notifyConfig.resendFromEmail}
+                onChange={(e) =>
+                  setNotifyConfig({ ...notifyConfig, resendFromEmail: e.target.value })
+                }
+                placeholder="no-reply@yourdomain.com（Resendで認証済みのドメイン）"
+              />
+            </div>
+
+            <div className="field">
+              <label>テスト送信先メールアドレス</label>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  type="text"
+                  style={{ flex: 1 }}
+                  value={testEmailTo}
+                  onChange={(e) => setTestEmailTo(e.target.value)}
+                  placeholder="test@example.com"
+                />
+                <button className="btn sm ghost" disabled={notifyBusy} onClick={sendTestEmail}>
+                  テスト送信
+                </button>
+              </div>
+            </div>
+
+            <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.7 }}>
+              予約フォームでお客様が入力したメールアドレス宛に、「予約申請内容の確認メール」と、サロン側で空き状況を確認したうえでの「予約確定メール」を自動送信する予定です（前準備段階のため、現時点では設定の保存とテスト送信のみです）。
             </p>
 
             <div className="modal-actions" style={{ justifyContent: "flex-start" }}>
