@@ -7,6 +7,8 @@ function emptyConfig() {
     lineToken: "",
     massageGroupId: "",
     fortuneGroupId: "",
+    resendApiKey: "",
+    resendFromEmail: "",
   };
 }
 
