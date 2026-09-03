@@ -11,6 +11,7 @@ import Login from "./pages/Login.jsx";
 import Payroll from "./pages/Payroll.jsx";
 import Pricing from "./pages/Pricing.jsx";
 import ReceptionList from "./pages/ReceptionList.jsx";
+import ReservationRequests from "./pages/ReservationRequests.jsx";
 import Settings from "./pages/Settings.jsx";
 import Shift from "./pages/Shift.jsx";
 import SignageSettings from "./pages/SignageSettings.jsx";
@@ -23,6 +24,7 @@ export const useApp = () => useContext(AppCtx);
 const PAGES = {
   dashboard: Dashboard,
   timeboard: TimeBoard,
+  bookingRequests: ReservationRequests,
   reception: ReceptionList,
   shift: Shift,
   inventory: Inventory,
@@ -95,7 +97,7 @@ export default function App() {
   // 管理者権限のないスタッフは、ダッシュボード／料金／顧客名簿／設定／デバッグ依頼に入れない
   const RESTRICTED_PAGES = ["dashboard", "pricing", "customers", "settings", "signageSettings", "debugRequests"];
   useEffect(() => {
-    if (role === "fortune" && page !== "fortune") {
+    if (role === "fortune" && page !== "fortune" && page !== "bookingRequests") {
       setPage("fortune");
       return;
     }
