@@ -603,6 +603,65 @@
     to { transform: translateX(-50%); }
   }
 
+  /* ---- 杉の泉アピールモーダル（ページ表示時にポップアップ） ---- */
+  .promo-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 6, 20, 0.6);
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    animation: promoFadeIn .25s ease;
+  }
+  .promo-overlay.hidden { display: none; }
+  @keyframes promoFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .promo-modal {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    max-height: 88vh;
+    overflow-y: auto;
+    border-radius: 22px;
+    background: radial-gradient(ellipse at top, #3d2a6b 0%, #1b1330 55%, #100b1e 100%);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    padding-bottom: 18px;
+  }
+  .promo-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 2;
+  }
+  .promo-close:active { background: rgba(255,255,255,0.28); }
+  .promo-cta-wrap { padding: 4px 20px 4px; }
+  .promo-cta {
+    width: 100%;
+    border: none;
+    border-radius: 26px;
+    padding: 14px;
+    font-size: 14.5px;
+    font-weight: 700;
+    font-family: inherit;
+    background: #ffd76b;
+    color: #241a3d;
+    cursor: pointer;
+  }
+  .promo-cta:active { background: #f0c94e; }
+
   .fortune-form-wrap {
     position: relative;
     background: var(--paper);
@@ -689,6 +748,63 @@
 </style>
 </head>
 <body>
+
+<div class="promo-overlay hidden" id="promoOverlay">
+  <div class="promo-modal">
+    <button class="promo-close" onclick="closePromo()">✕</button>
+
+    <div class="fortune-logo" style="padding-top:30px;">
+      <svg viewBox="0 -6 200 96" fill="none">
+        <path d="M20 78 A80 80 0 0 1 180 78" stroke="#b088e8" stroke-width="7" stroke-linecap="round"/>
+        <path d="M32 78 A68 68 0 0 1 168 78" stroke="#6fa8dc" stroke-width="7" stroke-linecap="round"/>
+        <path d="M44 78 A56 56 0 0 1 156 78" stroke="#5fc9a8" stroke-width="7" stroke-linecap="round"/>
+        <path d="M56 78 A44 44 0 0 1 144 78" stroke="#f0c14b" stroke-width="7" stroke-linecap="round"/>
+        <path d="M68 78 A32 32 0 0 1 132 78" stroke="#e8836b" stroke-width="7" stroke-linecap="round"/>
+      </svg>
+      <div class="f-title">杉の泉</div>
+      <div class="f-sub">SUGINOIZUMI 占い部屋</div>
+    </div>
+
+    <div class="fortune-price-wrap">
+      <div class="fortune-price-card">
+        <div class="fortune-price-row">
+          <div><div class="fp-name">お試し</div><div class="fp-time">20分</div></div>
+          <div class="fp-price">¥2,800</div>
+        </div>
+        <div class="fortune-price-row">
+          <div><div class="fp-name">レギュラー</div><div class="fp-time">30分</div></div>
+          <div class="fp-price">¥3,800</div>
+        </div>
+        <div class="fortune-price-row">
+          <div><div class="fp-name">レギュラー</div><div class="fp-time">40分</div></div>
+          <div class="fp-price">¥4,800</div>
+        </div>
+        <div class="fortune-price-row">
+          <div><div class="fp-name">じっくり</div><div class="fp-time">50分</div></div>
+          <div class="fp-price">¥5,800</div>
+        </div>
+        <div class="fortune-price-row">
+          <div><div class="fp-name">じっくり</div><div class="fp-time">60分</div></div>
+          <div class="fp-price">¥6,800</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fortune-ext-note">〈延長〉10分 <b>¥1,000</b>　※全て税込価格です</div>
+
+    <div class="fortune-badges">
+      <span class="fortune-badge">★ 人数制限なし</span>
+      <span class="fortune-badge">1人でも複数人でもOK</span>
+    </div>
+
+    <div class="fortune-gallery-wrap" id="promoGalleryWrap"></div>
+
+    <div class="promo-cta-wrap">
+      <button class="promo-cta" onclick="goToFortune()">占いのご予約はこちら</button>
+    </div>
+  </div>
+</div>
+
 <div class="app">
 
   <div class="brand">
@@ -1373,6 +1489,37 @@
   }
 
   goStep(0);
+
+  // ---- 杉の泉アピールモーダル ----
+  (function initPromo() {
+    const overlay = document.getElementById("promoOverlay");
+    const galleryWrap = document.getElementById("promoGalleryWrap");
+    const mainTrack = document.querySelector(".fortune-gallery-track");
+    if (mainTrack && galleryWrap) {
+      const clone = document.createElement("div");
+      clone.className = "fortune-gallery-track";
+      clone.style.animationDuration = "34s";
+      clone.innerHTML = mainTrack.innerHTML;
+      galleryWrap.appendChild(clone);
+    }
+    if (!overlay) return;
+    try {
+      if (sessionStorage.getItem("promoDismissed") === "1") return;
+    } catch (e) { /* プライベートブラウズ等でsessionStorageが使えない場合は毎回表示 */ }
+    setTimeout(() => overlay.classList.remove("hidden"), 700);
+  })();
+
+  function closePromo() {
+    const overlay = document.getElementById("promoOverlay");
+    if (overlay) overlay.classList.add("hidden");
+    try { sessionStorage.setItem("promoDismissed", "1"); } catch (e) {}
+  }
+
+  function goToFortune() {
+    closePromo();
+    const target = document.querySelector(".fortune-form-wrap");
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 </script>
 </body>
 </html>
