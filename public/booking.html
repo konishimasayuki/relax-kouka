@@ -587,7 +587,7 @@
     display: flex;
     gap: 12px;
     width: max-content;
-    animation: fortuneScroll 34s linear infinite;
+    animation: fortuneScroll 22.7s linear infinite;
   }
   .fortune-gallery-wrap:active .fortune-gallery-track { animation-play-state: paused; }
   .fortune-gallery-track img {
@@ -769,7 +769,7 @@
 </head>
 <body>
 
-<div class="promo-overlay hidden" id="promoOverlay">
+<div class="promo-overlay hidden" id="promoOverlay" onclick="if(event.target===this) closePromo()">
   <div class="promo-modal">
     <button class="promo-close" onclick="closePromo()">✕</button>
 
