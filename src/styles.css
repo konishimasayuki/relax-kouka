@@ -1980,3 +1980,31 @@ table.grid th.num {
   text-align: right;
   font-size: 13px;
 }
+
+/* ---------- タイムボード：時間未設定の予約バナー ---------- */
+.tb-notime-banner {
+  background: #fff4e0;
+  border: 1px solid #f0c56b;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+.tb-notime-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.tb-notime-chip {
+  border: 1px solid #e0a83f;
+  background: #fff;
+  color: #6b4c14;
+  border-radius: 16px;
+  padding: 5px 12px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.tb-notime-chip:active {
+  background: #fef0d8;
+}
