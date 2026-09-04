@@ -100,8 +100,6 @@ export default function ReceptionList() {
     [records],
   );
 
-  const total = useMemo(() => view.reduce((s, r) => s + Number(r.amount || 0), 0), [view]);
-
   // レコードの一部を更新して即保存（新規行なら作成）。体感速度のため先に画面へ反映する。
   const updateRecord = async (r, patch) => {
     if (r && deletingIdsRef.current.has(r.id)) return;
@@ -173,13 +171,22 @@ export default function ReceptionList() {
   // ---- 紙の受付表の再現用 ----
   const [yy, mm, dd] = date.split("-").map(Number);
   const youbi = "日月火水木金土"[new Date(yy, mm - 1, dd).getDay()];
-  // 紙の様式に合わせて最低20行を確保しつつ、
-  // 行が埋まっても続けて入力できるよう、常に3行の空白行を余らせる
-  const sheetRows = Math.max(20, view.length + 3);
-  const cashList = view.filter((r) => r.payment === "現金");
-  const roomList = view.filter((r) => r.payment === "部屋付け");
-  const creditList = view.filter((r) => r.payment === "クレジット");
-  const qrList = view.filter((r) => r.payment === "QR");
+  // 紙の様式に合わせて1ページ最大20行。
+  // 店舗グループ（BODY RECESS=パレス／宙館、Spa the Ceada）ごとに別の受付表として分け、
+  // 21件以上になる場合はページ（NO.）を分けて続ける。
+  const PAGE_SIZE = 20;
+  const storeById = useMemo(() => Object.fromEntries(stores.map((s) => [s.id, s])), [stores]);
+  const isCeadaStore = (storeId) => storeById[storeId]?.building === "Ceada";
+  const bodyRecessRecords = useMemo(
+    () => view.filter((r) => !isCeadaStore(r.storeId)),
+    // eslint-disable-next-line
+    [view, storeById],
+  );
+  const ceadaRecords = useMemo(
+    () => view.filter((r) => isCeadaStore(r.storeId)),
+    // eslint-disable-next-line
+    [view, storeById],
+  );
   const sumOf = (list) => list.reduce((s, r) => s + Number(r.amount || 0), 0);
   const num = (n) => Number(n || 0).toLocaleString("ja-JP");
 
@@ -206,10 +213,64 @@ export default function ReceptionList() {
       {loading ? (
         <div className="empty">読み込み中…</div>
       ) : (
-        <div className="sheet-scroll reception-sheet">
+        <>
+          {renderGroupPages(bodyRecessRecords, "BODY RECESS（パレス／宙館）")}
+          {renderGroupPages(ceadaRecords, "Spa the Ceada")}
+        </>
+      )}
+
+
+      {signOpen && (
+        <SignaturePad
+          initialValue={meta.signature}
+          onClose={() => setSignOpen(false)}
+          onSave={(dataUrl) => {
+            updateMeta({ signature: dataUrl });
+            setSignOpen(false);
+          }}
+        />
+      )}
+
+      {newOpen && (
+        <NewReceptionModal
+          date={date}
+          stores={stores}
+          staff={staff}
+          menus={menus}
+          options={options}
+          coupons={coupons}
+          extensions={extensions}
+          workingStaffIds={workingStaffIds}
+          onClose={() => setNewOpen(false)}
+          onSaved={(saved) => {
+            if (saved.date === date) setRecords((prev) => [...prev, saved]);
+            setNewOpen(false);
+          }}
+        />
+      )}
+    </div>
+  );
+
+  function renderGroupPages(groupRecords, groupLabel) {
+    const groupKey = groupLabel;
+    const pageCount = Math.max(1, Math.ceil(groupRecords.length / PAGE_SIZE));
+    const groupTotal = sumOf(groupRecords);
+
+    return Array.from({ length: pageCount }, (_, pageIndex) => {
+      const startNo = pageIndex * PAGE_SIZE;
+      const slice = groupRecords.slice(startNo, startNo + PAGE_SIZE);
+      const isLastPage = pageIndex === pageCount - 1;
+      const rowCount = isLastPage ? Math.max(PAGE_SIZE, slice.length + 3) : PAGE_SIZE;
+      const cashList = groupRecords.filter((r) => r.payment === "現金");
+      const roomList = groupRecords.filter((r) => r.payment === "部屋付け");
+      const creditList = groupRecords.filter((r) => r.payment === "クレジット");
+      const qrList = groupRecords.filter((r) => r.payment === "QR");
+
+      return (
+        <div className="sheet-scroll reception-sheet" key={`${groupKey}-${pageIndex}`}>
           <div className="sheet">
             <div className="sheet-head">
-              <span className="sheet-title">Body Recess　受付表</span>
+              <span className="sheet-title">{groupLabel}　受付表</span>
               <span>
                 客数{" "}
                 <input
@@ -235,7 +296,7 @@ export default function ReceptionList() {
                 名
               </span>
               <span>
-                令和 {yy - 2018} 年 {mm} 月 {dd} 日（{youbi}）　NO. 1
+                令和 {yy - 2018} 年 {mm} 月 {dd} 日（{youbi}）　NO. {pageIndex + 1}
               </span>
             </div>
 
@@ -281,9 +342,10 @@ export default function ReceptionList() {
                 </tr>
               </thead>
               <tbody>
-                {Array.from({ length: sheetRows }, (_, i) => {
-                  const r = view[i];
-                  const rowKey = r ? r.id : `empty-${i}`;
+                {Array.from({ length: rowCount }, (_, i) => {
+                  const r = slice[i];
+                  const displayNo = startNo + i + 1;
+                  const rowKey = r ? r.id : `empty-${groupKey}-${pageIndex}-${i}`;
                   return (
                     <tr
                       key={rowKey}
@@ -301,7 +363,7 @@ export default function ReceptionList() {
                         />
                       </td>
                       <td className="c-center">{i === 0 ? `${mm}/${dd}` : ""}</td>
-                      <td className="c-center c-no">{i + 1}</td>
+                      <td className="c-center c-no">{displayNo}</td>
                       <td className="c-center">
                         <select
                           className="cell-select"
@@ -574,6 +636,7 @@ export default function ReceptionList() {
               </tbody>
             </table>
 
+            {isLastPage && (
             <div className="sheet-foot">
               <div className="sf-left">
                 <div>
@@ -633,43 +696,15 @@ export default function ReceptionList() {
                 </div>
                 <div>
                   <span>合計</span>
-                  <span>{view.length} 件</span>
-                  <span>{num(total)} 円</span>
+                  <span>{groupRecords.length} 件</span>
+                  <span>{num(groupTotal)} 円</span>
                 </div>
               </div>
             </div>
+            )}
           </div>
         </div>
-      )}
-
-      {signOpen && (
-        <SignaturePad
-          initialValue={meta.signature}
-          onClose={() => setSignOpen(false)}
-          onSave={(dataUrl) => {
-            updateMeta({ signature: dataUrl });
-            setSignOpen(false);
-          }}
-        />
-      )}
-
-      {newOpen && (
-        <NewReceptionModal
-          date={date}
-          stores={stores}
-          staff={staff}
-          menus={menus}
-          options={options}
-          coupons={coupons}
-          extensions={extensions}
-          workingStaffIds={workingStaffIds}
-          onClose={() => setNewOpen(false)}
-          onSaved={(saved) => {
-            if (saved.date === date) setRecords((prev) => [...prev, saved]);
-            setNewOpen(false);
-          }}
-        />
-      )}
-    </div>
-  );
+      );
+    });
+  }
 }
