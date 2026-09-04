@@ -266,7 +266,10 @@ export default function TimeBoardGrid({
     // eslint-disable-next-line
   }, [staffIdsToday, records, todaysShifts, todaysBreaks, homeBuilding, stores, attendanceMap]);
 
-  // 担当未定の予約（タイムボード最下段に表示）
+  // 開始時間が未設定の予約（担当の有無に関わらず、これまでタイムボード上どこにも
+  // 表示されず「見えない」まま件数だけカウントされてしまっていた）
+  const noTimeApps = useMemo(() => records.filter((r) => !r.startTime), [records]);
+
   const unassignedApps = useMemo(
     () =>
       records
@@ -328,7 +331,26 @@ export default function TimeBoardGrid({
   }
 
   return (
-    <div className="tb-scroll">
+    <>
+      {noTimeApps.length > 0 && (
+        <div className="tb-notime-banner">
+          <strong>⚠ 開始時間が未設定の予約（{noTimeApps.length}件）</strong>
+          <span className="muted"> タップして時間を設定してください。個人別日計表には件数が含まれますが、ここには表示されていませんでした。</span>
+          <div className="tb-notime-list">
+            {noTimeApps.map((r) => (
+              <button
+                key={r.id}
+                className="tb-notime-chip"
+                onClick={() => onSelect?.(r)}
+              >
+                {r.customerName || "（お客様名未入力）"}
+                {r.staffId ? `／${staffName(r.staffId)}` : "／担当未定"}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      <div className="tb-scroll">
       <div className="tb" style={{ minWidth: STAFF_COL_W + laneW }}>
         <div className="tb-hours">
           <div className="tb-bedcol" style={{ width: STAFF_COL_W, height: 33 }} />
@@ -558,5 +580,6 @@ export default function TimeBoardGrid({
         )}
       </div>
     </div>
+    </>
   );
 }
