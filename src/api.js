@@ -98,6 +98,10 @@ export const api = {
   deleteBookingRequest: (id) =>
     req(`bookingRequests?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
 
+  commissionRates: () => req("commissionRates"),
+  saveCommissionRates: (c) =>
+    req("commissionRates", { method: "POST", body: JSON.stringify(c) }),
+
   payrollRates: () => req("payrollRates"),
   savePayrollRate: (r) => req("payrollRates", { method: "POST", body: JSON.stringify(r) }),
 
