@@ -217,17 +217,25 @@ export default function TimeBoardGrid({
 
       // 本店以外の場所は、同じ建物が連続する「滞在」ごとにまとめ、
       // その滞在の前後にだけ移動20分を入れる（連続中は移動なし）。
+      // ただし同じ建物内でも前の施術の終了から次の開始まで60分以上空く場合は、
+      // 一度本店に戻っているとみなして滞在を区切り、その間にも移動を入れる。
       // 状態を引き継ぐ方式ではなく、滞在単位でグループ化してから
       // 判定するため、担当変更や時間変更の編集後も必ず正しく再計算される。
+      const STAY_GAP_LIMIT = 60; // 分
       const stays = [];
       for (const r of apps) {
         const bld = buildingOf(r.storeId);
         const last = stays[stays.length - 1];
         if (last && last.building === bld) {
-          last.apps.push(r);
-        } else {
-          stays.push({ building: bld, apps: [r] });
+          const lastApp = last.apps[last.apps.length - 1];
+          const lastAppEnd = toMin(lastApp.startTime) + totalMinutes(lastApp.course);
+          const gap = toMin(r.startTime) - lastAppEnd;
+          if (gap < STAY_GAP_LIMIT) {
+            last.apps.push(r);
+            continue;
+          }
         }
+        stays.push({ building: bld, apps: [r] });
       }
 
       const travels = [];
