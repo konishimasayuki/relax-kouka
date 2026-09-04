@@ -229,20 +229,20 @@ export default function Payroll() {
         <div className="empty">読み込み中…</div>
       ) : (
         <>
-          {renderSheet("BODY RECESS（パレス／宙館）", rowsBodyRecess, totalsBodyRecess)}
-          {renderSheet("Spa the Ceada", rowsCeada, totalsCeada)}
+          {renderSheet("BODY RECESS（パレス／宙館）", rowsBodyRecess, totalsBodyRecess, BILLING_COMPANY)}
+          {renderSheet("Spa the Ceada", rowsCeada, totalsCeada, "株式会社Spa the Ceada")}
         </>
       )}
     </div>
   );
 
-  function renderSheet(storeLabel, rows, totals) {
+  function renderSheet(storeLabel, rows, totals, billingCompany) {
     return (
       <div className="sheet-scroll payroll-sheet" style={{ marginBottom: 24 }}>
         <div className="sheet">
           <div className="sheet-head">
             <span className="sheet-title">請求書</span>
-            <span>{BILLING_COMPANY} 御中</span>
+            <span>{billingCompany} 御中</span>
             <span>{m}月分</span>
             <span>
               令和 <span>{reiwaYear}</span> 年 <span>{m}</span> 月 <span>{lastDay}</span> 日
