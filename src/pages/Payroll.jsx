@@ -19,8 +19,10 @@ export default function Payroll() {
   const [month, setMonth] = useState(thisMonthStr());
   const [staffId, setStaffId] = useState(isLockedToSelf ? selfStaffId : "");
   const [monthRecords, setMonthRecords] = useState({}); // date -> records[]
+  const [monthAttendance, setMonthAttendance] = useState({}); // date -> attendance[]
   const [shifts, setShifts] = useState([]);
   const [rateOverrides, setRateOverrides] = useState([]); // payrollrate items
+  const [commissionRates, setCommissionRates] = useState(null);
   const [loading, setLoading] = useState(false);
   const [savingDay, setSavingDay] = useState(null);
 
@@ -33,18 +35,24 @@ export default function Payroll() {
     try {
       const days = daysInMonth(month);
       const dates = Array.from({ length: days }, (_, i) => dateOfMonth(month, i + 1));
-      const [recArr, sh, rates] = await Promise.all([
+      const [recArr, attArr, sh, rates, commRates] = await Promise.all([
         Promise.all(dates.map((d) => api.reception(d))),
+        Promise.all(dates.map((d) => api.attendance(d))),
         api.shifts(),
         api.payrollRates(),
+        api.commissionRates(),
       ]);
       const map = {};
+      const attMap = {};
       dates.forEach((d, i) => {
         map[d] = recArr[i] || [];
+        attMap[d] = attArr[i] || [];
       });
       setMonthRecords(map);
+      setMonthAttendance(attMap);
       setShifts(sh);
       setRateOverrides(rates);
+      setCommissionRates(commRates);
     } finally {
       setLoading(false);
     }
@@ -60,9 +68,47 @@ export default function Payroll() {
   const rateOf = (day) =>
     rateOverrides.find((r) => r.staffId === staffId && r.month === month && r.day === day);
 
+  // "HH:MM" を分に変換
+  const toMinutes = (hhmm) => {
+    if (!hhmm) return null;
+    const [h, m] = hhmm.split(":").map(Number);
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+    return h * 60 + m;
+  };
+  const MIN_11_00 = 11 * 60;
+  const MIN_15_00 = 15 * 60;
+  const MIN_23_00 = 23 * 60;
+
+  // 出勤時刻の時間帯バケットを判定
+  const bucketOf = (checkInMin) => {
+    if (checkInMin === null) return null;
+    if (checkInMin <= MIN_11_00) return "until11";
+    if (checkInMin <= MIN_15_00) return "from11to15";
+    return "from15to23";
+  };
+
+  // 出勤時刻・退勤時刻（タイムボードの出勤／途中退勤記録）から、その日の自動歩合率を算出。
+  // 出勤記録が無い日は null（空欄）を返す。
+  const autoRateFor = (date, storeKey) => {
+    if (!commissionRates) return null;
+    const att = (monthAttendance[date] || []).find((a) => a.staffId === staffId);
+    if (!att?.checkInTime) return null;
+
+    const checkInMin = toMinutes(att.checkInTime);
+    const bucket = bucketOf(checkInMin);
+    if (!bucket) return null;
+
+    const leaveMin = att.leaveTime ? toMinutes(att.leaveTime) : null;
+    const isEarlyLeave = leaveMin !== null && leaveMin < MIN_23_00;
+
+    const table = commissionRates[storeKey];
+    if (!table) return null;
+    return isEarlyLeave ? table.earlyLeave[bucket] : table.base[bucket];
+  };
+
   // 店舗グループ（パレス／宙館 or Ceada）ごとに、日別の受付を絞り込んで集計する。
   // 税込累計・歩合金額などはグループごとに独立して計算し直す。
-  const buildRows = (storeFilter) => {
+  const buildRows = (storeFilter, commissionKey) => {
     const days = daysInMonth(month);
     let cumTaxIn = 0;
     const out = [];
@@ -81,8 +127,9 @@ export default function Payroll() {
       cumTaxIn += taxIn;
 
       const override = rateOf(day);
-      const rate = override ? Number(override.rate) : Number(selectedStaff?.commissionRate ?? 45);
-      const commission = Math.round(taxEx * (rate / 100));
+      const autoRate = autoRateFor(date, commissionKey);
+      const rate = override ? Number(override.rate) : autoRate;
+      const commission = rate === null ? 0 : Math.round(taxEx * (rate / 100));
       const total = commission + nominateFee;
 
       const dayShift = shifts.find((s) => s.staffId === staffId && s.date === date);
@@ -108,14 +155,14 @@ export default function Payroll() {
   };
 
   const rowsBodyRecess = useMemo(
-    () => buildRows((storeId) => !isCeadaStore(storeId)),
+    () => buildRows((storeId) => !isCeadaStore(storeId), "bodyRecess"),
     // eslint-disable-next-line
-    [month, monthRecords, staffId, rateOverrides, selectedStaff, shifts, storeById],
+    [month, monthRecords, monthAttendance, staffId, rateOverrides, commissionRates, shifts, storeById],
   );
   const rowsCeada = useMemo(
-    () => buildRows((storeId) => isCeadaStore(storeId)),
+    () => buildRows((storeId) => isCeadaStore(storeId), "ceada"),
     // eslint-disable-next-line
-    [month, monthRecords, staffId, rateOverrides, selectedStaff, shifts, storeById],
+    [month, monthRecords, monthAttendance, staffId, rateOverrides, commissionRates, shifts, storeById],
   );
 
   const sumRows = (rows) =>
@@ -232,12 +279,13 @@ export default function Payroll() {
                 <tr key={r.day}>
                   <td className="c-center">{r.day}日</td>
                   <td className="c-center">
-                    <span className="print-only">{r.rate}%</span>
+                    <span className="print-only">{r.rate === null ? "" : `${r.rate}%`}</span>
                     <span className="no-print">
                       <input
                         type="number"
                         className="rate-input"
-                        value={r.rate}
+                        value={r.rate === null ? "" : r.rate}
+                        placeholder="-"
                         disabled={savingDay === r.day}
                         onChange={(e) => saveRate(r.day, e.target.value)}
                       />
