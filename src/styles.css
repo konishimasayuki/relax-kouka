@@ -1953,3 +1953,30 @@ table.grid th.num {
   padding: 16px 24px;
   text-align: center;
 }
+
+/* ---------- 設定タブ：歩合率設定 ---------- */
+.rate-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+.rate-table th,
+.rate-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  text-align: center;
+}
+.rate-table th {
+  color: var(--ink-soft, #777);
+  font-weight: 500;
+  font-size: 12px;
+}
+.rate-table .rate-input {
+  width: 52px;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  text-align: right;
+  font-size: 13px;
+}
