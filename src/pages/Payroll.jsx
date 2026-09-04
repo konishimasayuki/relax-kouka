@@ -7,10 +7,14 @@ const BILLING_COMPANY = "株式会社 康佳";
 const BILLING_ADDRESS = "大分県別府市海観寺1杉乃井ホテル内　康楽美ボディリセ";
 
 export default function Payroll() {
-  const { role, staffSession, isAdminUser, staff } = useApp();
+  const { role, staffSession, isAdminUser, staff, stores } = useApp();
 
   const isLockedToSelf = role === "staff" && !isAdminUser;
   const selfStaffId = staffSession?.id || "";
+
+  // 請求書は2枚に分ける：①BODY RECESS（パレス／宙館） ②Spa the Ceada
+  const storeById = useMemo(() => Object.fromEntries(stores.map((s) => [s.id, s])), [stores]);
+  const isCeadaStore = (storeId) => storeById[storeId]?.building === "Ceada";
 
   const [month, setMonth] = useState(thisMonthStr());
   const [staffId, setStaffId] = useState(isLockedToSelf ? selfStaffId : "");
@@ -56,14 +60,17 @@ export default function Payroll() {
   const rateOf = (day) =>
     rateOverrides.find((r) => r.staffId === staffId && r.month === month && r.day === day);
 
-  // 店舗をまたいでも、スタッフ1人につき請求書は1枚。全店舗の受付を合算する。
-  const rows = useMemo(() => {
+  // 店舗グループ（パレス／宙館 or Ceada）ごとに、日別の受付を絞り込んで集計する。
+  // 税込累計・歩合金額などはグループごとに独立して計算し直す。
+  const buildRows = (storeFilter) => {
     const days = daysInMonth(month);
     let cumTaxIn = 0;
     const out = [];
     for (let day = 1; day <= days; day++) {
       const date = dateOfMonth(month, day);
-      const dayRecords = (monthRecords[date] || []).filter((r) => r.staffId === staffId);
+      const dayRecords = (monthRecords[date] || []).filter(
+        (r) => r.staffId === staffId && storeFilter(r.storeId),
+      );
       const count = dayRecords.length;
       const taxIn = dayRecords.reduce((s, r) => s + Number(r.amount || 0), 0);
       const taxEx = Math.round(taxIn / 1.1);
@@ -98,24 +105,34 @@ export default function Payroll() {
       });
     }
     return out;
-    // eslint-disable-next-line
-  }, [month, monthRecords, staffId, rateOverrides, selectedStaff, shifts]);
+  };
 
-  const totals = useMemo(
-    () =>
-      rows.reduce(
-        (acc, r) => ({
-          count: acc.count + r.count,
-          taxIn: acc.taxIn + r.taxIn,
-          taxEx: acc.taxEx + r.taxEx,
-          commission: acc.commission + r.commission,
-          nominateFee: acc.nominateFee + r.nominateFee,
-          total: acc.total + r.total,
-        }),
-        { count: 0, taxIn: 0, taxEx: 0, commission: 0, nominateFee: 0, total: 0 },
-      ),
-    [rows],
+  const rowsBodyRecess = useMemo(
+    () => buildRows((storeId) => !isCeadaStore(storeId)),
+    // eslint-disable-next-line
+    [month, monthRecords, staffId, rateOverrides, selectedStaff, shifts, storeById],
   );
+  const rowsCeada = useMemo(
+    () => buildRows((storeId) => isCeadaStore(storeId)),
+    // eslint-disable-next-line
+    [month, monthRecords, staffId, rateOverrides, selectedStaff, shifts, storeById],
+  );
+
+  const sumRows = (rows) =>
+    rows.reduce(
+      (acc, r) => ({
+        count: acc.count + r.count,
+        taxIn: acc.taxIn + r.taxIn,
+        taxEx: acc.taxEx + r.taxEx,
+        commission: acc.commission + r.commission,
+        nominateFee: acc.nominateFee + r.nominateFee,
+        total: acc.total + r.total,
+      }),
+      { count: 0, taxIn: 0, taxEx: 0, commission: 0, nominateFee: 0, total: 0 },
+    );
+
+  const totalsBodyRecess = useMemo(() => sumRows(rowsBodyRecess), [rowsBodyRecess]);
+  const totalsCeada = useMemo(() => sumRows(rowsCeada), [rowsCeada]);
 
   const saveRate = async (day, newRate) => {
     setSavingDay(day);
@@ -164,89 +181,99 @@ export default function Payroll() {
       {loading ? (
         <div className="empty">読み込み中…</div>
       ) : (
-        <div className="sheet-scroll payroll-sheet">
-          <div className="sheet">
-            <div className="sheet-head">
-              <span className="sheet-title">請求書</span>
-              <span>{BILLING_COMPANY} 御中</span>
-              <span>{m}月分</span>
-              <span>
-                令和 <span>{reiwaYear}</span> 年 <span>{m}</span> 月 <span>{lastDay}</span> 日
-              </span>
-            </div>
-            <div className="sheet-head" style={{ paddingTop: 0 }}>
-              <span>
-                氏名 <span>{selectedStaff?.name || "（未選択）"}</span>
-              </span>
-              <span>業務遂行地（住所）：{BILLING_ADDRESS}</span>
-            </div>
-
-            <div className="sheet-title" style={{ margin: "10px 0" }}>
-              ボディ・フット・リフレ委託料金合計金額　¥{totals.commission.toLocaleString("ja-JP")}
-            </div>
-
-            <table className="sheet-table payroll-table">
-              <thead>
-                <tr>
-                  <th>日</th>
-                  <th>歩合率</th>
-                  <th>出勤時間</th>
-                  <th>件数</th>
-                  <th>税込売上</th>
-                  <th>税込累計</th>
-                  <th>税抜売上</th>
-                  <th>歩合金額</th>
-                  <th>指名件数</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.day}>
-                    <td className="c-center">{r.day}日</td>
-                    <td className="c-center">
-                      <span className="print-only">{r.rate}%</span>
-                      <span className="no-print">
-                        <input
-                          type="number"
-                          className="rate-input"
-                          value={r.rate}
-                          disabled={savingDay === r.day}
-                          onChange={(e) => saveRate(r.day, e.target.value)}
-                        />
-                        %
-                      </span>
-                    </td>
-                    <td className="c-center">{r.startLabel}</td>
-                    <td className="c-center">{r.count ? `${r.count}件` : "件"}</td>
-                    <td className="c-amount">{r.taxIn ? r.taxIn.toLocaleString("ja-JP") : ""}</td>
-                    <td className="c-amount">
-                      {r.count || r.cumTaxIn ? r.cumTaxIn.toLocaleString("ja-JP") : ""}
-                    </td>
-                    <td className="c-amount">{r.taxIn ? r.taxEx.toLocaleString("ja-JP") : ""}</td>
-                    <td className="c-amount">
-                      {r.taxIn ? r.commission.toLocaleString("ja-JP") : ""}
-                    </td>
-                    <td className="c-center">{r.nominateCount ? `${r.nominateCount}件` : "件"}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td className="c-center" colSpan={3}>
-                    総合計
-                  </td>
-                  <td className="c-center">{totals.count}件</td>
-                  <td className="c-amount">{totals.taxIn.toLocaleString("ja-JP")}円</td>
-                  <td />
-                  <td className="c-amount">{totals.taxEx.toLocaleString("ja-JP")}円</td>
-                  <td className="c-amount">{totals.commission.toLocaleString("ja-JP")}円</td>
-                  <td />
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
+        <>
+          {renderSheet("BODY RECESS（パレス／宙館）", rowsBodyRecess, totalsBodyRecess)}
+          {renderSheet("Spa the Ceada", rowsCeada, totalsCeada)}
+        </>
       )}
     </div>
   );
+
+  function renderSheet(storeLabel, rows, totals) {
+    return (
+      <div className="sheet-scroll payroll-sheet" style={{ marginBottom: 24 }}>
+        <div className="sheet">
+          <div className="sheet-head">
+            <span className="sheet-title">請求書</span>
+            <span>{BILLING_COMPANY} 御中</span>
+            <span>{m}月分</span>
+            <span>
+              令和 <span>{reiwaYear}</span> 年 <span>{m}</span> 月 <span>{lastDay}</span> 日
+            </span>
+          </div>
+          <div className="sheet-head" style={{ paddingTop: 0 }}>
+            <span>
+              氏名 <span>{selectedStaff?.name || "（未選択）"}</span>
+            </span>
+            <span>業務遂行地（住所）：{BILLING_ADDRESS}</span>
+          </div>
+
+          <div className="sheet-title" style={{ margin: "10px 0" }}>
+            {storeLabel}　ボディ・フット・リフレ委託料金合計金額　¥
+            {totals.commission.toLocaleString("ja-JP")}
+          </div>
+
+          <table className="sheet-table payroll-table">
+            <thead>
+              <tr>
+                <th>日</th>
+                <th>歩合率</th>
+                <th>出勤時間</th>
+                <th>件数</th>
+                <th>税込売上</th>
+                <th>税込累計</th>
+                <th>税抜売上</th>
+                <th>歩合金額</th>
+                <th>指名件数</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.day}>
+                  <td className="c-center">{r.day}日</td>
+                  <td className="c-center">
+                    <span className="print-only">{r.rate}%</span>
+                    <span className="no-print">
+                      <input
+                        type="number"
+                        className="rate-input"
+                        value={r.rate}
+                        disabled={savingDay === r.day}
+                        onChange={(e) => saveRate(r.day, e.target.value)}
+                      />
+                      %
+                    </span>
+                  </td>
+                  <td className="c-center">{r.startLabel}</td>
+                  <td className="c-center">{r.count ? `${r.count}件` : "件"}</td>
+                  <td className="c-amount">{r.taxIn ? r.taxIn.toLocaleString("ja-JP") : ""}</td>
+                  <td className="c-amount">
+                    {r.count || r.cumTaxIn ? r.cumTaxIn.toLocaleString("ja-JP") : ""}
+                  </td>
+                  <td className="c-amount">{r.taxIn ? r.taxEx.toLocaleString("ja-JP") : ""}</td>
+                  <td className="c-amount">
+                    {r.taxIn ? r.commission.toLocaleString("ja-JP") : ""}
+                  </td>
+                  <td className="c-center">{r.nominateCount ? `${r.nominateCount}件` : "件"}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td className="c-center" colSpan={3}>
+                  総合計
+                </td>
+                <td className="c-center">{totals.count}件</td>
+                <td className="c-amount">{totals.taxIn.toLocaleString("ja-JP")}円</td>
+                <td />
+                <td className="c-amount">{totals.taxEx.toLocaleString("ja-JP")}円</td>
+                <td className="c-amount">{totals.commission.toLocaleString("ja-JP")}円</td>
+                <td />
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    );
+  }
 }
