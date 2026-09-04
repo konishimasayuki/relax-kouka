@@ -68,6 +68,18 @@ export default function Settings() {
   const [testEmailTo, setTestEmailTo] = useState("");
   const [notifyBusy, setNotifyBusy] = useState(false);
   const [notifySaved, setNotifySaved] = useState(false);
+  const [commissionRates, setCommissionRates] = useState({
+    bodyRecess: {
+      base: { until11: 55, from11to15: 50, from15to23: 45 },
+      earlyLeave: { until11: 55, from11to15: 45, from15to23: 40 },
+    },
+    ceada: {
+      base: { until11: 50, from11to15: 50, from15to23: 45 },
+      earlyLeave: { until11: 50, from11to15: 45, from15to23: 40 },
+    },
+  });
+  const [rateBusy, setRateBusy] = useState(false);
+  const [rateSaved, setRateSaved] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -87,6 +99,9 @@ export default function Settings() {
     }
     if (tab === "notify") {
       api.notifyConfig().then(setNotifyConfig).catch(() => {});
+    }
+    if (tab === "commissionRate") {
+      api.commissionRates().then(setCommissionRates).catch(() => {});
     }
   }, [tab]);
 
@@ -127,6 +142,31 @@ export default function Settings() {
       alert(`送信失敗: ${e.message}`);
     } finally {
       setNotifyBusy(false);
+    }
+  };
+
+  const updateRate = (store, kind, bucket, value) => {
+    setCommissionRates((prev) => ({
+      ...prev,
+      [store]: {
+        ...prev[store],
+        [kind]: { ...prev[store][kind], [bucket]: Number(value) },
+      },
+    }));
+  };
+
+  const saveCommissionRates = async () => {
+    setRateBusy(true);
+    setRateSaved(false);
+    try {
+      const saved = await api.saveCommissionRates(commissionRates);
+      setCommissionRates(saved);
+      setRateSaved(true);
+      setTimeout(() => setRateSaved(false), 2000);
+    } catch (e) {
+      alert(`保存失敗: ${e.message}`);
+    } finally {
+      setRateBusy(false);
     }
   };
 
@@ -350,6 +390,12 @@ export default function Settings() {
           onClick={() => setTab("notify")}
         >
           通知設定
+        </button>
+        <button
+          className={tab === "commissionRate" ? "btn sm" : "btn sm gray"}
+          onClick={() => setTab("commissionRate")}
+        >
+          歩合率設定
         </button>
       </div>
 
@@ -701,6 +747,71 @@ export default function Settings() {
               </button>
               {notifySaved && <span className="muted">保存しました</span>}
             </div>
+          </div>
+        </div>
+      )}
+
+      {tab === "commissionRate" && (
+        <div>
+          {[
+            { key: "bodyRecess", label: "BODY RECESS（パレス／宙館）" },
+            { key: "ceada", label: "Spa the Ceada" },
+          ].map(({ key: storeKey, label }) => (
+            <div className="card" key={storeKey} style={{ marginBottom: 16 }}>
+              <h3 style={{ fontSize: 15, margin: "0 0 4px" }}>{label}</h3>
+              <p className="muted" style={{ fontSize: 12.5, marginTop: 0 }}>
+                出勤時間帯ごとの歩合率です。23時より前に退勤した場合は「早退時」の率が適用されます（23時のラストまでいた場合は「通常」の率）。
+              </p>
+              <table className="rate-table">
+                <thead>
+                  <tr>
+                    <th>出勤時間</th>
+                    <th>通常（23時まで）</th>
+                    <th>早退時（23時より前に退勤）</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { bucket: "until11", label: "〜11:00" },
+                    { bucket: "from11to15", label: "11:01〜15:00" },
+                    { bucket: "from15to23", label: "15:01〜23:00" },
+                  ].map(({ bucket, label: bucketLabel }) => (
+                    <tr key={bucket}>
+                      <td>{bucketLabel}</td>
+                      <td>
+                        <input
+                          type="number"
+                          className="rate-input"
+                          value={commissionRates[storeKey].base[bucket]}
+                          onChange={(e) =>
+                            updateRate(storeKey, "base", bucket, e.target.value)
+                          }
+                        />
+                        %
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="rate-input"
+                          value={commissionRates[storeKey].earlyLeave[bucket]}
+                          onChange={(e) =>
+                            updateRate(storeKey, "earlyLeave", bucket, e.target.value)
+                          }
+                        />
+                        %
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+
+          <div className="modal-actions" style={{ justifyContent: "flex-start" }}>
+            <button className="btn" disabled={rateBusy} onClick={saveCommissionRates}>
+              保存
+            </button>
+            {rateSaved && <span className="muted">保存しました</span>}
           </div>
         </div>
       )}
