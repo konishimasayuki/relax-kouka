@@ -102,6 +102,14 @@ export const api = {
   saveCommissionRates: (c) =>
     req("commissionRates", { method: "POST", body: JSON.stringify(c) }),
 
+  fortuneReceptions: (date) => req(`fortuneReceptions?date=${encodeURIComponent(date)}`),
+  saveFortuneReception: (r) =>
+    req("fortuneReceptions", { method: "POST", body: JSON.stringify(r) }),
+  deleteFortuneReception: (id, date) =>
+    req(`fortuneReceptions?id=${encodeURIComponent(id)}&date=${encodeURIComponent(date)}`, {
+      method: "DELETE",
+    }),
+
   payrollRates: () => req("payrollRates"),
   savePayrollRate: (r) => req("payrollRates", { method: "POST", body: JSON.stringify(r) }),
 
