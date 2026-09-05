@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
 import { addDays, api, todayStr } from "../api.js";
 import TimeInput10 from "../components/TimeInput10.jsx";
@@ -50,6 +50,10 @@ function emptyReservation(date) {
     price: 0,
     memo: "",
     staffId: "",
+    gender: "",
+    payment: "現金",
+    room: "",
+    checked: false,
   };
 }
 
@@ -142,91 +146,30 @@ export default function Fortune() {
     // eslint-disable-next-line
   }, [date]);
 
-  // ---- 受付一覧表（紙の受付表に相当） ----
-  const [recRecords, setRecRecords] = useState([]);
-  const [loadingRec, setLoadingRec] = useState(false);
-  const deletingRecIdsRef = useRef(new Set());
-
-  const loadRecRecords = async () => {
-    setLoadingRec(true);
-    try {
-      setRecRecords(await api.fortuneReceptions(date));
-    } finally {
-      setLoadingRec(false);
-    }
-  };
-
-  useEffect(() => {
-    loadRecRecords();
-    // eslint-disable-next-line
-  }, [date]);
-
-  const recView = useMemo(
-    () =>
-      [...recRecords].sort((a, b) => {
-        if (!a.startTime) return 1;
-        if (!b.startTime) return -1;
-        return a.startTime.localeCompare(b.startTime);
-      }),
-    [recRecords],
-  );
-  const REC_PAGE_SIZE = 20;
-  const [recYY, recMM, recDD] = date.split("-").map(Number);
-  const recYoubi = WEEK_LABEL[new Date(recYY, recMM - 1, recDD).getDay()];
-
-  function emptyFortuneReception() {
-    return {
-      id: "",
-      date,
-      checked: false,
-      customerName: "",
-      gender: "",
-      courseMinutes: 20,
-      staffId: "",
-      startTime: "",
-      payment: "現金",
-      room: "",
-      amount: "",
-    };
-  }
-
-  const updateRecRecord = async (r, patch) => {
-    if (r && deletingRecIdsRef.current.has(r.id)) return;
-    const base = r || emptyFortuneReception();
+  // ---- 受付一覧表（紙の受付表に相当）----
+  // タイムボードと同じ reservations（fortuneReservations）を直接読み書きすることで、
+  // タイムボード⇔受付一覧表のどちらを編集しても双方に反映されるようにする。
+  const updateReservationField = async (r, patch) => {
+    const base = r || emptyReservation(date);
     const payload = { ...base, ...patch };
-
     if (r) {
-      setRecRecords((prev) => prev.map((x) => (x.id === r.id ? payload : x)));
+      setReservations((prev) => prev.map((x) => (x.id === r.id ? payload : x)));
     }
     try {
-      const saved = await api.saveFortuneReception(payload);
-      setRecRecords((prev) => {
+      const saved = await api.saveFortuneReservation(payload);
+      setReservations((prev) => {
         const exists = prev.some((x) => x.id === saved.id);
         return exists ? prev.map((x) => (x.id === saved.id ? saved : x)) : [...prev, saved];
       });
     } catch (e) {
       alert(`保存失敗: ${e.message}`);
-      loadRecRecords();
+      loadReservations();
     }
   };
 
-  const delRecRecord = async (id) => {
-    deletingRecIdsRef.current.add(id);
-    const ok = window.confirm("この受付を削除しますか？");
-    if (!ok) {
-      deletingRecIdsRef.current.delete(id);
-      return;
-    }
-    setRecRecords((prev) => prev.filter((x) => x.id !== id));
-    try {
-      await api.deleteFortuneReception(id, date);
-    } catch (e) {
-      alert(`削除失敗: ${e.message}`);
-      loadRecRecords();
-    } finally {
-      deletingRecIdsRef.current.delete(id);
-    }
-  };
+  const REC_PAGE_SIZE = 20;
+  const [recYY, recMM, recDD] = date.split("-").map(Number);
+  const recYoubi = WEEK_LABEL[new Date(recYY, recMM - 1, recDD).getDay()];
 
   const staffName = (id) => staffList.find((s) => s.id === id)?.name || "?";
 
@@ -428,10 +371,11 @@ export default function Fortune() {
         )}
       </div>
 
-      {/* ---- 受付一覧表（マッサージ側の受付一覧表と同じ紙の様式） ---- */}
+      {/* ---- 受付一覧表（マッサージ側の受付一覧表と同じ紙の様式・タイムボードと同じデータを共有） ---- */}
       <div className="toolbar" style={{ marginTop: 0 }}>
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         <span className="muted" style={{ fontSize: 12 }}>
-          セルをクリックしてそのまま編集（チェックはスタッフの確認用です）
+          セルをクリックしてそのまま編集（チェックはスタッフの確認用です）。タイムボードと同じデータなので、どちらを編集しても両方に反映されます。
         </span>
         <button className="btn sm ghost" onClick={() => window.print()}>
           🖨️ 印刷
@@ -439,10 +383,10 @@ export default function Fortune() {
       </div>
       <style>{"@page { size: A4 landscape; margin: 8mm; }"}</style>
 
-      {loadingRec ? (
+      {loadingRes ? (
         <div className="empty">読み込み中…</div>
       ) : (
-        renderFortuneRecPages(recView, "杉の泉　受付表")
+        renderFortuneRecPages(view, "杉の泉　受付表")
       )}
 
       {/* ---- 予約管理 ---- */}
@@ -704,6 +648,38 @@ export default function Fortune() {
                 ))}
               </select>
             </div>
+            <div className="row">
+              <div className="field">
+                <label>性別</label>
+                <select
+                  value={resForm.gender || ""}
+                  onChange={(e) => setResForm({ ...resForm, gender: e.target.value })}
+                >
+                  <option value="">-</option>
+                  <option value="男">男</option>
+                  <option value="女">女</option>
+                </select>
+              </div>
+              <div className="field">
+                <label>支払方法</label>
+                <select
+                  value={resForm.payment || "現金"}
+                  onChange={(e) => setResForm({ ...resForm, payment: e.target.value })}
+                >
+                  <option value="現金">現金</option>
+                  <option value="部屋付け">部屋付け</option>
+                  <option value="QR">QR</option>
+                </select>
+              </div>
+              <div className="field">
+                <label>部屋番号</label>
+                <input
+                  value={resForm.room || ""}
+                  placeholder="例：705"
+                  onChange={(e) => setResForm({ ...resForm, room: e.target.value })}
+                />
+              </div>
+            </div>
             <div className="field">
               <label>メモ</label>
               <input
@@ -738,7 +714,7 @@ export default function Fortune() {
       const cashList = groupRecords.filter((r) => r.payment === "現金");
       const roomList = groupRecords.filter((r) => r.payment === "部屋付け");
       const qrList = groupRecords.filter((r) => r.payment === "QR");
-      const sumOf = (list) => list.reduce((s, r) => s + Number(r.amount || 0), 0);
+      const sumOf = (list) => list.reduce((s, r) => s + Number(r.price || 0), 0);
       const num = (n) => Number(n || 0).toLocaleString("ja-JP");
 
       return (
@@ -781,7 +757,7 @@ export default function Fortune() {
                           type="checkbox"
                           checked={!!r?.checked}
                           disabled={!r}
-                          onChange={(e) => updateRecRecord(r, { checked: e.target.checked })}
+                          onChange={(e) => updateReservationField(r, { checked: e.target.checked })}
                         />
                       </td>
                       <td className="c-center">
@@ -795,7 +771,7 @@ export default function Fortune() {
                             key={`${rowKey}-name`}
                             defaultValue={r?.customerName || ""}
                             onBlur={(e) =>
-                              updateRecRecord(r, { customerName: e.target.value })
+                              updateReservationField(r, { customerName: e.target.value })
                             }
                           />
                           <span className="printed">様</span>
@@ -804,14 +780,14 @@ export default function Fortune() {
                       <td className="c-center printed">
                         <span
                           className={r?.gender === "男" ? "circled clickable" : "clickable"}
-                          onClick={() => updateRecRecord(r, { gender: "男" })}
+                          onClick={() => updateReservationField(r, { gender: "男" })}
                         >
                           男
                         </span>
                         ・
                         <span
                           className={r?.gender === "女" ? "circled clickable" : "clickable"}
-                          onClick={() => updateRecRecord(r, { gender: "女" })}
+                          onClick={() => updateReservationField(r, { gender: "女" })}
                         >
                           女
                         </span>
@@ -819,9 +795,9 @@ export default function Fortune() {
                       <td className="c-center">
                         <select
                           className="cell-select"
-                          value={r?.courseMinutes || 20}
+                          value={r?.minutes || 20}
                           onChange={(e) =>
-                            updateRecRecord(r, { courseMinutes: Number(e.target.value) })
+                            updateReservationField(r, { minutes: Number(e.target.value) })
                           }
                         >
                           {[20, 30, 40, 50, 60].map((m) => (
@@ -835,7 +811,7 @@ export default function Fortune() {
                         <select
                           className="cell-select"
                           value={r?.staffId || ""}
-                          onChange={(e) => updateRecRecord(r, { staffId: e.target.value })}
+                          onChange={(e) => updateReservationField(r, { staffId: e.target.value })}
                         >
                           <option value="">-</option>
                           {staffList.map((s) => (
@@ -848,13 +824,13 @@ export default function Fortune() {
                       <td className="c-center">
                         <TimeInput10
                           value={r?.startTime || ""}
-                          onChange={(v) => updateRecRecord(r, { startTime: v })}
+                          onChange={(v) => updateReservationField(r, { startTime: v })}
                         />
                       </td>
                       <td className="c-center printed">
                         <span
                           className={r?.payment === "現金" ? "circled clickable" : "clickable"}
-                          onClick={() => updateRecRecord(r, { payment: "現金" })}
+                          onClick={() => updateReservationField(r, { payment: "現金" })}
                         >
                           現
                         </span>
@@ -863,14 +839,14 @@ export default function Fortune() {
                           className={
                             r?.payment === "部屋付け" ? "circled clickable" : "clickable"
                           }
-                          onClick={() => updateRecRecord(r, { payment: "部屋付け" })}
+                          onClick={() => updateReservationField(r, { payment: "部屋付け" })}
                         >
                           部
                         </span>
                         ・
                         <span
                           className={r?.payment === "QR" ? "circled clickable" : "clickable"}
-                          onClick={() => updateRecRecord(r, { payment: "QR" })}
+                          onClick={() => updateReservationField(r, { payment: "QR" })}
                         >
                           Q
                         </span>
@@ -881,7 +857,7 @@ export default function Fortune() {
                           key={`${rowKey}-room`}
                           defaultValue={r?.room || ""}
                           placeholder="例：705"
-                          onBlur={(e) => updateRecRecord(r, { room: e.target.value })}
+                          onBlur={(e) => updateReservationField(r, { room: e.target.value })}
                         />
                       </td>
                       <td className="c-amount">
@@ -890,11 +866,11 @@ export default function Fortune() {
                           style={{ textAlign: "right" }}
                           key={`${rowKey}-amount`}
                           inputMode="numeric"
-                          defaultValue={r?.amount ?? ""}
+                          defaultValue={r?.price ?? ""}
                           placeholder="0"
                           onBlur={(e) =>
-                            updateRecRecord(r, {
-                              amount: e.target.value.replace(/[^\d]/g, ""),
+                            updateReservationField(r, {
+                              price: e.target.value.replace(/[^\d]/g, ""),
                             })
                           }
                         />
@@ -903,7 +879,7 @@ export default function Fortune() {
                         {r && (
                           <button
                             className="btn sm danger"
-                            onClick={() => delRecRecord(r.id)}
+                            onClick={() => delReservation(r.id)}
                           >
                             削除
                           </button>
