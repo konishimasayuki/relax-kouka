@@ -170,7 +170,9 @@ export default function Fortune() {
       }),
     [recRecords],
   );
-  const recSheetRows = Math.max(20, recView.length + 3);
+  const REC_PAGE_SIZE = 20;
+  const [recYY, recMM, recDD] = date.split("-").map(Number);
+  const recYoubi = WEEK_LABEL[new Date(recYY, recMM - 1, recDD).getDay()];
 
   function emptyFortuneReception() {
     return {
@@ -426,155 +428,22 @@ export default function Fortune() {
         )}
       </div>
 
-      {/* ---- 受付一覧表 ---- */}
-      <div className="card">
-        <strong>受付一覧表</strong>
-        {loadingRec && (
-          <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>
-            読み込み中…
-          </div>
-        )}
-        <div className="table-wrap" style={{ marginTop: 10 }}>
-          <table className="grid fortune-rec-table">
-            <thead>
-              <tr>
-                <th>チェック</th>
-                <th>お客様氏名</th>
-                <th>性別</th>
-                <th>コース</th>
-                <th>担当</th>
-                <th>開始時刻</th>
-                <th>支払方法</th>
-                <th>部屋番号</th>
-                <th className="num">金額</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from({ length: recSheetRows }, (_, i) => {
-                const r = recView[i];
-                const rowKey = r ? r.id : `empty-${i}`;
-                return (
-                  <tr key={rowKey}>
-                    <td className="c-center">
-                      <input
-                        type="checkbox"
-                        checked={!!r?.checked}
-                        onChange={(e) => updateRecRecord(r, { checked: e.target.checked })}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        className="cell-input"
-                        defaultValue={r?.customerName || ""}
-                        placeholder="お客様氏名"
-                        onBlur={(e) => {
-                          if (!r && !e.target.value.trim()) return;
-                          updateRecRecord(r, { customerName: e.target.value });
-                        }}
-                      />
-                    </td>
-                    <td>
-                      <select
-                        value={r?.gender || ""}
-                        disabled={!r}
-                        onChange={(e) => updateRecRecord(r, { gender: e.target.value })}
-                      >
-                        <option value="">-</option>
-                        <option value="男">男</option>
-                        <option value="女">女</option>
-                      </select>
-                    </td>
-                    <td>
-                      <select
-                        value={r?.courseMinutes || 20}
-                        disabled={!r}
-                        onChange={(e) =>
-                          updateRecRecord(r, { courseMinutes: Number(e.target.value) })
-                        }
-                      >
-                        {[20, 30, 40, 50, 60].map((m) => (
-                          <option key={m} value={m}>
-                            {m}分
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td>
-                      <select
-                        value={r?.staffId || ""}
-                        disabled={!r}
-                        onChange={(e) => updateRecRecord(r, { staffId: e.target.value })}
-                      >
-                        <option value="">-</option>
-                        {staffList.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td>
-                      <TimeInput10
-                        value={r?.startTime || ""}
-                        onChange={(v) => {
-                          if (!r && !v) return;
-                          updateRecRecord(r, { startTime: v });
-                        }}
-                      />
-                    </td>
-                    <td>
-                      <select
-                        value={r?.payment || "現金"}
-                        disabled={!r}
-                        onChange={(e) => updateRecRecord(r, { payment: e.target.value })}
-                      >
-                        <option value="現金">現金</option>
-                        <option value="部屋付け">部屋付け</option>
-                        <option value="QR">QR</option>
-                      </select>
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        className="cell-input"
-                        defaultValue={r?.room || ""}
-                        placeholder="例：705"
-                        onBlur={(e) => {
-                          if (!r && !e.target.value.trim()) return;
-                          updateRecRecord(r, { room: e.target.value });
-                        }}
-                      />
-                    </td>
-                    <td className="num">
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        className="cell-input"
-                        style={{ textAlign: "right" }}
-                        defaultValue={r?.amount ?? ""}
-                        placeholder="0"
-                        onBlur={(e) => {
-                          if (!r && !e.target.value.trim()) return;
-                          updateRecRecord(r, { amount: e.target.value.replace(/[^\d]/g, "") });
-                        }}
-                      />
-                    </td>
-                    <td>
-                      {r && (
-                        <button className="btn sm danger" onClick={() => delRecRecord(r.id)}>
-                          削除
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+      {/* ---- 受付一覧表（マッサージ側の受付一覧表と同じ紙の様式） ---- */}
+      <div className="toolbar" style={{ marginTop: 0 }}>
+        <span className="muted" style={{ fontSize: 12 }}>
+          セルをクリックしてそのまま編集（チェックはスタッフの確認用です）
+        </span>
+        <button className="btn sm ghost" onClick={() => window.print()}>
+          🖨️ 印刷
+        </button>
       </div>
+      <style>{"@page { size: A4 landscape; margin: 8mm; }"}</style>
+
+      {loadingRec ? (
+        <div className="empty">読み込み中…</div>
+      ) : (
+        renderFortuneRecPages(recView, "杉の泉　受付表")
+      )}
 
       {/* ---- 予約管理 ---- */}
       <div className="card">
@@ -855,4 +724,226 @@ export default function Fortune() {
       )}
     </div>
   );
+
+  function renderFortuneRecPages(groupRecords, groupLabel) {
+    const pageCount = Math.max(1, Math.ceil(groupRecords.length / REC_PAGE_SIZE));
+
+    return Array.from({ length: pageCount }, (_, pageIndex) => {
+      const startNo = pageIndex * REC_PAGE_SIZE;
+      const slice = groupRecords.slice(startNo, startNo + REC_PAGE_SIZE);
+      const isLastPage = pageIndex === pageCount - 1;
+      const rowCount = isLastPage
+        ? Math.max(REC_PAGE_SIZE, slice.length + 3)
+        : REC_PAGE_SIZE;
+      const cashList = groupRecords.filter((r) => r.payment === "現金");
+      const roomList = groupRecords.filter((r) => r.payment === "部屋付け");
+      const qrList = groupRecords.filter((r) => r.payment === "QR");
+      const sumOf = (list) => list.reduce((s, r) => s + Number(r.amount || 0), 0);
+      const num = (n) => Number(n || 0).toLocaleString("ja-JP");
+
+      return (
+        <div className="sheet-scroll reception-sheet" key={`fortune-${pageIndex}`}>
+          <div className="sheet">
+            <div className="sheet-head">
+              <span className="sheet-title">{groupLabel}</span>
+              <span>
+                令和 {recYY - 2018} 年 {recMM} 月 {recDD} 日（{recYoubi}）　NO.{" "}
+                {pageIndex + 1}
+              </span>
+            </div>
+
+            <table className="sheet-table">
+              <thead>
+                <tr>
+                  <th>チェック</th>
+                  <th>日付</th>
+                  <th>NO</th>
+                  <th>氏名</th>
+                  <th>性別</th>
+                  <th>コース</th>
+                  <th>担当</th>
+                  <th>開始時間</th>
+                  <th>支払方法</th>
+                  <th>部屋番号</th>
+                  <th>金額</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: rowCount }, (_, i) => {
+                  const r = slice[i];
+                  const displayNo = startNo + i + 1;
+                  const rowKey = r ? r.id : `empty-fortune-${pageIndex}-${i}`;
+                  return (
+                    <tr key={rowKey}>
+                      <td className="c-center">
+                        <input
+                          type="checkbox"
+                          checked={!!r?.checked}
+                          disabled={!r}
+                          onChange={(e) => updateRecRecord(r, { checked: e.target.checked })}
+                        />
+                      </td>
+                      <td className="c-center">
+                        {i === 0 ? `${recMM}/${recDD}` : ""}
+                      </td>
+                      <td className="c-center c-no">{displayNo}</td>
+                      <td className="c-name">
+                        <div className="cell">
+                          <input
+                            className="cell-input"
+                            key={`${rowKey}-name`}
+                            defaultValue={r?.customerName || ""}
+                            onBlur={(e) =>
+                              updateRecRecord(r, { customerName: e.target.value })
+                            }
+                          />
+                          <span className="printed">様</span>
+                        </div>
+                      </td>
+                      <td className="c-center printed">
+                        <span
+                          className={r?.gender === "男" ? "circled clickable" : "clickable"}
+                          onClick={() => updateRecRecord(r, { gender: "男" })}
+                        >
+                          男
+                        </span>
+                        ・
+                        <span
+                          className={r?.gender === "女" ? "circled clickable" : "clickable"}
+                          onClick={() => updateRecRecord(r, { gender: "女" })}
+                        >
+                          女
+                        </span>
+                      </td>
+                      <td className="c-center">
+                        <select
+                          className="cell-select"
+                          value={r?.courseMinutes || 20}
+                          onChange={(e) =>
+                            updateRecRecord(r, { courseMinutes: Number(e.target.value) })
+                          }
+                        >
+                          {[20, 30, 40, 50, 60].map((m) => (
+                            <option key={m} value={m}>
+                              {m}分
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="c-center">
+                        <select
+                          className="cell-select"
+                          value={r?.staffId || ""}
+                          onChange={(e) => updateRecRecord(r, { staffId: e.target.value })}
+                        >
+                          <option value="">-</option>
+                          {staffList.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="c-center">
+                        <TimeInput10
+                          value={r?.startTime || ""}
+                          onChange={(v) => updateRecRecord(r, { startTime: v })}
+                        />
+                      </td>
+                      <td className="c-center printed">
+                        <span
+                          className={r?.payment === "現金" ? "circled clickable" : "clickable"}
+                          onClick={() => updateRecRecord(r, { payment: "現金" })}
+                        >
+                          現
+                        </span>
+                        ・
+                        <span
+                          className={
+                            r?.payment === "部屋付け" ? "circled clickable" : "clickable"
+                          }
+                          onClick={() => updateRecRecord(r, { payment: "部屋付け" })}
+                        >
+                          部
+                        </span>
+                        ・
+                        <span
+                          className={r?.payment === "QR" ? "circled clickable" : "clickable"}
+                          onClick={() => updateRecRecord(r, { payment: "QR" })}
+                        >
+                          Q
+                        </span>
+                      </td>
+                      <td className="c-center">
+                        <input
+                          className="cell-input c-narrow"
+                          key={`${rowKey}-room`}
+                          defaultValue={r?.room || ""}
+                          placeholder="例：705"
+                          onBlur={(e) => updateRecRecord(r, { room: e.target.value })}
+                        />
+                      </td>
+                      <td className="c-amount">
+                        <input
+                          className="cell-input"
+                          style={{ textAlign: "right" }}
+                          key={`${rowKey}-amount`}
+                          inputMode="numeric"
+                          defaultValue={r?.amount ?? ""}
+                          placeholder="0"
+                          onBlur={(e) =>
+                            updateRecRecord(r, {
+                              amount: e.target.value.replace(/[^\d]/g, ""),
+                            })
+                          }
+                        />
+                      </td>
+                      <td className="no-print">
+                        {r && (
+                          <button
+                            className="btn sm danger"
+                            onClick={() => delRecRecord(r.id)}
+                          >
+                            削除
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {isLastPage && (
+              <div className="sheet-foot">
+                <div className="sf-total">
+                  <div>
+                    <span>現金</span>
+                    <span>{cashList.length} 件</span>
+                    <span>{num(sumOf(cashList))} 円</span>
+                  </div>
+                  <div>
+                    <span>部屋掛け</span>
+                    <span>{roomList.length} 件</span>
+                    <span>{num(sumOf(roomList))} 円</span>
+                  </div>
+                  <div>
+                    <span>QR</span>
+                    <span>{qrList.length} 件</span>
+                    <span>{num(sumOf(qrList))} 円</span>
+                  </div>
+                  <div>
+                    <span>合計</span>
+                    <span>{groupRecords.length} 件</span>
+                    <span>{num(sumOf(groupRecords))} 円</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    });
+  }
 }
