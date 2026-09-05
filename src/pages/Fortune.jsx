@@ -39,6 +39,12 @@ function emptyShift(date, staffId) {
   return { id: "", staffId: staffId || "", date, start: "11:00", end: "23:00" };
 }
 
+// 性別タグ（男性・女性・ペア）は複数選択可。同じものをもう一度押すと外れる。
+function toggleGenderTag(current, tag) {
+  const arr = Array.isArray(current) ? current : current ? [current] : [];
+  return arr.includes(tag) ? arr.filter((t) => t !== tag) : [...arr, tag];
+}
+
 function emptyReservation(date) {
   return {
     id: "",
@@ -50,7 +56,7 @@ function emptyReservation(date) {
     price: 0,
     memo: "",
     staffId: "",
-    gender: "",
+    gender: [],
     payment: "現金",
     room: "",
     checked: false,
@@ -651,14 +657,26 @@ export default function Fortune() {
             <div className="row">
               <div className="field">
                 <label>性別</label>
-                <select
-                  value={resForm.gender || ""}
-                  onChange={(e) => setResForm({ ...resForm, gender: e.target.value })}
-                >
-                  <option value="">-</option>
-                  <option value="男">男</option>
-                  <option value="女">女</option>
-                </select>
+                <div style={{ display: "flex", gap: 10, alignItems: "center", height: 34 }}>
+                  {["男性", "女性", "ペア"].map((tag) => (
+                    <label
+                      key={tag}
+                      style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13 }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={(resForm.gender || []).includes(tag)}
+                        onChange={() =>
+                          setResForm({
+                            ...resForm,
+                            gender: toggleGenderTag(resForm.gender, tag),
+                          })
+                        }
+                      />
+                      {tag}
+                    </label>
+                  ))}
+                </div>
               </div>
               <div className="field">
                 <label>支払方法</label>
@@ -778,19 +796,25 @@ export default function Fortune() {
                         </div>
                       </td>
                       <td className="c-center printed">
-                        <span
-                          className={r?.gender === "男" ? "circled clickable" : "clickable"}
-                          onClick={() => updateReservationField(r, { gender: "男" })}
-                        >
-                          男
-                        </span>
-                        ・
-                        <span
-                          className={r?.gender === "女" ? "circled clickable" : "clickable"}
-                          onClick={() => updateReservationField(r, { gender: "女" })}
-                        >
-                          女
-                        </span>
+                        {["男性", "女性", "ペア"].map((tag, idx) => (
+                          <span key={tag}>
+                            {idx > 0 && "・"}
+                            <span
+                              className={
+                                (r?.gender || []).includes(tag)
+                                  ? "circled clickable"
+                                  : "clickable"
+                              }
+                              onClick={() =>
+                                updateReservationField(r, {
+                                  gender: toggleGenderTag(r?.gender, tag),
+                                })
+                              }
+                            >
+                              {tag}
+                            </span>
+                          </span>
+                        ))}
                       </td>
                       <td className="c-center">
                         <select
