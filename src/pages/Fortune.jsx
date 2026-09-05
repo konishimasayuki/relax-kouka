@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "../App.jsx";
 import { addDays, api, todayStr } from "../api.js";
 import TimeInput10 from "../components/TimeInput10.jsx";
@@ -141,6 +141,90 @@ export default function Fortune() {
     loadReservations();
     // eslint-disable-next-line
   }, [date]);
+
+  // ---- 受付一覧表（紙の受付表に相当） ----
+  const [recRecords, setRecRecords] = useState([]);
+  const [loadingRec, setLoadingRec] = useState(false);
+  const deletingRecIdsRef = useRef(new Set());
+
+  const loadRecRecords = async () => {
+    setLoadingRec(true);
+    try {
+      setRecRecords(await api.fortuneReceptions(date));
+    } finally {
+      setLoadingRec(false);
+    }
+  };
+
+  useEffect(() => {
+    loadRecRecords();
+    // eslint-disable-next-line
+  }, [date]);
+
+  const recView = useMemo(
+    () =>
+      [...recRecords].sort((a, b) => {
+        if (!a.startTime) return 1;
+        if (!b.startTime) return -1;
+        return a.startTime.localeCompare(b.startTime);
+      }),
+    [recRecords],
+  );
+  const recSheetRows = Math.max(20, recView.length + 3);
+
+  function emptyFortuneReception() {
+    return {
+      id: "",
+      date,
+      checked: false,
+      customerName: "",
+      gender: "",
+      courseMinutes: 20,
+      staffId: "",
+      startTime: "",
+      payment: "現金",
+      room: "",
+      amount: "",
+    };
+  }
+
+  const updateRecRecord = async (r, patch) => {
+    if (r && deletingRecIdsRef.current.has(r.id)) return;
+    const base = r || emptyFortuneReception();
+    const payload = { ...base, ...patch };
+
+    if (r) {
+      setRecRecords((prev) => prev.map((x) => (x.id === r.id ? payload : x)));
+    }
+    try {
+      const saved = await api.saveFortuneReception(payload);
+      setRecRecords((prev) => {
+        const exists = prev.some((x) => x.id === saved.id);
+        return exists ? prev.map((x) => (x.id === saved.id ? saved : x)) : [...prev, saved];
+      });
+    } catch (e) {
+      alert(`保存失敗: ${e.message}`);
+      loadRecRecords();
+    }
+  };
+
+  const delRecRecord = async (id) => {
+    deletingRecIdsRef.current.add(id);
+    const ok = window.confirm("この受付を削除しますか？");
+    if (!ok) {
+      deletingRecIdsRef.current.delete(id);
+      return;
+    }
+    setRecRecords((prev) => prev.filter((x) => x.id !== id));
+    try {
+      await api.deleteFortuneReception(id, date);
+    } catch (e) {
+      alert(`削除失敗: ${e.message}`);
+      loadRecRecords();
+    } finally {
+      deletingRecIdsRef.current.delete(id);
+    }
+  };
 
   const staffName = (id) => staffList.find((s) => s.id === id)?.name || "?";
 
@@ -340,6 +424,156 @@ export default function Fortune() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* ---- 受付一覧表 ---- */}
+      <div className="card">
+        <strong>受付一覧表</strong>
+        {loadingRec && (
+          <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>
+            読み込み中…
+          </div>
+        )}
+        <div className="table-wrap" style={{ marginTop: 10 }}>
+          <table className="grid fortune-rec-table">
+            <thead>
+              <tr>
+                <th>チェック</th>
+                <th>お客様氏名</th>
+                <th>性別</th>
+                <th>コース</th>
+                <th>担当</th>
+                <th>開始時刻</th>
+                <th>支払方法</th>
+                <th>部屋番号</th>
+                <th className="num">金額</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: recSheetRows }, (_, i) => {
+                const r = recView[i];
+                const rowKey = r ? r.id : `empty-${i}`;
+                return (
+                  <tr key={rowKey}>
+                    <td className="c-center">
+                      <input
+                        type="checkbox"
+                        checked={!!r?.checked}
+                        onChange={(e) => updateRecRecord(r, { checked: e.target.checked })}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        className="cell-input"
+                        defaultValue={r?.customerName || ""}
+                        placeholder="お客様氏名"
+                        onBlur={(e) => {
+                          if (!r && !e.target.value.trim()) return;
+                          updateRecRecord(r, { customerName: e.target.value });
+                        }}
+                      />
+                    </td>
+                    <td>
+                      <select
+                        value={r?.gender || ""}
+                        disabled={!r}
+                        onChange={(e) => updateRecRecord(r, { gender: e.target.value })}
+                      >
+                        <option value="">-</option>
+                        <option value="男">男</option>
+                        <option value="女">女</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select
+                        value={r?.courseMinutes || 20}
+                        disabled={!r}
+                        onChange={(e) =>
+                          updateRecRecord(r, { courseMinutes: Number(e.target.value) })
+                        }
+                      >
+                        {[20, 30, 40, 50, 60].map((m) => (
+                          <option key={m} value={m}>
+                            {m}分
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <select
+                        value={r?.staffId || ""}
+                        disabled={!r}
+                        onChange={(e) => updateRecRecord(r, { staffId: e.target.value })}
+                      >
+                        <option value="">-</option>
+                        {staffList.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <TimeInput10
+                        value={r?.startTime || ""}
+                        onChange={(v) => {
+                          if (!r && !v) return;
+                          updateRecRecord(r, { startTime: v });
+                        }}
+                      />
+                    </td>
+                    <td>
+                      <select
+                        value={r?.payment || "現金"}
+                        disabled={!r}
+                        onChange={(e) => updateRecRecord(r, { payment: e.target.value })}
+                      >
+                        <option value="現金">現金</option>
+                        <option value="部屋付け">部屋付け</option>
+                        <option value="QR">QR</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        className="cell-input"
+                        defaultValue={r?.room || ""}
+                        placeholder="例：705"
+                        onBlur={(e) => {
+                          if (!r && !e.target.value.trim()) return;
+                          updateRecRecord(r, { room: e.target.value });
+                        }}
+                      />
+                    </td>
+                    <td className="num">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        className="cell-input"
+                        style={{ textAlign: "right" }}
+                        defaultValue={r?.amount ?? ""}
+                        placeholder="0"
+                        onBlur={(e) => {
+                          if (!r && !e.target.value.trim()) return;
+                          updateRecRecord(r, { amount: e.target.value.replace(/[^\d]/g, "") });
+                        }}
+                      />
+                    </td>
+                    <td>
+                      {r && (
+                        <button className="btn sm danger" onClick={() => delRecRecord(r.id)}>
+                          削除
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* ---- 予約管理 ---- */}
