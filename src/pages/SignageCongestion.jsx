@@ -3,44 +3,75 @@ import { api } from "../api.js";
 import { computeBusyRanges, computeFreeGaps, homeBuildingOf, toMin } from "../staffSchedule.js";
 
 const HOUR_START = 11;
-const HOUR_END = 24;
+const HOUR_END = 23; // 11時〜23時まで表示
+const WEEK_LABEL = ["日", "月", "火", "水", "木", "金", "土"];
 
 function nowMin() {
   const d = new Date();
   return d.getHours() * 60 + d.getMinutes();
 }
 
-function todayStr() {
+function dateStrOf(offsetDays) {
   const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${dd}`;
 }
 
+function labelOf(dateStr) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const youbi = WEEK_LABEL[new Date(y, m - 1, d).getDay()];
+  return `${m}/${d}（${youbi}）`;
+}
+
+// あるスタッフの、その日の空き区間（シフト時間の範囲内）を求める
+function staffFreeGapsForDay(staffId, dateRecords, dateShifts, stores, homeBuilding) {
+  const staffShifts = dateShifts.filter((s) => s.staffId === staffId);
+  if (!staffShifts.length) return [];
+  const shiftStart = Math.min(...staffShifts.map((s) => toMin(s.start)));
+  const shiftEnd = Math.max(...staffShifts.map((s) => toMin(s.end)));
+  const rangeStart = Math.max(shiftStart, HOUR_START * 60);
+  const rangeEnd = Math.min(shiftEnd, HOUR_END * 60 + 60);
+  if (rangeStart >= rangeEnd) return [];
+
+  const apps = dateRecords
+    .filter((r) => r.staffId === staffId && r.startTime)
+    .sort((a, b) => toMin(a.startTime) - toMin(b.startTime));
+  const busy = computeBusyRanges(apps, stores, homeBuilding);
+  return computeFreeGaps(busy, rangeStart, rangeEnd);
+}
+
+function isFreeAt(freeGaps, slotStart, duration) {
+  return freeGaps.some((g) => g.start <= slotStart && g.end >= slotStart + duration);
+}
+
 export default function SignageCongestion() {
   const [stores, setStores] = useState([]);
   const [staff, setStaff] = useState([]);
-  const [records, setRecords] = useState([]);
+  const [recordsByDate, setRecordsByDate] = useState({});
   const [shifts, setShifts] = useState([]);
-  const [config, setConfig] = useState({ refreshSec: 20, durationTiers: [30, 60, 90] });
+  const [config, setConfig] = useState({ refreshSec: 20 });
   const [now, setNow] = useState(nowMin());
   const timerRef = useRef(null);
 
+  const dates = [dateStrOf(0), dateStrOf(1)]; // 今日・明日
+
   const fetchAll = async () => {
     try {
-      const dateStr = todayStr();
-      const [st, sf, rec, sh, cfg] = await Promise.all([
+      const [st, sf, recToday, recTomorrow, allShifts, cfg] = await Promise.all([
         api.stores(),
         api.staff(),
-        api.reception(dateStr),
+        api.reception(dates[0]),
+        api.reception(dates[1]),
         api.shifts(),
         api.signageConfig().catch(() => null),
       ]);
       setStores(st);
       setStaff(sf);
-      setRecords(rec);
-      setShifts(sh.filter((s) => s.date === dateStr));
+      setRecordsByDate({ [dates[0]]: recToday, [dates[1]]: recTomorrow });
+      setShifts(allShifts);
       if (cfg) setConfig(cfg);
       setNow(nowMin());
     } catch {
@@ -61,39 +92,40 @@ export default function SignageCongestion() {
   }, [config.refreshSec]);
 
   const homeBuilding = homeBuildingOf(stores);
+  const hours = Array.from({ length: HOUR_END - HOUR_START + 1 }, (_, i) => HOUR_START + i);
 
-  // 出勤しているスタッフ（店舗をまたいで全員）
-  const staffIdsToday = Array.from(
-    new Set([
-      ...shifts.map((s) => s.staffId),
-      ...records.filter((r) => r.staffId).map((r) => r.staffId),
-    ]),
-  );
+  // 日付ごとに、スタッフごとの空き区間を計算
+  const gapsByDate = {};
+  for (const dateStr of dates) {
+    const dateRecords = recordsByDate[dateStr] || [];
+    const dateShifts = shifts.filter((s) => s.date === dateStr);
+    const staffIds = Array.from(
+      new Set([
+        ...dateShifts.map((s) => s.staffId),
+        ...dateRecords.filter((r) => r.staffId).map((r) => r.staffId),
+      ]),
+    );
+    const byStaff = {};
+    for (const staffId of staffIds) {
+      byStaff[staffId] = staffFreeGapsForDay(staffId, dateRecords, dateShifts, stores, homeBuilding);
+    }
+    gapsByDate[dateStr] = { staffIds, byStaff };
+  }
 
-  // スタッフごとの busy 区間・空き区間・シフト範囲
-  const rows = staffIdsToday.map((staffId) => {
-    const apps = records
-      .filter((r) => r.staffId === staffId && r.startTime)
-      .sort((a, b) => toMin(a.startTime) - toMin(b.startTime));
-    const busy = computeBusyRanges(apps, stores, homeBuilding);
-    const staffShifts = shifts.filter((s) => s.staffId === staffId);
-    const shiftEnd = staffShifts.length
-      ? Math.max(...staffShifts.map((s) => toMin(s.end)))
-      : HOUR_END * 60;
-    const rangeStart = Math.max(now, HOUR_START * 60);
-    const freeGaps = computeFreeGaps(busy, rangeStart, Math.min(shiftEnd, HOUR_END * 60));
-    return { staffId, busy, freeGaps, shiftEnd };
-  });
+  // 各セル（日付×時間）の記号を判定
+  function symbolFor(dateStr, hour) {
+    const slotStart = hour * 60;
+    const isToday = dateStr === dates[0];
+    if (isToday && slotStart <= now) return { text: "closed" };
 
-  // 案内可能人数（設定された分数ごとに、今すぐその長さの空きがあるスタッフの人数）
-  const tierCounts = (config.durationTiers || [30, 60, 90]).map((mins) => {
-    const count = rows.filter((r) => r.freeGaps.some((g) => g.end - g.start >= mins)).length;
-    return { mins, count };
-  });
-
-  const totalMin = (HOUR_END - HOUR_START) * 60;
-  const nowClamped = Math.max(HOUR_START * 60, Math.min(now, HOUR_END * 60));
-  const pct = (min) => ((min - HOUR_START * 60) / totalMin) * 100;
+    const { staffIds, byStaff } = gapsByDate[dateStr] || { staffIds: [], byStaff: {} };
+    const count60 = staffIds.filter((id) => isFreeAt(byStaff[id], slotStart, 60)).length;
+    if (count60 >= 2) return { text: "◎", cls: "double" };
+    if (count60 >= 1) return { text: "○", cls: "single" };
+    const count30 = staffIds.filter((id) => isFreeAt(byStaff[id], slotStart, 30)).length;
+    if (count30 >= 1) return { text: "△", cls: "triangle" };
+    return { text: "-" };
+  }
 
   return (
     <div className="signage-congestion">
@@ -105,70 +137,47 @@ export default function SignageCongestion() {
         <div className="signage-title">ご案内可能状況</div>
       </div>
 
-      <div className="signage-tiers">
-        {tierCounts.map((t) => (
-          <div className="signage-tier" key={t.mins}>
-            <div className="signage-tier-mins">{t.mins}分コース</div>
-            <div className="signage-tier-count">
-              {t.count > 0 ? (
-                <>
-                  <span className="num">{t.count}</span>
-                  <span className="unit">名 案内可能</span>
-                </>
-              ) : (
-                <span className="none">満席</span>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="signage-grid-wrap">
-        <div className="signage-grid-head">
-          {Array.from({ length: HOUR_END - HOUR_START }, (_, i) => HOUR_START + i).map((h) => (
-            <div key={h} className="signage-grid-hour" style={{ left: `${pct(h * 60)}%` }}>
-              {h}
-            </div>
-          ))}
-        </div>
-        <div className="signage-grid-body">
-          <div className="signage-now-line" style={{ left: `${pct(nowClamped)}%` }} />
-          {rows.map((r) => (
-            <div className="signage-grid-row" key={r.staffId}>
-              {r.busy
-                .filter((b) => b.end > now)
-                .map((b, i) => {
-                  const start = Math.max(b.start, HOUR_START * 60);
-                  const end = Math.min(b.end, HOUR_END * 60);
-                  if (end <= start) return null;
+      <div className="signage-table-wrap">
+        <table className="signage-table">
+          <thead>
+            <tr>
+              <th className="signage-th-time">日時</th>
+              {dates.map((d, i) => (
+                <th key={d} className={i === 0 ? "signage-th-today" : "signage-th-tomorrow"}>
+                  {labelOf(d)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {hours.map((h) => (
+              <tr key={h}>
+                <td className="signage-td-time">{String(h).padStart(2, "0")}:00</td>
+                {dates.map((d) => {
+                  const sym = symbolFor(d, h);
                   return (
-                    <div
-                      key={i}
-                      className="signage-block busy"
-                      style={{ left: `${pct(start)}%`, width: `${pct(end) - pct(start)}%` }}
-                    />
+                    <td key={d} className="signage-td-cell">
+                      {sym.text === "closed" ? (
+                        <span className="signage-closed">受付終了</span>
+                      ) : sym.text === "-" ? (
+                        <span className="signage-dash">－</span>
+                      ) : (
+                        <span className={`signage-symbol sym-${sym.cls}`}>{sym.text}</span>
+                      )}
+                    </td>
                   );
                 })}
-              {/* シフト終了以降は受付不可としてグレー表示 */}
-              <div
-                className="signage-block offduty"
-                style={{
-                  left: `${pct(Math.min(r.shiftEnd, HOUR_END * 60))}%`,
-                  width: `${100 - pct(Math.min(r.shiftEnd, HOUR_END * 60))}%`,
-                }}
-              />
-            </div>
-          ))}
-        </div>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       <div className="signage-legend">
-        <span>
-          <i className="dot busy" /> ご案内中／移動
-        </span>
-        <span>
-          <i className="dot free" /> 空き
-        </span>
+        <span>◎ 2名以上ご案内可</span>
+        <span>○ 1名ご案内可</span>
+        <span>△ 短いコースのみ空きあり</span>
+        <span>－ 空きなし</span>
       </div>
     </div>
   );
