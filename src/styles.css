@@ -1765,8 +1765,8 @@ table.grid th.num {
 .signage-congestion {
   width: 100vw;
   height: 100vh;
-  background: #0f172a;
-  color: #fff;
+  background: #f7f5f0;
+  color: #2b2b2b;
   display: flex;
   flex-direction: column;
   padding: 24px;
@@ -1777,144 +1777,128 @@ table.grid th.num {
 
 .signage-head {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .signage-time {
-  font-size: 22px;
-  color: #93c5fd;
-  margin-bottom: 6px;
+  font-size: 20px;
+  color: #6b6458;
+  margin-bottom: 4px;
 }
 
 .signage-title {
-  font-size: 34px;
+  font-size: 30px;
   font-weight: 800;
+  color: #2b2b2b;
 }
 
-.signage-tiers {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin-bottom: 24px;
+.signage-table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.06);
 }
 
-.signage-tier {
-  background: #1e293b;
-  border-radius: 16px;
-  padding: 18px 22px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.signage-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
 }
 
-.signage-tier-mins {
-  font-size: 26px;
+.signage-table th,
+.signage-table td {
+  border: 1px solid #eee6d8;
+  text-align: center;
+  padding: 10px 6px;
+}
+
+.signage-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font-size: 18px;
   font-weight: 700;
+  padding: 14px 6px;
 }
 
-.signage-tier-count .num {
-  font-size: 40px;
+.signage-th-time {
+  background: #f1ede3;
+  width: 18%;
+}
+
+.signage-th-today {
+  background: #dbeafe;
+  color: #1e3a5f;
+}
+
+.signage-th-tomorrow {
+  background: #fbe1ec;
+  color: #6b1d3f;
+}
+
+.signage-td-time {
+  background: #f8f6f0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #5b5648;
+}
+
+.signage-td-cell {
+  font-size: 22px;
+}
+
+.signage-symbol {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
   font-weight: 800;
-  color: #4ade80;
-  margin-right: 6px;
 }
 
-.signage-tier-count .unit {
+.signage-symbol.sym-double {
+  background: #ffe1e8;
+  color: #d6336c;
+  font-size: 24px;
+}
+
+.signage-symbol.sym-single {
+  background: #fdeef2;
+  color: #e05a86;
+  font-size: 22px;
+}
+
+.signage-symbol.sym-triangle {
+  background: #fff6da;
+  color: #b8860b;
+  font-size: 18px;
+}
+
+.signage-dash {
+  color: #b3ada0;
   font-size: 20px;
 }
 
-.signage-tier-count .none {
-  font-size: 26px;
-  font-weight: 700;
-  color: #f87171;
-}
-
-.signage-grid-wrap {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.signage-grid-head {
-  position: relative;
-  height: 24px;
+.signage-closed {
+  display: inline-block;
+  color: #9a9488;
   font-size: 13px;
-  color: #94a3b8;
-}
-
-.signage-grid-hour {
-  position: absolute;
-  transform: translateX(-50%);
-}
-
-.signage-grid-body {
-  position: relative;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  overflow-y: auto;
-  border-top: 1px solid #334155;
-  padding-top: 8px;
-}
-
-.signage-grid-row {
-  position: relative;
-  height: 18px;
-  background: #16a34a;
-  border-radius: 4px;
-  flex: 0 0 auto;
-}
-
-.signage-block {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  border-radius: 4px;
-}
-
-.signage-block.busy {
-  background: #dc2626;
-}
-
-.signage-block.offduty {
-  background: #475569;
-}
-
-.signage-now-line {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: #fde047;
-  z-index: 5;
+  background: #ece7db;
+  border-radius: 8px;
+  padding: 4px 8px;
 }
 
 .signage-legend {
   display: flex;
-  gap: 20px;
+  gap: 22px;
   justify-content: center;
-  margin-top: 16px;
+  margin-top: 14px;
   font-size: 14px;
-  color: #cbd5e1;
-}
-
-.signage-legend .dot {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-  margin-right: 6px;
-  vertical-align: middle;
-}
-
-.signage-legend .dot.busy {
-  background: #dc2626;
-}
-
-.signage-legend .dot.free {
-  background: #16a34a;
+  color: #6b6458;
+  flex-wrap: wrap;
 }
 
 /* ---------- サイネージ：画面2（宣伝・横長） ---------- */
