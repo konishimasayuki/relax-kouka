@@ -2008,3 +2008,17 @@ table.grid th.num {
 .tb-notime-chip:active {
   background: #fef0d8;
 }
+
+/* ---------- 占いタイムボード：特記事項バッジ ---------- */
+.bl-special-badge {
+  display: inline-block;
+  margin-left: 5px;
+  background: #e63946;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: 4px;
+  vertical-align: middle;
+}
