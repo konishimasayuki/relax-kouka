@@ -60,6 +60,7 @@ function emptyReservation(date) {
     payment: "現金",
     room: "",
     checked: false,
+    specialNote: "",
   };
 }
 
@@ -363,7 +364,14 @@ export default function Fortune() {
                             )}
                             onClick={() => setResForm({ ...r })}
                           >
-                            <div className="bl-course">{r.minutes}分</div>
+                            <div className="bl-course">
+                              {r.minutes}分
+                              {r.specialNote?.trim() && (
+                                <span className="bl-special-badge" title={r.specialNote}>
+                                  特
+                                </span>
+                              )}
+                            </div>
                             <div className="bl-name">{r.customerName}様</div>
                           </div>
                         );
@@ -703,6 +711,14 @@ export default function Fortune() {
               <input
                 value={resForm.memo}
                 onChange={(e) => setResForm({ ...resForm, memo: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label>特記事項（タイムボードに「特」と表示されます）</label>
+              <input
+                value={resForm.specialNote || ""}
+                placeholder="例：常連様・アレルギーあり　等"
+                onChange={(e) => setResForm({ ...resForm, specialNote: e.target.value })}
               />
             </div>
             <div className="modal-actions">
