@@ -477,6 +477,15 @@ export default function TimeBoard() {
               </div>
             </div>
 
+            <div className="field">
+              <label>特記事項（タイムボードに「特」と表示されます）</label>
+              <input
+                value={sel.note || ""}
+                placeholder="例：常連様・アレルギーあり　等"
+                onChange={(e) => updateSel({ note: e.target.value })}
+              />
+            </div>
+
             <div className="modal-actions">
               <button className="btn gray" onClick={() => setSel(null)}>
                 キャンセル
