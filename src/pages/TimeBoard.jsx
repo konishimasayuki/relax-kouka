@@ -72,6 +72,37 @@ export default function TimeBoard() {
     return Math.max(0, menuPrice + optionPrice + extensionPrice - discount);
   };
 
+  // 店舗を変更した場合、メニュー等は店舗ごとに異なるためリセットする。
+  // ベッド番号（bed）も新しい店舗に存在しないベッドを指していると困るため空にする。
+  // storeIdが変わればタイムボードの移動（滞在）判定は records から自動的に再計算される。
+  const changeSelStore = (storeId) => {
+    updateSel({
+      storeId,
+      bed: "",
+      course: {
+        menuId: "",
+        name: "",
+        displayName: "",
+        minutes: "",
+        color: "",
+        freeText: "",
+        optionId: "",
+        optionName: "",
+        optionDisplayName: "",
+        optionMinutes: "",
+        optionColor: "",
+        couponId: "",
+        couponName: "",
+        couponDiscount: 0,
+        extensionId: "",
+        extensionName: "",
+        extensionDisplayName: "",
+        extensionMinutes: "",
+        extensionColor: "",
+      },
+    });
+  };
+
   const selectMenu = (menuId) => {
     const m = menusFor(sel).find((x) => x.id === menuId);
     const cur = sel.course || {};
@@ -351,8 +382,18 @@ export default function TimeBoard() {
                 onChange={(e) => updateSel({ customerName: e.target.value })}
               />
             </div>
+            <div className="field">
+              <label>店舗</label>
+              <select value={sel.storeId} onChange={(e) => changeSelStore(e.target.value)}>
+                {stores.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
             <p className="muted" style={{ marginTop: -8 }}>
-              {stores.find((s) => s.id === sel.storeId)?.name} / Bed {sel.bed}
+              Bed {sel.bed}
             </p>
 
             <div className="field">
