@@ -344,7 +344,13 @@ export default function TimeBoard() {
       {sel && (
         <div className="modal-overlay" onClick={overlayClose(() => setSel(null))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>{sel.customerName} 様</h3>
+            <div className="field">
+              <label>お客様名</label>
+              <input
+                value={sel.customerName || ""}
+                onChange={(e) => updateSel({ customerName: e.target.value })}
+              />
+            </div>
             <p className="muted" style={{ marginTop: -8 }}>
               {stores.find((s) => s.id === sel.storeId)?.name} / Bed {sel.bed}
             </p>
