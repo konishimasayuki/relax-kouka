@@ -641,13 +641,14 @@ table.grid th.num {
   padding: 4px 6px;
   color: #fff;
   font-size: 11px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
   cursor: pointer;
 }
 
 .tb-block .bl-course {
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .tb-block .bl-name {
@@ -2005,4 +2006,7 @@ table.grid th.num {
   padding: 2px 5px;
   border-radius: 4px;
   vertical-align: middle;
+  position: relative;
+  z-index: 3;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.35);
 }
