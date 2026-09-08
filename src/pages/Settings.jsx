@@ -80,6 +80,9 @@ export default function Settings() {
   });
   const [rateBusy, setRateBusy] = useState(false);
   const [rateSaved, setRateSaved] = useState(false);
+  const [pushConfig, setPushConfig] = useState({ publicKey: "", privateKey: "", subject: "" });
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushSaved, setPushSaved] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -102,6 +105,9 @@ export default function Settings() {
     }
     if (tab === "commissionRate") {
       api.commissionRates().then(setCommissionRates).catch(() => {});
+    }
+    if (tab === "pushNotify") {
+      api.pushConfig().then(setPushConfig).catch(() => {});
     }
   }, [tab]);
 
@@ -167,6 +173,21 @@ export default function Settings() {
       alert(`保存失敗: ${e.message}`);
     } finally {
       setRateBusy(false);
+    }
+  };
+
+  const savePushConfig = async (regenerate = false) => {
+    setPushBusy(true);
+    setPushSaved(false);
+    try {
+      const saved = await api.savePushConfig({ ...pushConfig, regenerate });
+      setPushConfig(saved);
+      setPushSaved(true);
+      setTimeout(() => setPushSaved(false), 2000);
+    } catch (e) {
+      alert(`保存失敗: ${e.message}`);
+    } finally {
+      setPushBusy(false);
     }
   };
 
@@ -396,6 +417,12 @@ export default function Settings() {
           onClick={() => setTab("commissionRate")}
         >
           歩合率設定
+        </button>
+        <button
+          className={tab === "pushNotify" ? "btn sm" : "btn sm gray"}
+          onClick={() => setTab("pushNotify")}
+        >
+          プッシュ通知設定
         </button>
       </div>
 
@@ -812,6 +839,65 @@ export default function Settings() {
               保存
             </button>
             {rateSaved && <span className="muted">保存しました</span>}
+          </div>
+        </div>
+      )}
+
+      {tab === "pushNotify" && (
+        <div>
+          <div className="card">
+            <h3 style={{ fontSize: 15, margin: "0 0 4px" }}>プッシュ通知（VAPIDキー）</h3>
+            <p className="muted" style={{ fontSize: 12.5, marginTop: 0 }}>
+              タイムボードで予約の登録・変更があった際、通知を有効にした端末へプッシュ通知が届きます。
+              キーが未設定の場合は下の「発行する」を押すと自動で作成されます。
+            </p>
+
+            <div className="field">
+              <label>公開鍵（Public Key）</label>
+              <input type="text" value={pushConfig.publicKey} readOnly />
+            </div>
+            <div className="field">
+              <label>秘密鍵（Private Key）</label>
+              <input type="text" value={pushConfig.privateKey} readOnly />
+            </div>
+            <div className="field">
+              <label>連絡先（subject）</label>
+              <input
+                type="text"
+                value={pushConfig.subject}
+                placeholder="mailto:you@example.com"
+                onChange={(e) => setPushConfig({ ...pushConfig, subject: e.target.value })}
+              />
+            </div>
+
+            <div className="modal-actions" style={{ justifyContent: "flex-start" }}>
+              {!pushConfig.publicKey ? (
+                <button className="btn" disabled={pushBusy} onClick={() => savePushConfig(true)}>
+                  発行する
+                </button>
+              ) : (
+                <>
+                  <button className="btn" disabled={pushBusy} onClick={() => savePushConfig(false)}>
+                    保存
+                  </button>
+                  <button
+                    className="btn danger"
+                    disabled={pushBusy}
+                    onClick={() => {
+                      if (confirm("キーを再発行すると、既存の通知許可済み端末は再度有効化が必要になります。よろしいですか？"))
+                        savePushConfig(true);
+                    }}
+                  >
+                    再発行
+                  </button>
+                </>
+              )}
+              {pushSaved && <span className="muted">保存しました</span>}
+            </div>
+
+            <p className="muted" style={{ fontSize: 12.5, marginTop: 14 }}>
+              各スタッフは、画面上部のベルアイコン（🔕）をタップすると自分の端末で通知を受け取れるようになります。
+            </p>
           </div>
         </div>
       )}
