@@ -451,7 +451,14 @@ export default function TimeBoardGrid({
                       onPointerUp={handleBlockPointerUp}
                       onPointerCancel={handleBlockPointerUp}
                     >
-                      <div className="bl-course">{courseLbl}</div>
+                      <div className="bl-course">
+                        {courseLbl}
+                        {r.note?.trim() && (
+                          <span className="bl-special-badge" title={r.note}>
+                            特
+                          </span>
+                        )}
+                      </div>
                       <div className="bl-name">{r.customerName}様</div>
                     </div>,
                     optionMins > 0 && (
@@ -540,7 +547,14 @@ export default function TimeBoardGrid({
                     onPointerUp={handleBlockPointerUp}
                     onPointerCancel={handleBlockPointerUp}
                   >
-                    <div className="bl-course">{courseLbl}</div>
+                    <div className="bl-course">
+                      {courseLbl}
+                      {r.note?.trim() && (
+                        <span className="bl-special-badge" title={r.note}>
+                          特
+                        </span>
+                      )}
+                    </div>
                     <div className="bl-name">{r.customerName}様</div>
                   </div>,
                   optionMins > 0 && (
