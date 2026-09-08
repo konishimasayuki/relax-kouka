@@ -246,6 +246,7 @@ export default function NewReceptionModal({
           <div className="field">
             <label>開始時間</label>
             <TimeInput10
+              minHour={11}
               value={form.startTime}
               onChange={(v) => setForm({ ...form, startTime: v })}
             />
