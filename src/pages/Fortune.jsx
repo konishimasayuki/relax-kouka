@@ -611,6 +611,7 @@ export default function Fortune() {
               <div className="field">
                 <label>開始時間</label>
                 <TimeInput10
+                  minHour={11}
                   value={resForm.startTime}
                   onChange={(v) => setResForm({ ...resForm, startTime: v })}
                 />
@@ -863,6 +864,7 @@ export default function Fortune() {
                       </td>
                       <td className="c-center">
                         <TimeInput10
+                          minHour={11}
                           value={r?.startTime || ""}
                           onChange={(v) => updateReservationField(r, { startTime: v })}
                         />
