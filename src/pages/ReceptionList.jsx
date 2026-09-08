@@ -66,6 +66,10 @@ export default function ReceptionList() {
   const [newOpen, setNewOpen] = useState(false);
   // 削除中のIDを即時マーク（confirm()によるblur連鎖で誤って保存が走るのを防ぐ）
   const deletingIdsRef = useRef(new Set());
+  // 空白行（まだ保存されていない新規行）への連続編集で、それぞれの編集が
+  // 別々の新規レコードとして二重作成されてしまわないよう、
+  // 同じ行（rowKey）に対する保存処理を直列化する
+  const draftSavesRef = useRef({});
 
   const load = async () => {
     setLoading(true);
@@ -101,26 +105,57 @@ export default function ReceptionList() {
   );
 
   // レコードの一部を更新して即保存（新規行なら作成）。体感速度のため先に画面へ反映する。
-  const updateRecord = async (r, patch) => {
+  const updateRecord = async (r, rowKey, patch) => {
     if (r && deletingIdsRef.current.has(r.id)) return;
-    const base = r ? normalizeRecord(r) : emptyRecord(stores[0]?.id, date);
-    const payload = { ...base, ...patch };
 
+    // 既存行の編集はこれまで通り即座に保存する
     if (r) {
+      const payload = { ...normalizeRecord(r), ...patch };
       setRecords((prev) => prev.map((x) => (x.id === r.id ? payload : x)));
+      try {
+        const saved = await api.saveReception(payload);
+        if (deletingIdsRef.current.has(saved.id)) return;
+        setRecords((prev) => {
+          const exists = prev.some((x) => x.id === saved.id);
+          return exists ? prev.map((x) => (x.id === saved.id ? saved : x)) : [...prev, saved];
+        });
+      } catch (e) {
+        alert(`保存失敗: ${e.message}`);
+        load();
+      }
+      return;
     }
 
-    try {
-      const saved = await api.saveReception(payload);
-      if (deletingIdsRef.current.has(saved.id)) return; // 保存が返る前に削除された場合は反映しない
-      setRecords((prev) => {
-        const exists = prev.some((x) => x.id === saved.id);
-        return exists ? prev.map((x) => (x.id === saved.id ? saved : x)) : [...prev, saved];
+    // 空白行の編集：直前の保存がまだ完了していなければそれを待ってから、
+    // 同じレコード（同じid）に対して追記保存する。こうしないと、1つの新規行に
+    // 素早く複数項目を入力したときに別々の新規レコードが二重にできてしまう。
+    const prevSave = draftSavesRef.current[rowKey] || Promise.resolve(null);
+    const thisSave = prevSave
+      .then(async (prevSaved) => {
+        const base = prevSaved || emptyRecord(stores[0]?.id, date);
+        const payload = { ...base, ...patch };
+        const saved = await api.saveReception(payload);
+        if (deletingIdsRef.current.has(saved.id)) return saved;
+        setRecords((prevRecs) => {
+          const exists = prevRecs.some((x) => x.id === saved.id);
+          return exists ? prevRecs.map((x) => (x.id === saved.id ? saved : x)) : [...prevRecs, saved];
+        });
+        return saved;
+      })
+      .catch((e) => {
+        alert(`保存失敗: ${e.message}`);
+        load();
+        return null;
       });
-    } catch (e) {
-      alert(`保存失敗: ${e.message}`);
-      load();
-    }
+    draftSavesRef.current[rowKey] = thisSave;
+    thisSave.finally(() => {
+      // この行（rowKey）への保存がこれ以上続いていなければ、
+      // 次に同じ表示位置に別の新規行が来たときのために参照を消しておく
+      if (draftSavesRef.current[rowKey] === thisSave) {
+        delete draftSavesRef.current[rowKey];
+      }
+    });
+    await thisSave;
   };
 
   const del = async (id, recordDate) => {
@@ -359,7 +394,7 @@ export default function ReceptionList() {
                           type="checkbox"
                           checked={!!r?.done}
                           disabled={!r}
-                          onChange={(e) => updateRecord(r, { done: e.target.checked })}
+                          onChange={(e) => updateRecord(r, rowKey, { done: e.target.checked })}
                         />
                       </td>
                       <td className="c-center">{i === 0 ? `${mm}/${dd}` : ""}</td>
@@ -369,7 +404,7 @@ export default function ReceptionList() {
                           className="cell-select"
                           value={r?.storeId || stores[0]?.id || ""}
                           onChange={(e) =>
-                            updateRecord(r, {
+                            updateRecord(r, rowKey, {
                               storeId: e.target.value,
                               course: {
                                 menuId: "",
@@ -394,7 +429,7 @@ export default function ReceptionList() {
                           className="cell-input c-narrow"
                           key={`${rowKey}-bed`}
                           defaultValue={r?.bed || ""}
-                          onBlur={(e) => updateRecord(r, { bed: e.target.value })}
+                          onBlur={(e) => updateRecord(r, rowKey, { bed: e.target.value })}
                         />
                       </td>
                       <td className="c-name">
@@ -403,7 +438,7 @@ export default function ReceptionList() {
                             className="cell-input"
                             key={`${rowKey}-name`}
                             defaultValue={r?.customerName || ""}
-                            onBlur={(e) => updateRecord(r, { customerName: e.target.value })}
+                            onBlur={(e) => updateRecord(r, rowKey, { customerName: e.target.value })}
                           />
                           <span className="printed">様</span>
                         </div>
@@ -411,14 +446,14 @@ export default function ReceptionList() {
                       <td className="c-center printed">
                         <span
                           className={r?.gender === "男" ? "circled clickable" : "clickable"}
-                          onClick={() => updateRecord(r, { gender: "男" })}
+                          onClick={() => updateRecord(r, rowKey, { gender: "男" })}
                         >
                           男
                         </span>
                         ・
                         <span
                           className={r?.gender === "女" ? "circled clickable" : "clickable"}
-                          onClick={() => updateRecord(r, { gender: "女" })}
+                          onClick={() => updateRecord(r, rowKey, { gender: "女" })}
                         >
                           女
                         </span>
@@ -432,7 +467,7 @@ export default function ReceptionList() {
                               defaultValue={r?.course?.freeText || ""}
                               placeholder="自由記述"
                               onBlur={(e) =>
-                                updateRecord(r, {
+                                updateRecord(r, rowKey, {
                                   course: { ...(r?.course || {}), freeText: e.target.value },
                                 })
                               }
@@ -446,7 +481,7 @@ export default function ReceptionList() {
                                   s.delete(rowKey);
                                   return s;
                                 });
-                                updateRecord(r, {
+                                updateRecord(r, rowKey, {
                                   course: { ...(r?.course || {}), freeText: "" },
                                 });
                               }}
@@ -465,7 +500,7 @@ export default function ReceptionList() {
                               }
                               const m = menusFor(r).find((x) => x.id === e.target.value);
                               if (!m) {
-                                updateRecord(r, {
+                                updateRecord(r, rowKey, {
                                   course: {
                                     ...(r?.course || {}),
                                     menuId: "",
@@ -477,7 +512,7 @@ export default function ReceptionList() {
                                 });
                                 return;
                               }
-                              updateRecord(r, {
+                              updateRecord(r, rowKey, {
                                 course: {
                                   ...(r?.course || {}),
                                   menuId: m.id,
@@ -508,12 +543,12 @@ export default function ReceptionList() {
                           type="checkbox"
                           checked={!!r?.couponCheck}
                           disabled={!r}
-                          onChange={(e) => updateRecord(r, { couponCheck: e.target.checked })}
+                          onChange={(e) => updateRecord(r, rowKey, { couponCheck: e.target.checked })}
                         />
                       </td>
                       <td
                         className="c-center clickable"
-                        onClick={() => updateRecord(r, { nominate: !r?.nominate })}
+                        onClick={() => updateRecord(r, rowKey, { nominate: !r?.nominate })}
                       >
                         {r?.nominate ? "○" : ""}
                       </td>
@@ -522,14 +557,14 @@ export default function ReceptionList() {
                           type="checkbox"
                           checked={!!r?.catchCheck}
                           disabled={!r}
-                          onChange={(e) => updateRecord(r, { catchCheck: e.target.checked })}
+                          onChange={(e) => updateRecord(r, rowKey, { catchCheck: e.target.checked })}
                         />
                       </td>
                       <td className="c-center">
                         <select
                           className="cell-select"
                           value={r?.staffId || ""}
-                          onChange={(e) => updateRecord(r, { staffId: e.target.value })}
+                          onChange={(e) => updateRecord(r, rowKey, { staffId: e.target.value })}
                         >
                           <option value="">未定</option>
                           {assignableStaff(r).map((s) => (
@@ -542,8 +577,9 @@ export default function ReceptionList() {
                       <td className="c-center">
                         <TimeInput10
                           className="time10-cell"
+                          minHour={11}
                           value={r?.startTime || ""}
-                          onChange={(v) => updateRecord(r, { startTime: v })}
+                          onChange={(v) => updateRecord(r, rowKey, { startTime: v })}
                         />
                       </td>
                       <td className="c-center printed pay-cell">
@@ -551,7 +587,7 @@ export default function ReceptionList() {
                           <span key={p}>
                             <span
                               className={r?.payment === p ? "circled clickable" : "clickable"}
-                              onClick={() => updateRecord(r, { payment: p, paymentNote: "" })}
+                              onClick={() => updateRecord(r, rowKey, { payment: p, paymentNote: "" })}
                             >
                               {p === "現金" ? "現" : p === "部屋付け" ? "部" : p === "クレジット" ? "クレ" : p}
                             </span>
@@ -566,13 +602,13 @@ export default function ReceptionList() {
                             defaultValue={r?.paymentNote || ""}
                             placeholder="他"
                             onBlur={(e) =>
-                              updateRecord(r, { payment: "その他", paymentNote: e.target.value })
+                              updateRecord(r, rowKey, { payment: "その他", paymentNote: e.target.value })
                             }
                           />
                         ) : (
                           <span
                             className="clickable"
-                            onClick={() => updateRecord(r, { payment: "その他" })}
+                            onClick={() => updateRecord(r, rowKey, { payment: "その他" })}
                           >
                             他
                           </span>
@@ -583,7 +619,7 @@ export default function ReceptionList() {
                           className="cell-input c-narrow"
                           key={`${rowKey}-recept`}
                           defaultValue={r?.receptionist || ""}
-                          onBlur={(e) => updateRecord(r, { receptionist: e.target.value })}
+                          onBlur={(e) => updateRecord(r, rowKey, { receptionist: e.target.value })}
                         />
                       </td>
                       <td className="c-center">
@@ -591,7 +627,7 @@ export default function ReceptionList() {
                           className="cell-input c-narrow"
                           key={`${rowKey}-room`}
                           defaultValue={r?.room || ""}
-                          onBlur={(e) => updateRecord(r, { room: e.target.value })}
+                          onBlur={(e) => updateRecord(r, rowKey, { room: e.target.value })}
                         />
                       </td>
                       <td className="c-center">
@@ -599,7 +635,7 @@ export default function ReceptionList() {
                           className="cell-input c-narrow"
                           key={`${rowKey}-phone`}
                           defaultValue={r?.phone || ""}
-                          onBlur={(e) => updateRecord(r, { phone: e.target.value })}
+                          onBlur={(e) => updateRecord(r, rowKey, { phone: e.target.value })}
                         />
                       </td>
                       <td className="c-amount">
@@ -608,7 +644,7 @@ export default function ReceptionList() {
                           className="cell-input c-narrow amount-input"
                           key={`${rowKey}-amount`}
                           defaultValue={r?.amount || ""}
-                          onBlur={(e) => updateRecord(r, { amount: Number(e.target.value) || 0 })}
+                          onBlur={(e) => updateRecord(r, rowKey, { amount: Number(e.target.value) || 0 })}
                         />
                       </td>
                       <td className="c-center">
@@ -616,7 +652,7 @@ export default function ReceptionList() {
                           className="cell-input c-narrow"
                           key={`${rowKey}-cashnote`}
                           defaultValue={r?.cashNote || ""}
-                          onBlur={(e) => updateRecord(r, { cashNote: e.target.value })}
+                          onBlur={(e) => updateRecord(r, rowKey, { cashNote: e.target.value })}
                         />
                       </td>
                       <td className="c-center">
