@@ -9,7 +9,7 @@ function urlBase64ToUint8Array(base64String) {
   return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
 }
 
-export default function NotificationBell() {
+export default function NotificationBell({ variant = "icon" }) {
   const [supported, setSupported] = useState(true);
   const [subscribed, setSubscribed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -74,7 +74,25 @@ export default function NotificationBell() {
     }
   };
 
-  if (!supported) return null;
+  if (!supported) {
+    return variant === "button" ? (
+      <p className="muted" style={{ fontSize: 12.5 }}>
+        この端末（ブラウザ）はプッシュ通知に対応していません。
+      </p>
+    ) : null;
+  }
+
+  if (variant === "button") {
+    return (
+      <button
+        className={subscribed ? "btn gray" : "btn"}
+        disabled={busy}
+        onClick={subscribed ? disable : enable}
+      >
+        {subscribed ? "🔔 通知をオフにする" : "🔕 通知をオンにする"}
+      </button>
+    );
+  }
 
   return (
     <button
