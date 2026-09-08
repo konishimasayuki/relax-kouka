@@ -95,6 +95,34 @@ export default function BoardView() {
     return Math.max(0, menuPrice + optionPrice + extensionPrice - discount);
   };
 
+  const changeSelStore = (storeId) => {
+    updateSel({
+      storeId,
+      bed: "",
+      course: {
+        menuId: "",
+        name: "",
+        displayName: "",
+        minutes: "",
+        color: "",
+        freeText: "",
+        optionId: "",
+        optionName: "",
+        optionDisplayName: "",
+        optionMinutes: "",
+        optionColor: "",
+        couponId: "",
+        couponName: "",
+        couponDiscount: 0,
+        extensionId: "",
+        extensionName: "",
+        extensionDisplayName: "",
+        extensionMinutes: "",
+        extensionColor: "",
+      },
+    });
+  };
+
   const selectMenu = (menuId) => {
     const m = menusFor(sel).find((x) => x.id === menuId);
     const cur = sel.course || {};
@@ -277,8 +305,18 @@ export default function BoardView() {
               />
             </div>
             <p className="muted" style={{ marginTop: -8 }}>
-              {stores.find((s) => s.id === sel.storeId)?.name} / Bed {sel.bed}
+              Bed {sel.bed}
             </p>
+            <div className="field">
+              <label>店舗</label>
+              <select value={sel.storeId} onChange={(e) => changeSelStore(e.target.value)}>
+                {stores.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <div className="field">
               <label>コース</label>
