@@ -43,6 +43,7 @@ function emptyForm(date, storeId) {
     room: "",
     phone: "",
     amount: 0,
+    note: "",
   };
 }
 
@@ -465,6 +466,15 @@ export default function NewReceptionModal({
             <label>携帯番号</label>
             <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
           </div>
+        </div>
+
+        <div className="field">
+          <label>特記事項（タイムボードに「特」と表示されます）</label>
+          <input
+            value={form.note || ""}
+            placeholder="例：常連様・アレルギーあり　等"
+            onChange={(e) => setForm({ ...form, note: e.target.value })}
+          />
         </div>
 
         <div className="modal-actions">
