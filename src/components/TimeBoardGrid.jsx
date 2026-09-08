@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   courseColorHex,
   courseOnlyBoardLabel,
@@ -67,6 +67,33 @@ export default function TimeBoardGrid({
 }) {
   const HOUR_W = hourWidth;
   const MIN_W = HOUR_W / 60;
+
+  // 現在時刻のガイドライン用（表示中の日付が今日の場合のみ表示）。
+  // 60秒ごとに更新（要件の「最低20分に1回」より高頻度で、より正確な位置になる）。
+  const [nowMin, setNowMin] = useState(() => {
+    const d = new Date();
+    return d.getHours() * 60 + d.getMinutes();
+  });
+  useEffect(() => {
+    const tick = () => {
+      const d = new Date();
+      setNowMin(d.getHours() * 60 + d.getMinutes());
+    };
+    tick();
+    const timer = setInterval(tick, 60 * 1000);
+    return () => clearInterval(timer);
+  }, []);
+  const todayStr = (() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${dd}`;
+  })();
+  const isViewingToday = date === todayStr;
+  const nowLinePos = (nowMin - START_HOUR * 60) * MIN_W;
+  const showNowLine = isViewingToday && nowMin >= START_HOUR * 60 && nowMin <= END_HOUR * 60;
+
 
   // ---- ドラッグで時間・担当を変更する機能 ----
   // 少し（HOLD_MS）押さえてから動かすとドラッグ、それより早く指/マウスを離すとクリック（編集）扱いにする。
@@ -360,6 +387,15 @@ export default function TimeBoardGrid({
       )}
       <div className="tb-scroll">
       <div className="tb" style={{ minWidth: STAFF_COL_W + laneW }}>
+        {showNowLine && (
+          <div
+            className="tb-now-line"
+            style={{ left: STAFF_COL_W + nowLinePos }}
+            title={`現在時刻 ${String(Math.floor(nowMin / 60)).padStart(2, "0")}:${String(
+              nowMin % 60,
+            ).padStart(2, "0")}`}
+          />
+        )}
         <div className="tb-hours">
           <div className="tb-bedcol" style={{ width: STAFF_COL_W, height: 33 }} />
           {hours.map((h) => (
