@@ -2035,3 +2035,16 @@ table.grid th.num {
   z-index: 6;
   pointer-events: none;
 }
+
+/* ---------- ヘッダーのプッシュ通知ベル ---------- */
+.notif-bell {
+  background: none;
+  border: none;
+  font-size: 20px;
+  padding: 4px 8px;
+  cursor: pointer;
+  line-height: 1;
+}
+.notif-bell:disabled {
+  opacity: 0.5;
+}
