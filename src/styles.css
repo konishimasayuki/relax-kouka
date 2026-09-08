@@ -1823,6 +1823,10 @@ table.grid th.num {
   overflow: hidden;
 }
 
+.signage-td-cell {
+  container-type: size;
+}
+
 .signage-cell:last-child {
   border-right: none;
 }
@@ -1861,8 +1865,10 @@ table.grid th.num {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 4.6vh;
-  height: 4.6vh;
+  height: 68cqh;
+  aspect-ratio: 1 / 1;
+  width: auto;
+  max-width: 90cqw;
   border-radius: 50%;
   font-weight: 800;
 }
@@ -1870,30 +1876,30 @@ table.grid th.num {
 .signage-symbol.sym-double {
   background: #ffe1e8;
   color: #d6336c;
-  font-size: 2.6vh;
+  font-size: 36cqh;
 }
 
 .signage-symbol.sym-single {
   background: #fdeef2;
   color: #e05a86;
-  font-size: 2.3vh;
+  font-size: 32cqh;
 }
 
 .signage-symbol.sym-triangle {
   background: #fff6da;
   color: #b8860b;
-  font-size: 1.9vh;
+  font-size: 26cqh;
 }
 
 .signage-dash {
   color: #b3ada0;
-  font-size: 2.1vh;
+  font-size: 34cqh;
 }
 
 .signage-closed {
   display: inline-block;
   color: #9a9488;
-  font-size: 1.5vh;
+  font-size: 24cqh;
   background: #ece7db;
   border-radius: 0.8vh;
   padding: 0.4vh 0.8vh;
