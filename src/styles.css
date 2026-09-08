@@ -2010,3 +2010,14 @@ table.grid th.num {
   z-index: 3;
   box-shadow: 0 1px 3px rgba(0,0,0,0.35);
 }
+
+/* ---------- タイムボード：現在時刻のガイドライン ---------- */
+.tb-now-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #111;
+  z-index: 6;
+  pointer-events: none;
+}
