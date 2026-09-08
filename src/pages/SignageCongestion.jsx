@@ -92,7 +92,9 @@ export default function SignageCongestion() {
   }, [config.refreshSec]);
 
   const homeBuilding = homeBuildingOf(stores);
-  const hours = Array.from({ length: HOUR_END - HOUR_START + 1 }, (_, i) => HOUR_START + i);
+  // 30分刻みの時間スロット（分単位）。11:00〜23:00まで。
+  const slots = [];
+  for (let m = HOUR_START * 60; m <= HOUR_END * 60; m += 30) slots.push(m);
 
   // 日付ごとに、スタッフごとの空き区間を計算
   const gapsByDate = {};
@@ -113,8 +115,7 @@ export default function SignageCongestion() {
   }
 
   // 各セル（日付×時間）の記号を判定
-  function symbolFor(dateStr, hour) {
-    const slotStart = hour * 60;
+  function symbolFor(dateStr, slotStart) {
     const isToday = dateStr === dates[0];
     if (isToday && slotStart <= now) return { text: "closed" };
 
@@ -127,6 +128,8 @@ export default function SignageCongestion() {
     return { text: "-" };
   }
 
+  const colCount = dates.length + 1; // 時間列 + 日付列
+
   return (
     <div className="signage-congestion">
       <div className="signage-head">
@@ -137,40 +140,50 @@ export default function SignageCongestion() {
         <div className="signage-title">ご案内可能状況</div>
       </div>
 
-      <div className="signage-table-wrap">
-        <table className="signage-table">
-          <thead>
-            <tr>
-              <th className="signage-th-time">日時</th>
-              {dates.map((d, i) => (
-                <th key={d} className={i === 0 ? "signage-th-today" : "signage-th-tomorrow"}>
-                  {labelOf(d)}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {hours.map((h) => (
-              <tr key={h}>
-                <td className="signage-td-time">{String(h).padStart(2, "0")}:00</td>
-                {dates.map((d) => {
-                  const sym = symbolFor(d, h);
-                  return (
-                    <td key={d} className="signage-td-cell">
-                      {sym.text === "closed" ? (
-                        <span className="signage-closed">受付終了</span>
-                      ) : sym.text === "-" ? (
-                        <span className="signage-dash">－</span>
-                      ) : (
-                        <span className={`signage-symbol sym-${sym.cls}`}>{sym.text}</span>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div
+        className="signage-table-wrap"
+        style={{ gridTemplateRows: `auto repeat(${slots.length}, minmax(0, 1fr))` }}
+      >
+        <div className="signage-row signage-row-head" style={{ gridTemplateColumns: `1fr repeat(${dates.length}, 2fr)` }}>
+          <div className="signage-cell signage-th-time">日時</div>
+          {dates.map((d, i) => (
+            <div
+              key={d}
+              className={`signage-cell ${i === 0 ? "signage-th-today" : "signage-th-tomorrow"}`}
+            >
+              {labelOf(d)}
+            </div>
+          ))}
+        </div>
+        {slots.map((slotStart) => {
+          const hh = String(Math.floor(slotStart / 60)).padStart(2, "0");
+          const mm = String(slotStart % 60).padStart(2, "0");
+          return (
+            <div
+              className="signage-row"
+              key={slotStart}
+              style={{ gridTemplateColumns: `1fr repeat(${dates.length}, 2fr)` }}
+            >
+              <div className="signage-cell signage-td-time">
+                {hh}:{mm}
+              </div>
+              {dates.map((d) => {
+                const sym = symbolFor(d, slotStart);
+                return (
+                  <div key={d} className="signage-cell signage-td-cell">
+                    {sym.text === "closed" ? (
+                      <span className="signage-closed">受付終了</span>
+                    ) : sym.text === "-" ? (
+                      <span className="signage-dash">－</span>
+                    ) : (
+                      <span className={`signage-symbol sym-${sym.cls}`}>{sym.text}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
 
       <div className="signage-legend">
