@@ -102,6 +102,13 @@ export const api = {
   saveCommissionRates: (c) =>
     req("commissionRates", { method: "POST", body: JSON.stringify(c) }),
 
+  pushConfig: () => req("pushConfig"),
+  pushPublicKey: () => req("pushConfig?publicOnly=1"),
+  savePushConfig: (c) => req("pushConfig", { method: "POST", body: JSON.stringify(c) }),
+  subscribePush: (sub) => req("pushSubscriptions", { method: "POST", body: JSON.stringify(sub) }),
+  unsubscribePush: (endpoint) =>
+    req("pushSubscriptions", { method: "DELETE", body: JSON.stringify({ endpoint }) }),
+
   fortuneReceptions: (date) => req(`fortuneReceptions?date=${encodeURIComponent(date)}`),
   saveFortuneReception: (r) =>
     req("fortuneReceptions", { method: "POST", body: JSON.stringify(r) }),
