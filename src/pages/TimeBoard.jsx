@@ -483,6 +483,7 @@ export default function TimeBoard() {
               <div className="field">
                 <label>開始</label>
                 <TimeInput10
+                  minHour={11}
                   value={sel.startTime || ""}
                   onChange={(v) => updateSel({ startTime: v })}
                 />
