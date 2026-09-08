@@ -1,5 +1,4 @@
 import { useState } from "react";
-import NotificationBell from "./NotificationBell.jsx";
 
 const MENU = [
   { key: "dashboard", label: "ダッシュボード", ico: "📊" },
@@ -49,7 +48,6 @@ export default function Layout({ page, setPage, role, staffSession, isAdminUser,
         </button>
         <div className="title">{current?.label || "リラク業務管理"}</div>
         <div className="spacer" />
-        <NotificationBell />
         <div className="role-badge">{badge}</div>
       </header>
 
