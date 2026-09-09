@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
-import { PAYMENTS, api, sortByOrder, todayStr } from "../api.js";
+import { PAYMENTS, api, sortByOrder, staffDisplayName, todayStr } from "../api.js";
 import BreakModal from "../components/BreakModal.jsx";
 import NewReceptionModal from "../components/NewReceptionModal.jsx";
 import TimeBoardGrid from "../components/TimeBoardGrid.jsx";
@@ -475,7 +475,7 @@ export default function TimeBoard() {
                   <option value="">未定</option>
                   {assignableStaff(sel).map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.name}
+                      {staffDisplayName(s)}
                     </option>
                   ))}
                 </select>
