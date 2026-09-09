@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PAYMENTS, api, sortByOrder, todayStr } from "../api.js";
+import { PAYMENTS, api, sortByOrder, staffDisplayName, todayStr } from "../api.js";
 import TimeBoardGrid from "../components/TimeBoardGrid.jsx";
 import TimeInput10 from "../components/TimeInput10.jsx";
 import Login from "./Login.jsx";
@@ -397,7 +397,7 @@ export default function BoardView() {
                   <option value="">未定</option>
                   {assignableStaff(sel).map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.name}
+                      {staffDisplayName(s)}
                     </option>
                   ))}
                 </select>
