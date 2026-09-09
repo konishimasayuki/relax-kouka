@@ -1,6 +1,9 @@
 import { deleteItem, listAll, redis, saveItem } from "./_redis.js";
 import { sendPushToAll } from "./_push.js";
 
+// 通知機能は一旦不使用（trueに戻せばすぐ再開できます）
+const PUSH_NOTIFICATIONS_ENABLED = false;
+
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   try {
@@ -16,31 +19,33 @@ export default async function handler(req, res) {
       const saved = await saveItem(ns, { ...body, date });
 
       // タイムボードへの登録・変更をプッシュ通知（ベストエフォート。失敗しても保存自体は成功させる）
-      try {
-        const name = saved.customerName || "（お客様名未入力）";
-        const time = saved.startTime ? `${saved.startTime}〜` : "時間未定";
-        if (isNew) {
-          await sendPushToAll(
-            "予約が登録されました",
-            `${date} ${time} ${name}様`,
-            "/",
-          );
-        } else if (previous) {
-          const changed =
-            previous.startTime !== saved.startTime ||
-            previous.staffId !== saved.staffId ||
-            previous.customerName !== saved.customerName ||
-            previous.storeId !== saved.storeId;
-          if (changed) {
+      if (PUSH_NOTIFICATIONS_ENABLED) {
+        try {
+          const name = saved.customerName || "（お客様名未入力）";
+          const time = saved.startTime ? `${saved.startTime}〜` : "時間未定";
+          if (isNew) {
             await sendPushToAll(
-              "予約が変更されました",
+              "予約が登録されました",
               `${date} ${time} ${name}様`,
               "/",
             );
+          } else if (previous) {
+            const changed =
+              previous.startTime !== saved.startTime ||
+              previous.staffId !== saved.staffId ||
+              previous.customerName !== saved.customerName ||
+              previous.storeId !== saved.storeId;
+            if (changed) {
+              await sendPushToAll(
+                "予約が変更されました",
+                `${date} ${time} ${name}様`,
+                "/",
+              );
+            }
           }
+        } catch (e) {
+          console.error("push通知失敗", e);
         }
-      } catch (e) {
-        console.error("push通知失敗", e);
       }
 
       return res.json(saved);
