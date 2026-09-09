@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PAYMENTS, api, sortByOrder } from "../api.js";
+import { PAYMENTS, api, sortByOrder, staffDisplayName } from "../api.js";
 import TimeInput10 from "./TimeInput10.jsx";
 import { overlayClose } from "../modalUtils.js";
 
@@ -413,7 +413,7 @@ export default function NewReceptionModal({
               <option value="">未定</option>
               {assignable.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.name}
+                  {staffDisplayName(s)}
                 </option>
               ))}
             </select>
