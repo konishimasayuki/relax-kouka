@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useApp } from "../App.jsx";
 import { api, STAFF_COLOR_PALETTE, staffColor } from "../api.js";
-import NotificationBell from "../components/NotificationBell.jsx";
 import { overlayClose } from "../modalUtils.js";
 
 const emptyStore = {
@@ -397,12 +396,6 @@ export default function Settings() {
           onClick={() => setTab("commissionRate")}
         >
           歩合率設定
-        </button>
-        <button
-          className={tab === "pushNotify" ? "btn sm" : "btn sm gray"}
-          onClick={() => setTab("pushNotify")}
-        >
-          プッシュ通知設定
         </button>
       </div>
 
@@ -819,26 +812,6 @@ export default function Settings() {
               保存
             </button>
             {rateSaved && <span className="muted">保存しました</span>}
-          </div>
-        </div>
-      )}
-
-      {tab === "pushNotify" && (
-        <div>
-          <div className="card">
-            <h3 style={{ fontSize: 15, margin: "0 0 4px" }}>プッシュ通知設定</h3>
-            <p className="muted" style={{ fontSize: 12.5, marginTop: 0 }}>
-              タイムボードで予約の登録・変更があった際、通知を有効にした端末へプッシュ通知が届きます。
-              この端末での通知を、下のボタンでオン・オフできます。
-            </p>
-
-            <div className="modal-actions" style={{ justifyContent: "flex-start" }}>
-              <NotificationBell variant="button" />
-            </div>
-
-            <p className="muted" style={{ fontSize: 12.5, marginTop: 14 }}>
-              オン・オフはこの設定タブを開いた端末ごとに個別に切り替わります。他のスタッフの端末には影響しません。
-            </p>
           </div>
         </div>
       )}
