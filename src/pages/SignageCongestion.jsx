@@ -106,7 +106,7 @@ export default function SignageCongestion() {
   const menuList = [...menus]
     .filter((m) => m.storeId === homeStore?.id)
     .sort((a, b) => (a.order || 0) - (b.order || 0))
-    .slice(0, 8);
+    .slice(0, 12);
 
   // 30分刻みの時間スロット（分単位）。11:00〜23:00まで。
   const slots = [];
@@ -215,7 +215,14 @@ export default function SignageCongestion() {
             </div>
             <div className="signage-menu-sub">ごゆっくりとお選びください</div>
 
-            <div className="signage-menu-list">
+            <div
+              className="signage-menu-list"
+              style={
+                menuList.length
+                  ? { display: "grid", gridTemplateRows: `repeat(${menuList.length}, minmax(0, 1fr))` }
+                  : undefined
+              }
+            >
               {menuList.length === 0 ? (
                 <div className="signage-menu-empty">メニュー準備中</div>
               ) : (
