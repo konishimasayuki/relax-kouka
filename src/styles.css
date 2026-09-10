@@ -1990,9 +1990,9 @@ table.grid th.num {
 .signage-menu-list {
   width: 100%;
   max-width: 84cqw;
-  display: flex;
-  flex-direction: column;
-  gap: 1.8vh;
+  flex: 1;
+  min-height: 0;
+  gap: 0;
   overflow: hidden;
 }
 
@@ -2004,6 +2004,11 @@ table.grid th.num {
 
 .signage-menu-item {
   text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .signage-menu-item-main {
@@ -2013,7 +2018,7 @@ table.grid th.num {
 }
 
 .signage-menu-item-name {
-  font-size: min(2.1vh, 4.6cqw);
+  font-size: min(2.1vh, 4.6cqw, 3.6cqh);
   font-weight: 700;
   color: #fff;
   white-space: nowrap;
@@ -2026,14 +2031,14 @@ table.grid th.num {
 }
 
 .signage-menu-item-price {
-  font-size: min(2.1vh, 4.6cqw);
+  font-size: min(2.1vh, 4.6cqw, 3.6cqh);
   font-weight: 800;
   color: #ffd76b;
   white-space: nowrap;
 }
 
 .signage-menu-item-time {
-  font-size: min(1.4vh, 3.1cqw);
+  font-size: min(1.4vh, 3.1cqw, 2.4cqh);
   color: #b6a6de;
   margin-top: 0.2vh;
 }
