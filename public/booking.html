@@ -1326,6 +1326,26 @@
 
   let state = { day:"today", slot:null, menu:null, option:"o0" };
 
+  // 「今日／明日」から実際の日付（表示用ラベル・送信用ISO文字列）を計算する
+  const WEEK_LABEL_JA = ["日","月","火","水","木","金","土"];
+  function realDateOf(day) {
+    const d = new Date();
+    if (day === "tomorrow") d.setDate(d.getDate() + 1);
+    return d;
+  }
+  function isoDateOf(day) {
+    const d = realDateOf(day);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${dd}`;
+  }
+  function dayLabelOf(day) {
+    const d = realDateOf(day);
+    return `${d.getMonth() + 1}/${d.getDate()}（${WEEK_LABEL_JA[d.getDay()]}）`;
+  }
+
+
   // 占いの「ご希望時間」セレクトを 11:00〜23:00・10分刻みで生成
   (function buildFortuneTimeOptions() {
     const sel = document.getElementById("fTime");
@@ -1392,7 +1412,7 @@
   function selectSlot(day, time) {
     state.day = day;
     state.slot = time;
-    const dayLabel = day === "today" ? "8/31（月）" : "9/1（火）";
+    const dayLabel = dayLabelOf(day);
     document.getElementById("selectedSlotLabel").textContent = `${dayLabel} ${time}〜 のご予約です`;
     goStep(1);
   }
@@ -1441,7 +1461,7 @@
   }
 
   function renderSummary() {
-    const dayLabel = state.day === "today" ? "8/31（月）" : "9/1（火）";
+    const dayLabel = dayLabelOf(state.day);
     const menu = menus.find(m => m.id === state.menu);
     const option = options.find(o => o.id === state.option);
     document.getElementById("summaryBox").innerHTML = `
@@ -1515,7 +1535,6 @@
         alert("メールアドレスの形式が正しくありません");
         return;
       }
-      const dayLabel = state.day === "today" ? "8/31（月）" : "9/1（火）";
       const menu = menus.find(m => m.id === state.menu);
       const option = options.find(o => o.id === state.option);
       submitBookingRequest({
@@ -1524,8 +1543,8 @@
         phone,
         email,
         room,
-        desiredDate: dayLabel,
-        desiredTime: state.slot ? `${state.slot}〜` : "",
+        desiredDate: isoDateOf(state.day),
+        desiredTime: state.slot || "",
         menu: menu ? menu.name : "",
         option: option ? option.name : "なし",
         price: menu ? menu.price : "",
