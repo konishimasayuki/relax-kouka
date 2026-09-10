@@ -112,6 +112,15 @@ export default function TimeBoard() {
     setBusy(true);
     try {
       const priceNum = Number(String(r.price || "0").replace(/[^\d]/g, "")) || 0;
+
+      // メニュー名・オプション名が、選ばれた店舗の実際の登録メニューと一致するか探す。
+      // 一致すればコース・オプション欄にちゃんと選択された状態にする（一致しなければ自由入力で保持）。
+      const storeMenus = menus.filter((m) => m.storeId === homeStore?.id);
+      const storeOptions = options.filter((o) => o.storeId === homeStore?.id);
+      const matchedMenu = storeMenus.find((m) => m.name === r.menu);
+      const matchedOption =
+        r.option && r.option !== "なし" ? storeOptions.find((o) => o.name === r.option) : null;
+
       const newRecord = {
         id: "",
         date,
@@ -120,17 +129,17 @@ export default function TimeBoard() {
         customerName: r.name || "",
         gender: "女",
         course: {
-          menuId: "",
-          name: r.menu || "",
-          displayName: r.menu || "",
-          minutes: "",
-          color: "",
-          freeText: r.menu || "",
-          optionId: "",
-          optionName: r.option && r.option !== "なし" ? r.option : "",
-          optionDisplayName: "",
-          optionMinutes: "",
-          optionColor: "",
+          menuId: matchedMenu?.id || "",
+          name: matchedMenu?.name || r.menu || "",
+          displayName: matchedMenu?.name || r.menu || "",
+          minutes: matchedMenu?.minutes || "",
+          color: matchedMenu?.color || "",
+          freeText: matchedMenu ? "" : r.menu || "",
+          optionId: matchedOption?.id || "",
+          optionName: matchedOption?.name || (r.option && r.option !== "なし" ? r.option : ""),
+          optionDisplayName: matchedOption?.name || "",
+          optionMinutes: matchedOption?.minutes || "",
+          optionColor: matchedOption?.color || "",
           couponId: "",
           couponName: "",
           couponDiscount: 0,
@@ -151,7 +160,10 @@ export default function TimeBoard() {
         room: r.room || "",
         phone: r.phone || "",
         amount: priceNum,
-        note: "【予約申請より受入】" + (r.option && r.option !== "なし" ? `オプション:${r.option}` : ""),
+        note:
+          "【予約申請より受入】" +
+          (!matchedMenu ? `メニュー:${r.menu || ""}　` : "") +
+          (r.option && r.option !== "なし" && !matchedOption ? `オプション:${r.option}` : ""),
       };
       const saved = await api.saveReception(newRecord);
       pushUndo({ type: "create", record: saved });
