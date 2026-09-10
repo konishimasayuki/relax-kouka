@@ -1293,31 +1293,26 @@
   renderMenuSection();
   renderBookingStoreSelect();
 
-  // ---- デモ用データ（見た目確認用のダミー。実データは今後システムと連携） ----
-  const slotsToday = [
-    {time:"14:00", status:"open"},
-    {time:"14:30", status:"open"},
-    {time:"15:00", status:"full"},
-    {time:"15:30", status:"full"},
-    {time:"16:00", status:"open"},
-    {time:"16:30", status:"open"},
-    {time:"17:00", status:"open"},
-    {time:"17:30", status:"full"},
-    {time:"18:00", status:"open"},
-    {time:"18:30", status:"open"},
-    {time:"19:00", status:"closed"},
-  ];
-  const slotsTomorrow = [
-    {time:"11:00", status:"open"},
-    {time:"11:30", status:"open"},
-    {time:"12:00", status:"open"},
-    {time:"12:30", status:"open"},
-    {time:"13:00", status:"open"},
-    {time:"13:30", status:"full"},
-    {time:"14:00", status:"open"},
-    {time:"14:30", status:"open"},
-    {time:"15:00", status:"open"},
-  ];
+  // 空き状況は /api/availability から実データを取得する（読み込み中は空欄で表示）
+  let slotsToday = [];
+  let slotsTomorrow = [];
+
+  async function loadAvailability() {
+    try {
+      const todayIso = isoDateOf("today");
+      const tomorrowIso = isoDateOf("tomorrow");
+      const [today, tomorrow] = await Promise.all([
+        fetch(`/api/availability?date=${todayIso}`).then(r => r.json()),
+        fetch(`/api/availability?date=${tomorrowIso}`).then(r => r.json()),
+      ]);
+      slotsToday = today;
+      slotsTomorrow = tomorrow;
+      renderSlots(document.getElementById("slotListToday"), slotsToday, "today");
+      renderSlots(document.getElementById("slotListTomorrow"), slotsTomorrow, "tomorrow");
+    } catch (e) {
+      console.error("空き状況の取得に失敗しました", e);
+    }
+  }
 
   // メニュー・オプションは実際の登録データ（/api/menus, /api/options）から取得する。
   // ここでは初期値として空にしておき、loadRealMenuData() で読み込む。
@@ -1450,8 +1445,6 @@
       </div>`;
     }).join("");
   }
-  renderSlots(document.getElementById("slotListToday"), slotsToday, "today");
-  renderSlots(document.getElementById("slotListTomorrow"), slotsTomorrow, "tomorrow");
 
   document.querySelectorAll(".day-tab").forEach(tab => {
     tab.addEventListener("click", () => {
@@ -1660,6 +1653,7 @@
 
   goStep(0);
   loadRealMenuData();
+  loadAvailability();
 
   // ---- ローディング画面 ----
   // ページの全リソース（大きなメニュー画像など）の読み込みが終わり、
