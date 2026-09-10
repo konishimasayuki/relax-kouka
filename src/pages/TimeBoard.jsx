@@ -19,6 +19,9 @@ export default function TimeBoard() {
   const [busy, setBusy] = useState(false);
   const [newOpen, setNewOpen] = useState(false);
   const [breakModal, setBreakModal] = useState(null); // { editing } | null
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [attendanceModal, setAttendanceModal] = useState(null); // staffId | null
   const [editCheckInTime, setEditCheckInTime] = useState(""); // 出勤モーダル内での編集値
 
@@ -47,6 +50,30 @@ export default function TimeBoard() {
 
   const openBoardWindow = () => {
     window.open("/board", "relaxBoard", "width=1280,height=720,noopener");
+  };
+
+  const loadHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      setHistory(await api.receptionHistory(date));
+    } catch (e) {
+      alert(`履歴の取得に失敗しました: ${e.message}`);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const staffNameOf = (id) => staffDisplayName(staff.find((s) => s.id === id)) || "未定";
+
+  const historyActionLabel = (action) => {
+    if (action === "新規") return { text: "新規登録", cls: "history-new" };
+    if (action === "削除") return { text: "削除", cls: "history-delete" };
+    return { text: "変更", cls: "history-edit" };
+  };
+
+  const historyTimeLabel = (iso) => {
+    const d = new Date(iso);
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   };
 
   // その日にシフト登録されているスタッフのみ担当に選べるようにする
@@ -343,6 +370,15 @@ export default function TimeBoard() {
         </button>
         <button className="btn sm ghost desktop-only" onClick={openBoardWindow}>
           🖥️ 別ウィンドウで表示
+        </button>
+        <button
+          className="btn sm ghost"
+          onClick={() => {
+            setHistoryOpen(true);
+            loadHistory();
+          }}
+        >
+          📜 受付履歴
         </button>
         <span className="muted desktop-only" style={{ fontSize: 12 }}>
           10分刻み／斜線＝移動（20分・本店パレス2F基準）／灰色＝シフト外
@@ -661,6 +697,41 @@ export default function TimeBoard() {
             setBreakModal(null);
           }}
         />
+      )}
+
+      {historyOpen && (
+        <div className="modal-overlay" onClick={overlayClose(() => setHistoryOpen(false))}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>受付履歴（{date}）</h3>
+            {historyLoading ? (
+              <div className="empty">読み込み中…</div>
+            ) : history.length === 0 ? (
+              <div className="empty">この日の履歴はまだありません</div>
+            ) : (
+              <div className="history-list">
+                {history.map((h, i) => {
+                  const label = historyActionLabel(h.action);
+                  return (
+                    <div className="history-row" key={i}>
+                      <span className={`history-badge ${label.cls}`}>{label.text}</span>
+                      <span className="history-time">{historyTimeLabel(h.time)}</span>
+                      <span className="history-body">
+                        {h.customerName || "（お客様名未入力）"}様
+                        {h.startTime ? `　${h.startTime}〜` : "　時間未定"}
+                        　担当：{staffNameOf(h.staffId)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <div className="modal-actions">
+              <button className="btn gray" onClick={() => setHistoryOpen(false)}>
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
