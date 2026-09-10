@@ -21,7 +21,10 @@ export default function BoardView() {
   const [attendance, setAttendance] = useState([]);
   const [now, setNow] = useState(() => new Date());
   const [sel, setSel] = useState(null);
+  const selOriginalRef = useRef(null); // 編集モーダルを開いた時点の元データ（undo用）
   const [busy, setBusy] = useState(false);
+  const [undoStack, setUndoStack] = useState([]);
+  const [undoBusy, setUndoBusy] = useState(false);
   const timerRef = useRef(null);
 
   const handleLogin = (result) => {
@@ -222,10 +225,52 @@ export default function BoardView() {
     });
   };
 
+  const UNDO_LIMIT = 20;
+  const pushUndo = (entry) => {
+    setUndoStack((prev) => [...prev.slice(-(UNDO_LIMIT - 1)), entry]);
+  };
+
+  const undo = async () => {
+    if (!undoStack.length || undoBusy) return;
+    const last = undoStack[undoStack.length - 1];
+    setUndoStack((prev) => prev.slice(0, -1));
+    setUndoBusy(true);
+    try {
+      if (last.type === "update") {
+        const saved = await api.saveReception(last.record);
+        setRecords((prev) => prev.map((x) => (x.id === saved.id ? saved : x)));
+      } else if (last.type === "delete") {
+        const saved = await api.saveReception({ ...last.record, id: "" });
+        if (saved.date === date) setRecords((prev) => [...prev, saved]);
+      } else if (last.type === "create") {
+        await api.deleteReception(last.record.id, last.record.date || date);
+        setRecords((prev) => prev.filter((x) => x.id !== last.record.id));
+      }
+    } catch (e) {
+      alert(`元に戻す処理に失敗しました: ${e.message}`);
+    } finally {
+      setUndoBusy(false);
+    }
+  };
+
+  // Ctrl+Z / Cmd+Z で元に戻す
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      const isUndoKey = (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "z";
+      if (!isUndoKey || sel) return;
+      e.preventDefault();
+      undo();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+    // eslint-disable-next-line
+  }, [undo, sel]);
+
   const save = async () => {
     setBusy(true);
     try {
       const saved = await api.saveReception(sel);
+      if (selOriginalRef.current) pushUndo({ type: "update", record: selOriginalRef.current });
       setRecords((prev) => prev.map((x) => (x.id === saved.id ? saved : x)));
       setSel(null);
     } catch (e) {
@@ -241,6 +286,7 @@ export default function BoardView() {
     try {
       const copy = { ...sel, id: "", staffId: "" };
       const saved = await api.saveReception(copy);
+      pushUndo({ type: "create", record: saved });
       setRecords((prev) => [...prev, saved]);
       setSel(null);
     } catch (e) {
@@ -256,6 +302,7 @@ export default function BoardView() {
     setRecords((prev) => prev.map((x) => (x.id === record.id ? updated : x)));
     try {
       const saved = await api.saveReception(updated);
+      pushUndo({ type: "update", record });
       setRecords((prev) => prev.map((x) => (x.id === saved.id ? saved : x)));
     } catch (e) {
       alert(`移動失敗: ${e.message}`);
@@ -267,6 +314,7 @@ export default function BoardView() {
     setBusy(true);
     try {
       await api.deleteReception(sel.id, sel.date || date);
+      pushUndo({ type: "delete", record: sel });
       setRecords((prev) => prev.filter((x) => x.id !== sel.id));
       setSel(null);
     } catch (e) {
@@ -292,6 +340,14 @@ export default function BoardView() {
           <strong>リラク業務管理 ／ タイムボード</strong>
           <span className="muted">{dateLabel}</span>
           <div className="spacer" />
+          <button
+            className="btn sm ghost"
+            onClick={undo}
+            disabled={!undoStack.length || undoBusy}
+            title="直前の変更・削除を1つ元に戻します（Ctrl+Z）"
+          >
+            ↩️ 元に戻す{undoStack.length > 0 ? `（${undoStack.length}）` : ""}
+          </button>
           <span className="pill">{timeLabel}</span>
         </div>
         <div className="board-body">
@@ -302,7 +358,10 @@ export default function BoardView() {
             shifts={shifts}
             attendance={attendance}
             date={date}
-            onSelect={setSel}
+            onSelect={(r) => {
+              selOriginalRef.current = r;
+              setSel(r);
+            }}
             onMove={handleMove}
             hourWidth={140}
           />
