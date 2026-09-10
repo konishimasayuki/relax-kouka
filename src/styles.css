@@ -1776,6 +1776,26 @@ table.grid th.num {
   overflow: hidden; /* サイネージはスクロール不可・必ず画面内に収める */
 }
 
+.signage-layout {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 2.4vw;
+}
+
+.signage-left {
+  flex: 0 0 58%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.signage-right {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
 .signage-head {
   text-align: center;
   margin-bottom: 1.5vh;
@@ -1914,6 +1934,107 @@ table.grid th.num {
   color: #6b6458;
   flex-wrap: wrap;
   flex: 0 0 auto;
+}
+
+/* ---------- サイネージ：右側のメニュー紹介パネル ---------- */
+.signage-menu-panel {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 4vh 2.6vw;
+  border-radius: 1.4vh;
+  background: radial-gradient(ellipse at top, #3d2a6b 0%, #1b1330 55%, #100b1e 100%);
+  color: #f3ecff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+}
+
+.signage-menu-deco-line {
+  width: 5vh;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #d8b86a, transparent);
+  margin-bottom: 1.4vh;
+}
+.signage-menu-deco-line.bottom {
+  margin-top: auto;
+  margin-bottom: 0;
+}
+
+.signage-menu-eyebrow {
+  font-size: 1.5vh;
+  letter-spacing: 0.4em;
+  color: #d8b86a;
+  font-weight: 700;
+}
+
+.signage-menu-heading {
+  font-size: 3.2vh;
+  font-weight: 800;
+  margin-top: 0.8vh;
+  color: #fff;
+}
+
+.signage-menu-sub {
+  font-size: 1.6vh;
+  color: #c9bce8;
+  margin-top: 0.6vh;
+  margin-bottom: 3vh;
+}
+
+.signage-menu-list {
+  width: 100%;
+  max-width: 34vw;
+  display: flex;
+  flex-direction: column;
+  gap: 1.8vh;
+  overflow: hidden;
+}
+
+.signage-menu-empty {
+  color: #c9bce8;
+  font-size: 2vh;
+  margin-top: 2vh;
+}
+
+.signage-menu-item {
+  text-align: left;
+}
+
+.signage-menu-item-main {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6vw;
+}
+
+.signage-menu-item-name {
+  font-size: 2.1vh;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.signage-menu-item-dots {
+  flex: 1;
+  border-bottom: 2px dotted rgba(216, 184, 106, 0.45);
+  transform: translateY(-0.4vh);
+}
+
+.signage-menu-item-price {
+  font-size: 2.1vh;
+  font-weight: 800;
+  color: #ffd76b;
+  white-space: nowrap;
+}
+
+.signage-menu-item-time {
+  font-size: 1.4vh;
+  color: #b6a6de;
+  margin-top: 0.2vh;
 }
 
 /* ---------- サイネージ：画面2（宣伝・横長） ---------- */
