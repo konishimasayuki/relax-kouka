@@ -55,7 +55,7 @@ export default function TimeBoard() {
   const loadHistory = async () => {
     setHistoryLoading(true);
     try {
-      setHistory(await api.receptionHistory(date));
+      setHistory(await api.receptionHistory());
     } catch (e) {
       alert(`履歴の取得に失敗しました: ${e.message}`);
     } finally {
@@ -73,7 +73,9 @@ export default function TimeBoard() {
 
   const historyTimeLabel = (iso) => {
     const d = new Date(iso);
-    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(
+      d.getMinutes(),
+    ).padStart(2, "0")}`;
   };
 
   // その日にシフト登録されているスタッフのみ担当に選べるようにする
@@ -702,7 +704,7 @@ export default function TimeBoard() {
       {historyOpen && (
         <div className="modal-overlay" onClick={overlayClose(() => setHistoryOpen(false))}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>受付履歴（{date}）</h3>
+            <h3>受付履歴（全日程）</h3>
             {historyLoading ? (
               <div className="empty">読み込み中…</div>
             ) : history.length === 0 ? (
@@ -716,7 +718,7 @@ export default function TimeBoard() {
                       <span className={`history-badge ${label.cls}`}>{label.text}</span>
                       <span className="history-time">{historyTimeLabel(h.time)}</span>
                       <span className="history-body">
-                        {h.customerName || "（お客様名未入力）"}様
+                        【{h.date}】{h.customerName || "（お客様名未入力）"}様
                         {h.startTime ? `　${h.startTime}〜` : "　時間未定"}
                         　担当：{staffNameOf(h.staffId)}
                       </span>
