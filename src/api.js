@@ -98,6 +98,8 @@ export const api = {
   deleteBookingRequest: (id) =>
     req(`bookingRequests?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
 
+  receptionHistory: (date) => req(`receptionHistory?date=${encodeURIComponent(date)}`),
+
   commissionRates: () => req("commissionRates"),
   saveCommissionRates: (c) =>
     req("commissionRates", { method: "POST", body: JSON.stringify(c) }),
