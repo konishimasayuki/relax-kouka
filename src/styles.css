@@ -2214,3 +2214,15 @@ table.grid th.num {
   flex: 1;
   min-width: 200px;
 }
+
+/* ---------- タイムボード：予約申請（未対応）欄 ---------- */
+.tb-row-bookingreq {
+  background: rgba(217, 130, 43, 0.06);
+}
+.tb-block-bookingreq {
+  cursor: pointer;
+  border: 2px dashed rgba(255,255,255,0.6);
+}
+.tb-block-bookingreq:active {
+  filter: brightness(0.92);
+}
