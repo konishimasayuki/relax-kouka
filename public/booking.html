@@ -1236,15 +1236,23 @@
 
   function switchStore(key) {
     currentStore = key;
+    state.menu = null;
+    state.option = "";
     renderStorePicker();
     renderMenuSection();
     renderBookingStoreSelect();
+    if (getCurrentScreen() === 1) renderMenus();
+    if (getCurrentScreen() === 2) renderOptions();
   }
 
   function switchBookingStore(key) {
     currentStore = key;
+    state.menu = null;
+    state.option = "";
     renderStorePicker();
     renderMenuSection();
+    if (getCurrentScreen() === 1) renderMenus();
+    if (getCurrentScreen() === 2) renderOptions();
   }
 
   function renderBookingStoreSelect() {
@@ -1311,20 +1319,66 @@
     {time:"15:00", status:"open"},
   ];
 
-  const menus = [
-    {id:"m1", name:"もみほぐし 30分", desc:"お疲れの箇所を中心に", price:"¥3,300"},
-    {id:"m2", name:"もみほぐし 60分", desc:"全身をゆっくりと", price:"¥5,500"},
-    {id:"m3", name:"オイルリンパ 60分", desc:"むくみ・巡りのケアに", price:"¥7,700"},
-    {id:"m4", name:"フットケア 40分", desc:"脚の疲れに集中的に", price:"¥4,400"},
-  ];
+  // メニュー・オプションは実際の登録データ（/api/menus, /api/options）から取得する。
+  // ここでは初期値として空にしておき、loadRealMenuData() で読み込む。
+  let allRealMenus = [];
+  let allRealOptions = [];
+  let allRealStores = [];
 
-  const options = [
-    {id:"o0", name:"なし", desc:"", price:"¥0"},
-    {id:"o1", name:"ヘッドマッサージ +10分", desc:"仕上げに頭をすっきりと", price:"+¥1,100"},
-    {id:"o2", name:"ホットストーン +15分", desc:"温めた石でじんわりと", price:"+¥1,650"},
-  ];
+  function menusForCurrentStore() {
+    const realId = STORES[currentStore]?.realId;
+    return allRealMenus
+      .filter(m => m.storeId === realId)
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+      .map(formatMenu);
+  }
+  function optionsForCurrentStore() {
+    const realId = STORES[currentStore]?.realId;
+    const real = allRealOptions
+      .filter(o => o.storeId === realId)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+    return [{ id: "", name: "なし", desc: "", price: "¥0" }, ...real.map(formatOption)];
+  }
+  function formatMenu(m) {
+    return {
+      id: m.id,
+      name: m.name,
+      desc: m.minutes ? `${m.minutes}分` : "",
+      price: `¥${Number(m.price || 0).toLocaleString("ja-JP")}`,
+    };
+  }
+  function formatOption(o) {
+    return {
+      id: o.id,
+      name: o.name,
+      desc: o.minutes ? `+${o.minutes}分` : "",
+      price: `+¥${Number(o.price || 0).toLocaleString("ja-JP")}`,
+    };
+  }
 
-  let state = { day:"today", slot:null, menu:null, option:"o0" };
+  async function loadRealMenuData() {
+    try {
+      const [stores, menus, options] = await Promise.all([
+        fetch("/api/stores").then(r => r.json()),
+        fetch("/api/menus").then(r => r.json()),
+        fetch("/api/options").then(r => r.json()),
+      ]);
+      allRealStores = stores;
+      allRealMenus = menus;
+      allRealOptions = options;
+      // 建物名（パレス／宙館／Ceada）から実際の店舗IDを割り当てる
+      STORES.palace.realId = stores.find(s => (s.building || "").includes("パレス"))?.id || "";
+      STORES.chukan.realId = stores.find(s => (s.building || "").includes("宙館"))?.id || "";
+      STORES.ceada.realId = stores.find(s => (s.building || "").includes("Ceada"))?.id || "";
+      // メニュー・オプション画面が既に表示中なら描き直す
+      if (getCurrentScreen() === 1) renderMenus();
+      if (getCurrentScreen() === 2) renderOptions();
+    } catch (e) {
+      console.error("メニューデータの取得に失敗しました", e);
+    }
+  }
+
+  let state = { day:"today", slot:null, menu:null, option:"" };
 
   // 「今日／明日」から実際の日付（表示用ラベル・送信用ISO文字列）を計算する
   const WEEK_LABEL_JA = ["日","月","火","水","木","金","土"];
@@ -1419,7 +1473,7 @@
 
   function renderMenus() {
     const el = document.getElementById("menuList");
-    el.innerHTML = menus.map(m => `
+    el.innerHTML = menusForCurrentStore().map(m => `
       <div class="pick-card ${state.menu === m.id ? 'selected' : ''}" onclick="selectMenu('${m.id}')">
         <div class="pick-row">
           <div class="radio-dot"></div>
@@ -1441,7 +1495,7 @@
 
   function renderOptions() {
     const el = document.getElementById("optionList");
-    el.innerHTML = options.map(o => `
+    el.innerHTML = optionsForCurrentStore().map(o => `
       <div class="pick-card ${state.option === o.id ? 'selected' : ''}" onclick="selectOption('${o.id}')">
         <div class="pick-row">
           <div class="radio-dot"></div>
@@ -1462,8 +1516,8 @@
 
   function renderSummary() {
     const dayLabel = dayLabelOf(state.day);
-    const menu = menus.find(m => m.id === state.menu);
-    const option = options.find(o => o.id === state.option);
+    const menu = menusForCurrentStore().find(m => m.id === state.menu);
+    const option = optionsForCurrentStore().find(o => o.id === state.option);
     document.getElementById("summaryBox").innerHTML = `
       <div class="summary-row"><span class="s-label">日時</span><span class="s-value">${dayLabel} ${state.slot}〜</span></div>
       <div class="summary-row"><span class="s-label">メニュー</span><span class="s-value">${menu ? menu.name : "-"}</span></div>
@@ -1535,14 +1589,15 @@
         alert("メールアドレスの形式が正しくありません");
         return;
       }
-      const menu = menus.find(m => m.id === state.menu);
-      const option = options.find(o => o.id === state.option);
+      const menu = menusForCurrentStore().find(m => m.id === state.menu);
+      const option = optionsForCurrentStore().find(o => o.id === state.option);
       submitBookingRequest({
         type: "massage",
         name,
         phone,
         email,
         room,
+        storeId: STORES[currentStore]?.realId || "",
         desiredDate: isoDateOf(state.day),
         desiredTime: state.slot || "",
         menu: menu ? menu.name : "",
@@ -1604,6 +1659,7 @@
   }
 
   goStep(0);
+  loadRealMenuData();
 
   // ---- ローディング画面 ----
   // ページの全リソース（大きなメニュー画像など）の読み込みが終わり、
