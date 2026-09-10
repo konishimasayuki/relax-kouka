@@ -68,6 +68,7 @@ export default function Settings() {
   const [testEmailTo, setTestEmailTo] = useState("");
   const [notifyBusy, setNotifyBusy] = useState(false);
   const [notifySaved, setNotifySaved] = useState(false);
+  const [detectedGroups, setDetectedGroups] = useState([]);
   const [commissionRates, setCommissionRates] = useState({
     bodyRecess: {
       base: { until11: 55, from11to15: 50, from15to23: 45 },
@@ -99,6 +100,7 @@ export default function Settings() {
     }
     if (tab === "notify") {
       api.notifyConfig().then(setNotifyConfig).catch(() => {});
+      api.lineDetectedGroups().then(setDetectedGroups).catch(() => {});
     }
     if (tab === "commissionRate") {
       api.commissionRates().then(setCommissionRates).catch(() => {});
@@ -635,6 +637,50 @@ export default function Settings() {
                 }
                 placeholder="LINE Developersで発行したチャネルアクセストークン"
               />
+            </div>
+
+            <div className="card" style={{ background: "#f7f5f0", marginBottom: 14 }}>
+              <strong style={{ fontSize: 13.5 }}>グループIDの調べ方</strong>
+              <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.8, marginTop: 6 }}>
+                1. LINE Developersのコンソールで、Webhook URLに
+                <br />
+                <code>https://relax-kouka.vercel.app/api/lineWebhook</code>
+                <br />
+                を設定し、「Webhookの利用」をオンにする
+                <br />
+                2. 通知を送りたいLINEグループで、何かひとこと発言する（「テスト」等でOK）
+                <br />
+                3. 数秒後、下に検出されたグループIDが表示されるのでコピーして使う
+              </p>
+              <button
+                className="btn sm ghost"
+                onClick={() => api.lineDetectedGroups().then(setDetectedGroups)}
+              >
+                🔄 検出結果を更新
+              </button>
+              {detectedGroups.length === 0 ? (
+                <p className="muted" style={{ fontSize: 12.5, marginTop: 8 }}>
+                  まだ検出されたグループはありません
+                </p>
+              ) : (
+                <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+                  {detectedGroups.map((g) => (
+                    <div
+                      key={g.groupId}
+                      className="row"
+                      style={{ alignItems: "center", fontSize: 12.5 }}
+                    >
+                      <code style={{ flex: 1, wordBreak: "break-all" }}>{g.groupId}</code>
+                      <button
+                        className="btn sm ghost"
+                        onClick={() => navigator.clipboard?.writeText(g.groupId)}
+                      >
+                        コピー
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="field">
