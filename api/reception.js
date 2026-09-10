@@ -1,5 +1,6 @@
 import { deleteItem, listAll, redis, saveItem } from "./_redis.js";
 import { sendPushToAll } from "./_push.js";
+import { logReceptionHistory } from "./_receptionHistory.js";
 
 // 通知機能は一旦不使用（trueに戻せばすぐ再開できます）
 const PUSH_NOTIFICATIONS_ENABLED = false;
@@ -18,30 +19,35 @@ export default async function handler(req, res) {
       const previous = isNew ? null : await redis.get(`${ns}:${body.id}`);
       const saved = await saveItem(ns, { ...body, date });
 
+      const name = saved.customerName || "（お客様名未入力）";
+      const time = saved.startTime ? `${saved.startTime}〜` : "時間未定";
+      const changed =
+        isNew ||
+        !previous ||
+        previous.startTime !== saved.startTime ||
+        previous.staffId !== saved.staffId ||
+        previous.customerName !== saved.customerName ||
+        previous.storeId !== saved.storeId;
+
+      // 受付履歴に記録（新規・変更のみ。内容が変わっていなければ記録しない）
+      if (changed) {
+        await logReceptionHistory(date, {
+          action: isNew ? "新規" : "変更",
+          recordId: saved.id,
+          customerName: saved.customerName || "",
+          startTime: saved.startTime || "",
+          staffId: saved.staffId || "",
+          storeId: saved.storeId || "",
+        });
+      }
+
       // タイムボードへの登録・変更をプッシュ通知（ベストエフォート。失敗しても保存自体は成功させる）
-      if (PUSH_NOTIFICATIONS_ENABLED) {
+      if (PUSH_NOTIFICATIONS_ENABLED && changed) {
         try {
-          const name = saved.customerName || "（お客様名未入力）";
-          const time = saved.startTime ? `${saved.startTime}〜` : "時間未定";
           if (isNew) {
-            await sendPushToAll(
-              "予約が登録されました",
-              `${date} ${time} ${name}様`,
-              "/",
-            );
-          } else if (previous) {
-            const changed =
-              previous.startTime !== saved.startTime ||
-              previous.staffId !== saved.staffId ||
-              previous.customerName !== saved.customerName ||
-              previous.storeId !== saved.storeId;
-            if (changed) {
-              await sendPushToAll(
-                "予約が変更されました",
-                `${date} ${time} ${name}様`,
-                "/",
-              );
-            }
+            await sendPushToAll("予約が登録されました", `${date} ${time} ${name}様`, "/");
+          } else {
+            await sendPushToAll("予約が変更されました", `${date} ${time} ${name}様`, "/");
           }
         } catch (e) {
           console.error("push通知失敗", e);
@@ -51,7 +57,18 @@ export default async function handler(req, res) {
       return res.json(saved);
     }
     if (req.method === "DELETE") {
+      const existing = await redis.get(`${ns}:${req.query.id}`);
       await deleteItem(ns, req.query.id);
+      if (existing) {
+        await logReceptionHistory(date, {
+          action: "削除",
+          recordId: existing.id,
+          customerName: existing.customerName || "",
+          startTime: existing.startTime || "",
+          staffId: existing.staffId || "",
+          storeId: existing.storeId || "",
+        });
+      }
       return res.status(204).end();
     }
     return res.status(405).end();
