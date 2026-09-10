@@ -98,7 +98,7 @@ export const api = {
   deleteBookingRequest: (id) =>
     req(`bookingRequests?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
 
-  receptionHistory: (date) => req(`receptionHistory?date=${encodeURIComponent(date)}`),
+  receptionHistory: () => req("receptionHistory"),
 
   commissionRates: () => req("commissionRates"),
   saveCommissionRates: (c) =>
