@@ -235,6 +235,21 @@ export default function BoardView() {
     }
   };
 
+  // 現在編集中の内容をコピーして、担当未定（タイムボード下部の「未定」欄）で複製する。
+  const duplicate = async () => {
+    setBusy(true);
+    try {
+      const copy = { ...sel, id: "", staffId: "" };
+      const saved = await api.saveReception(copy);
+      setRecords((prev) => [...prev, saved]);
+      setSel(null);
+    } catch (e) {
+      alert(`複製失敗: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   // タイムボード上でドラッグして時間・担当を変更した時の確定処理
   const handleMove = async (record, patch) => {
     const updated = { ...record, ...patch };
@@ -453,6 +468,9 @@ export default function BoardView() {
               </button>
               <button className="btn danger" onClick={del} disabled={busy}>
                 削除
+              </button>
+              <button className="btn gray" onClick={duplicate} disabled={busy}>
+                📋 複製
               </button>
               <button className="btn" onClick={save} disabled={busy}>
                 保存
