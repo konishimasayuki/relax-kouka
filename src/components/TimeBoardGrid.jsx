@@ -67,6 +67,8 @@ export default function TimeBoardGrid({
   onMove,
   onStaffClick,
   hourWidth = 56,
+  bookingRequests = [],
+  onAcceptBookingRequest,
 }) {
   const HOUR_W = hourWidth;
   const MIN_W = HOUR_W / 60;
@@ -340,6 +342,37 @@ export default function TimeBoardGrid({
     return { map, laneCount: laneEnds.length || 1 };
   }, [unassignedApps]);
 
+  // 予約申請（未対応）を時間順に並べ、重なる場合は段を分ける
+  const sortedBookingRequests = useMemo(
+    () =>
+      [...bookingRequests]
+        .filter((r) => r.desiredTime)
+        .sort((a, b) => toMin(a.desiredTime) - toMin(b.desiredTime)),
+    [bookingRequests],
+  );
+  const bookingReqLaneOf = useMemo(() => {
+    const map = new Map();
+    const laneEnds = [];
+    for (const r of sortedBookingRequests) {
+      const s = toMin(r.desiredTime);
+      const e = s + 60; // 予約申請はメニュー時間が分からないため仮に60分幅で表示
+      let placed = false;
+      for (let i = 0; i < laneEnds.length; i++) {
+        if (laneEnds[i] <= s) {
+          laneEnds[i] = e;
+          map.set(r.id, i);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        laneEnds.push(e);
+        map.set(r.id, laneEnds.length - 1);
+      }
+    }
+    return { map, laneCount: laneEnds.length || 1 };
+  }, [sortedBookingRequests]);
+
   const hours = [];
   for (let h = START_HOUR; h < END_HOUR; h++) hours.push(h);
   const totalMin = (END_HOUR - START_HOUR) * 60;
@@ -362,7 +395,11 @@ export default function TimeBoardGrid({
     width: Math.max((endMin - startMin) * MIN_W, 0),
   });
 
-  if (staffIdsToday.length === 0 && unassignedApps.length === 0) {
+  if (
+    staffIdsToday.length === 0 &&
+    unassignedApps.length === 0 &&
+    sortedBookingRequests.length === 0
+  ) {
     return (
       <div className="empty">本日出勤予定のスタッフがいません（シフトタブで登録してください）</div>
     );
@@ -635,6 +672,43 @@ export default function TimeBoardGrid({
                     </div>
                   ),
                 ];
+              })}
+            </div>
+          </div>
+        )}
+
+        {sortedBookingRequests.length > 0 && (
+          <div
+            className="tb-row tb-row-bookingreq"
+            style={{ height: ROW_H * bookingReqLaneOf.laneCount }}
+          >
+            <div className="tb-bed" style={{ width: STAFF_COL_W }}>
+              <span className="b-name muted">予約申請</span>
+            </div>
+            <div className="tb-lane" style={{ width: laneW }}>
+              {gridMarks.map((g, i) => (
+                <div
+                  className={g.major ? "tb-gridline" : "tb-gridline-minor"}
+                  key={i}
+                  style={{ left: g.pos }}
+                />
+              ))}
+
+              {sortedBookingRequests.map((r) => {
+                const start = toMin(r.desiredTime);
+                const lane = bookingReqLaneOf.map.get(r.id) || 0;
+                const laneStyle = { top: lane * ROW_H + 4, height: ROW_H - 8 };
+                return (
+                  <div
+                    className="tb-block tb-block-bookingreq"
+                    key={r.id}
+                    style={{ ...blockStyle(start, 60, "#d9822b"), ...laneStyle }}
+                    onClick={() => onAcceptBookingRequest?.(r)}
+                  >
+                    <div className="bl-course">申請 {r.menu || ""}</div>
+                    <div className="bl-name">{r.name}様</div>
+                  </div>
+                );
               })}
             </div>
           </div>
