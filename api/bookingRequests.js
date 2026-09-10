@@ -2,6 +2,7 @@ import { redis } from "./_redis.js";
 import { deleteItem, listAll, saveItem } from "./_redis.js";
 import { sendLineMessage } from "./_line.js";
 import { sendEmail } from "./_email.js";
+import { sendPushToAll } from "./_push.js";
 
 const NS = "bookingRequests";
 const NOTIFY_KEY = "notify:config";
@@ -74,6 +75,15 @@ async function notifyOnCreate(saved, config) {
     }
   } catch (e) {
     console.error("LINE通知（新規申請）失敗", e);
+  }
+  try {
+    const title =
+      saved.type === "massage" ? "新規予約申請（マッサージ）" : "新規予約申請（占い）";
+    const time = saved.desiredTime ? `${saved.desiredTime}〜` : "時間未定";
+    const body = `${saved.desiredDate || ""} ${time} ${saved.name || ""}様`;
+    await sendPushToAll(title, body, "/");
+  } catch (e) {
+    console.error("アプリ通知（新規申請）失敗", e);
   }
   try {
     if (saved.email && config.resendApiKey && config.resendFromEmail) {
