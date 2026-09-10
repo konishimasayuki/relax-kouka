@@ -91,7 +91,7 @@ export const api = {
   saveNotifyConfig: (c) => req("notifyConfig", { method: "POST", body: JSON.stringify(c) }),
   testNotify: (target) => req("notifyTest", { method: "POST", body: JSON.stringify({ target }) }),
   lineDetectedGroups: () => req("lineDetectedGroups"),
-  testEmail: (to) => req("emailTest", { method: "POST", body: JSON.stringify({ to }) }),
+  testEmail: (to, type) => req("emailTest", { method: "POST", body: JSON.stringify({ to, type }) }),
 
   bookingRequests: () => req("bookingRequests"),
   saveBookingRequest: (r) =>
