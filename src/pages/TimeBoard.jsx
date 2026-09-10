@@ -112,11 +112,13 @@ export default function TimeBoard() {
     setBusy(true);
     try {
       const priceNum = Number(String(r.price || "0").replace(/[^\d]/g, "")) || 0;
+      // 予約申請に実際の店舗IDが含まれていればそれを使う（無ければ本店にフォールバック）
+      const targetStoreId = r.storeId || homeStore?.id || "";
 
       // メニュー名・オプション名が、選ばれた店舗の実際の登録メニューと一致するか探す。
       // 一致すればコース・オプション欄にちゃんと選択された状態にする（一致しなければ自由入力で保持）。
-      const storeMenus = menus.filter((m) => m.storeId === homeStore?.id);
-      const storeOptions = options.filter((o) => o.storeId === homeStore?.id);
+      const storeMenus = menus.filter((m) => m.storeId === targetStoreId);
+      const storeOptions = options.filter((o) => o.storeId === targetStoreId);
       const matchedMenu = storeMenus.find((m) => m.name === r.menu);
       const matchedOption =
         r.option && r.option !== "なし" ? storeOptions.find((o) => o.name === r.option) : null;
@@ -124,7 +126,7 @@ export default function TimeBoard() {
       const newRecord = {
         id: "",
         date,
-        storeId: homeStore?.id || "",
+        storeId: targetStoreId,
         bed: "",
         customerName: r.name || "",
         gender: "女",
