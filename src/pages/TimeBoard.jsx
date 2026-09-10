@@ -13,6 +13,8 @@ export default function TimeBoard() {
   const [records, setRecords] = useState([]);
   const [shifts, setShifts] = useState([]);
   const [breaks, setBreaks] = useState([]);
+  const [bookingRequests, setBookingRequests] = useState([]);
+  const [acceptReq, setAcceptReq] = useState(null); // 受け入れ確認モーダル用
   const [attendance, setAttendance] = useState([]);
   const [loading, setLoading] = useState(false);
   const [sel, setSel] = useState(null);
@@ -31,16 +33,18 @@ export default function TimeBoard() {
   const load = async () => {
     setLoading(true);
     try {
-      const [rec, sh, br, att] = await Promise.all([
+      const [rec, sh, br, att, bookingReqs] = await Promise.all([
         api.reception(date),
         api.shifts(),
         api.breaks(),
         api.attendance(date),
+        api.bookingRequests().catch(() => []),
       ]);
       setRecords(rec);
       setShifts(sh);
       setBreaks(br);
       setAttendance(att);
+      setBookingRequests(bookingReqs);
     } finally {
       setLoading(false);
     }
@@ -89,6 +93,81 @@ export default function TimeBoard() {
   );
   const assignableStaff = (r) =>
     staff.filter((s) => s.active && (workingStaffIds.has(s.id) || s.id === r?.staffId));
+
+  // その日・未対応のマッサージ予約申請だけをタイムボードの「予約申請」欄に表示する
+  const pendingBookingRequests = useMemo(
+    () =>
+      bookingRequests.filter(
+        (r) => r.type === "massage" && r.desiredDate === date && r.status !== "done",
+      ),
+    [bookingRequests, date],
+  );
+
+  const homeStore =
+    stores.find((s) => s.isHome) || stores.find((s) => s.building?.includes("パレス")) || stores[0];
+
+  // 予約申請を受け入れて、実際の受付レコードとしてタイムボードに反映する（担当は未定のまま）。
+  // 予約申請(デモ)タブ側も同じデータを見ているので、ステータスを更新すれば自動的に同期される。
+  const acceptBookingRequest = async (r) => {
+    setBusy(true);
+    try {
+      const priceNum = Number(String(r.price || "0").replace(/[^\d]/g, "")) || 0;
+      const newRecord = {
+        id: "",
+        date,
+        storeId: homeStore?.id || "",
+        bed: "",
+        customerName: r.name || "",
+        gender: "女",
+        course: {
+          menuId: "",
+          name: r.menu || "",
+          displayName: r.menu || "",
+          minutes: "",
+          color: "",
+          freeText: r.menu || "",
+          optionId: "",
+          optionName: r.option && r.option !== "なし" ? r.option : "",
+          optionDisplayName: "",
+          optionMinutes: "",
+          optionColor: "",
+          couponId: "",
+          couponName: "",
+          couponDiscount: 0,
+          extensionId: "",
+          extensionName: "",
+          extensionDisplayName: "",
+          extensionMinutes: "",
+          extensionColor: "",
+        },
+        nominate: false,
+        pregnancy: false,
+        femalePreferred: false,
+        staffId: "",
+        startTime: r.desiredTime || "",
+        payment: "現金",
+        paymentNote: "",
+        receptionist: "",
+        room: r.room || "",
+        phone: r.phone || "",
+        amount: priceNum,
+        note: "【予約申請より受入】" + (r.option && r.option !== "なし" ? `オプション:${r.option}` : ""),
+      };
+      const saved = await api.saveReception(newRecord);
+      pushUndo({ type: "create", record: saved });
+      setRecords((prev) => [...prev, saved]);
+
+      const updatedReq = { ...r, status: "done" };
+      await api.saveBookingRequest(updatedReq);
+      setBookingRequests((prev) => prev.map((x) => (x.id === r.id ? updatedReq : x)));
+
+      setAcceptReq(null);
+    } catch (e) {
+      alert(`受け入れ処理に失敗しました: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const menusFor = (r) => sortByOrder(menus.filter((m) => m.storeId === r?.storeId));
   const optionsFor = (r) => sortByOrder(options.filter((o) => o.storeId === r?.storeId));
@@ -485,6 +564,8 @@ export default function TimeBoard() {
             setAttendanceModal(staffId);
           }}
           hourWidth={80}
+          bookingRequests={pendingBookingRequests}
+          onAcceptBookingRequest={(r) => setAcceptReq(r)}
         />
       )}
 
@@ -812,6 +893,36 @@ export default function TimeBoard() {
             <div className="modal-actions">
               <button className="btn gray" onClick={() => setHistoryOpen(false)}>
                 閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {acceptReq && (
+        <div className="modal-overlay" onClick={overlayClose(() => setAcceptReq(null))}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>予約申請を受け入れる</h3>
+            <p className="muted" style={{ marginTop: -8, lineHeight: 1.8 }}>
+              希望日時：{acceptReq.desiredDate} {acceptReq.desiredTime}〜
+              <br />
+              お名前：{acceptReq.name}様　部屋番号：{acceptReq.room || "-"}
+              <br />
+              電話番号：{acceptReq.phone || "-"}
+              <br />
+              メニュー：{acceptReq.menu || "-"}　オプション：{acceptReq.option || "なし"}
+              <br />
+              金額：{acceptReq.price || "-"}
+            </p>
+            <p className="muted" style={{ fontSize: 12.5 }}>
+              受け入れると、担当未定のままタイムボードの「未定」欄に追加されます。店舗・担当・詳細はあとから編集できます。
+            </p>
+            <div className="modal-actions">
+              <button className="btn gray" onClick={() => setAcceptReq(null)}>
+                キャンセル
+              </button>
+              <button className="btn" disabled={busy} onClick={() => acceptBookingRequest(acceptReq)}>
+                受け入れる
               </button>
             </div>
           </div>
