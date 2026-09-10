@@ -1,14 +1,13 @@
 import { redis } from "./_redis.js";
 
+const KEY = "receptionHistory:all";
+
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   try {
-    const date = req.query.date;
-    if (!date) return res.status(400).json({ error: "date required" });
     if (req.method !== "GET") return res.status(405).end();
 
-    const key = `receptionHistory:${date}`;
-    const raw = await redis.lrange(key, 0, -1);
+    const raw = await redis.lrange(KEY, 0, -1);
     const entries = raw
       .map((x) => {
         try {
