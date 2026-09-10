@@ -52,6 +52,7 @@ export default function SignageCongestion() {
   const [staff, setStaff] = useState([]);
   const [recordsByDate, setRecordsByDate] = useState({});
   const [shifts, setShifts] = useState([]);
+  const [menus, setMenus] = useState([]);
   const [config, setConfig] = useState({ refreshSec: 20 });
   const [now, setNow] = useState(nowMin());
   const timerRef = useRef(null);
@@ -60,18 +61,20 @@ export default function SignageCongestion() {
 
   const fetchAll = async () => {
     try {
-      const [st, sf, recToday, recTomorrow, allShifts, cfg] = await Promise.all([
+      const [st, sf, recToday, recTomorrow, allShifts, allMenus, cfg] = await Promise.all([
         api.stores(),
         api.staff(),
         api.reception(dates[0]),
         api.reception(dates[1]),
         api.shifts(),
+        api.menus().catch(() => []),
         api.signageConfig().catch(() => null),
       ]);
       setStores(st);
       setStaff(sf);
       setRecordsByDate({ [dates[0]]: recToday, [dates[1]]: recTomorrow });
       setShifts(allShifts);
+      setMenus(allMenus);
       if (cfg) setConfig(cfg);
       setNow(nowMin());
     } catch {
@@ -92,6 +95,13 @@ export default function SignageCongestion() {
   }, [config.refreshSec]);
 
   const homeBuilding = homeBuildingOf(stores);
+  const homeStore =
+    stores.find((s) => s.isHome) || stores.find((s) => s.building?.includes("パレス")) || stores[0];
+  const menuList = [...menus]
+    .filter((m) => m.storeId === homeStore?.id)
+    .sort((a, b) => (a.order || 0) - (b.order || 0))
+    .slice(0, 8);
+
   // 30分刻みの時間スロット（分単位）。11:00〜23:00まで。
   const slots = [];
   for (let m = HOUR_START * 60; m <= HOUR_END * 60; m += 30) slots.push(m);
@@ -128,69 +138,106 @@ export default function SignageCongestion() {
     return { text: "-" };
   }
 
-  const colCount = dates.length + 1; // 時間列 + 日付列
-
   return (
     <div className="signage-congestion">
-      <div className="signage-head">
-        <div className="signage-time">
-          {String(new Date().getHours()).padStart(2, "0")}:
-          {String(new Date().getMinutes()).padStart(2, "0")} 現在
-        </div>
-        <div className="signage-title">ご案内可能状況</div>
-      </div>
-
-      <div
-        className="signage-table-wrap"
-        style={{ gridTemplateRows: `auto repeat(${slots.length}, minmax(0, 1fr))` }}
-      >
-        <div className="signage-row signage-row-head" style={{ gridTemplateColumns: `1fr repeat(${dates.length}, 2fr)` }}>
-          <div className="signage-cell signage-th-time">日時</div>
-          {dates.map((d, i) => (
-            <div
-              key={d}
-              className={`signage-cell ${i === 0 ? "signage-th-today" : "signage-th-tomorrow"}`}
-            >
-              {labelOf(d)}
+      <div className="signage-layout">
+        <div className="signage-left">
+          <div className="signage-head">
+            <div className="signage-time">
+              {String(new Date().getHours()).padStart(2, "0")}:
+              {String(new Date().getMinutes()).padStart(2, "0")} 現在
             </div>
-          ))}
-        </div>
-        {slots.map((slotStart) => {
-          const hh = String(Math.floor(slotStart / 60)).padStart(2, "0");
-          const mm = String(slotStart % 60).padStart(2, "0");
-          return (
+            <div className="signage-title">ご案内可能状況</div>
+          </div>
+
+          <div
+            className="signage-table-wrap"
+            style={{ gridTemplateRows: `auto repeat(${slots.length}, minmax(0, 1fr))` }}
+          >
             <div
-              className="signage-row"
-              key={slotStart}
+              className="signage-row signage-row-head"
               style={{ gridTemplateColumns: `1fr repeat(${dates.length}, 2fr)` }}
             >
-              <div className="signage-cell signage-td-time">
-                {hh}:{mm}
-              </div>
-              {dates.map((d) => {
-                const sym = symbolFor(d, slotStart);
-                return (
-                  <div key={d} className="signage-cell signage-td-cell">
-                    {sym.text === "closed" ? (
-                      <span className="signage-closed">受付終了</span>
-                    ) : sym.text === "-" ? (
-                      <span className="signage-dash">－</span>
-                    ) : (
-                      <span className={`signage-symbol sym-${sym.cls}`}>{sym.text}</span>
-                    )}
-                  </div>
-                );
-              })}
+              <div className="signage-cell signage-th-time">日時</div>
+              {dates.map((d, i) => (
+                <div
+                  key={d}
+                  className={`signage-cell ${i === 0 ? "signage-th-today" : "signage-th-tomorrow"}`}
+                >
+                  {labelOf(d)}
+                </div>
+              ))}
             </div>
-          );
-        })}
-      </div>
+            {slots.map((slotStart) => {
+              const hh = String(Math.floor(slotStart / 60)).padStart(2, "0");
+              const mm = String(slotStart % 60).padStart(2, "0");
+              return (
+                <div
+                  className="signage-row"
+                  key={slotStart}
+                  style={{ gridTemplateColumns: `1fr repeat(${dates.length}, 2fr)` }}
+                >
+                  <div className="signage-cell signage-td-time">
+                    {hh}:{mm}
+                  </div>
+                  {dates.map((d) => {
+                    const sym = symbolFor(d, slotStart);
+                    return (
+                      <div key={d} className="signage-cell signage-td-cell">
+                        {sym.text === "closed" ? (
+                          <span className="signage-closed">受付終了</span>
+                        ) : sym.text === "-" ? (
+                          <span className="signage-dash">－</span>
+                        ) : (
+                          <span className={`signage-symbol sym-${sym.cls}`}>{sym.text}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
 
-      <div className="signage-legend">
-        <span>◎ 2名以上ご案内可</span>
-        <span>○ 1名ご案内可</span>
-        <span>△ 短いコースのみ空きあり</span>
-        <span>－ 空きなし</span>
+          <div className="signage-legend">
+            <span>◎ 2名以上ご案内可</span>
+            <span>○ 1名ご案内可</span>
+            <span>△ 短いコースのみ空きあり</span>
+            <span>－ 空きなし</span>
+          </div>
+        </div>
+
+        <div className="signage-right">
+          <div className="signage-menu-panel">
+            <div className="signage-menu-deco-line" />
+            <div className="signage-menu-eyebrow">MENU</div>
+            <div className="signage-menu-heading">
+              {homeStore?.name || "本日のメニュー"}
+            </div>
+            <div className="signage-menu-sub">ごゆっくりとお選びください</div>
+
+            <div className="signage-menu-list">
+              {menuList.length === 0 ? (
+                <div className="signage-menu-empty">メニュー準備中</div>
+              ) : (
+                menuList.map((m) => (
+                  <div className="signage-menu-item" key={m.id}>
+                    <div className="signage-menu-item-main">
+                      <span className="signage-menu-item-name">{m.name}</span>
+                      <span className="signage-menu-item-dots" />
+                      <span className="signage-menu-item-price">
+                        ¥{Number(m.price || 0).toLocaleString("ja-JP")}
+                      </span>
+                    </div>
+                    {m.minutes && <div className="signage-menu-item-time">{m.minutes}分</div>}
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="signage-menu-deco-line bottom" />
+          </div>
+        </div>
       </div>
     </div>
   );
