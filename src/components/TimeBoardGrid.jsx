@@ -28,8 +28,8 @@ function minToHHMM(min) {
 }
 
 // シフト範囲の「隙間」＝受付不可（灰色表示）の区間を求める。
-// 出勤前や複数シフトの間は灰色にするが、シフト終了後は残業の可能性があるため
-// 灰色にしない（末尾の区間は追加しない）。
+// 出勤前・複数シフトの間はもちろん、退勤予定時刻が閉店（dayEnd）より前の場合は、
+// その退勤予定時刻より右も灰色にする。
 function computeOffDuty(ranges, dayStart, dayEnd) {
   if (!ranges.length) return [];
   const sorted = [...ranges]
@@ -44,6 +44,7 @@ function computeOffDuty(ranges, dayStart, dayEnd) {
     if (r.start > cursor) segments.push({ start: cursor, end: r.start });
     cursor = Math.max(cursor, r.end);
   }
+  if (cursor < dayEnd) segments.push({ start: cursor, end: dayEnd });
   return segments;
 }
 
