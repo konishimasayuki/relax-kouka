@@ -166,7 +166,7 @@ export default function TimeBoard() {
           (r.option && r.option !== "なし" && !matchedOption ? `オプション:${r.option}` : ""),
       };
       const saved = await api.saveReception(newRecord);
-      pushUndo({ type: "create", record: saved });
+      pushUndo({ type: "acceptRequest", record: saved, bookingRequestBefore: r });
       setRecords((prev) => [...prev, saved]);
 
       const updatedReq = { ...r, status: "done" };
@@ -346,6 +346,12 @@ export default function TimeBoard() {
       } else if (last.type === "create") {
         await api.deleteReception(last.record.id, last.record.date || date);
         setRecords((prev) => prev.filter((x) => x.id !== last.record.id));
+      } else if (last.type === "acceptRequest") {
+        // 受け入れで作った受付を削除し、予約申請を元のステータス（未対応）に戻す
+        await api.deleteReception(last.record.id, last.record.date || date);
+        setRecords((prev) => prev.filter((x) => x.id !== last.record.id));
+        const restored = await api.saveBookingRequest(last.bookingRequestBefore);
+        setBookingRequests((prev) => prev.map((x) => (x.id === restored.id ? restored : x)));
       }
     } catch (e) {
       alert(`元に戻す処理に失敗しました: ${e.message}`);
