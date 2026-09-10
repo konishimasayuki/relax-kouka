@@ -135,11 +135,11 @@ export default function Settings() {
     }
   };
 
-  const sendTestEmail = async () => {
+  const sendTestEmail = async (type) => {
     if (!testEmailTo.trim()) return alert("テスト送信先メールアドレスを入力してください");
     setNotifyBusy(true);
     try {
-      await api.testEmail(testEmailTo.trim());
+      await api.testEmail(testEmailTo.trim(), type);
       alert("テストメールを送信しました。受信箱を確認してください。");
     } catch (e) {
       alert(`送信失敗: ${e.message}`);
@@ -763,35 +763,53 @@ export default function Settings() {
             </div>
 
             <div className="field">
-              <label>送信元メールアドレス</label>
+              <label>送信元メールアドレス（空欄可）</label>
               <input
                 type="text"
                 value={notifyConfig.resendFromEmail}
                 onChange={(e) =>
                   setNotifyConfig({ ...notifyConfig, resendFromEmail: e.target.value })
                 }
-                placeholder="no-reply@yourdomain.com（Resendで認証済みのドメイン）"
+                placeholder="no-reply@yourdomain.com（空欄ならResendの共有ドメインで送信）"
               />
             </div>
 
+            <p className="muted" style={{ fontSize: 12, lineHeight: 1.7, background: "#fff4e0", padding: 8, borderRadius: 8 }}>
+              ⚠ 送信元を空欄にすると、Resendの共有テストドメイン（onboarding@resend.dev）で送信されます。
+              ただしこのドメインは<strong>Resendアカウント登録時のメールアドレス宛にしか送れません</strong>（お客様など他の宛先には届きません）。
+              実際にお客様へ送るには、Resend側で<strong>独自ドメインの認証</strong>が必要です。
+            </p>
+
             <div className="field">
               <label>テスト送信先メールアドレス</label>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <input
                   type="text"
-                  style={{ flex: 1 }}
+                  style={{ flex: 1, minWidth: 180 }}
                   value={testEmailTo}
                   onChange={(e) => setTestEmailTo(e.target.value)}
                   placeholder="test@example.com"
                 />
-                <button className="btn sm ghost" disabled={notifyBusy} onClick={sendTestEmail}>
-                  テスト送信
+                <button
+                  className="btn sm ghost"
+                  disabled={notifyBusy}
+                  onClick={() => sendTestEmail("massage")}
+                >
+                  マッサージ文面で送信
+                </button>
+                <button
+                  className="btn sm ghost"
+                  disabled={notifyBusy}
+                  onClick={() => sendTestEmail("fortune")}
+                >
+                  占い文面で送信
                 </button>
               </div>
             </div>
 
             <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.7 }}>
-              予約フォームでお客様が入力したメールアドレス宛に、「予約申請内容の確認メール」と、サロン側で空き状況を確認したうえでの「予約確定メール」を自動送信する予定です（前準備段階のため、現時点では設定の保存とテスト送信のみです）。
+              予約フォームでお客様が入力したメールアドレス宛に、「予約申請内容の確認メール（未確定である旨・確定後に再度メールする旨を明記）」と、
+              サロン側で対応済みにした際の「予約確定メール」が自動送信されます。上のテスト送信ボタンで、実際に届く文面と全く同じ内容を確認できます。
             </p>
 
             <div className="modal-actions" style={{ justifyContent: "flex-start" }}>
