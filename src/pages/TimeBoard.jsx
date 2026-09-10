@@ -244,6 +244,22 @@ export default function TimeBoard() {
     }
   };
 
+  // 現在編集中の内容をコピーして、担当未定（タイムボード下部の「未定」欄）で複製する。
+  // そこから担当を割り振ってもらう想定。
+  const duplicate = async () => {
+    setBusy(true);
+    try {
+      const copy = { ...sel, id: "", staffId: "" };
+      const saved = await api.saveReception(copy);
+      setRecords((prev) => [...prev, saved]);
+      setSel(null);
+    } catch (e) {
+      alert(`複製失敗: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   // タイムボード上でドラッグして時間・担当を変更した時の確定処理
   // 出勤打刻（現在時刻を記録）／打刻の取り消し
   const checkIn = async (staffId) => {
@@ -578,6 +594,9 @@ export default function TimeBoard() {
               </button>
               <button className="btn danger" onClick={del} disabled={busy}>
                 削除
+              </button>
+              <button className="btn gray" onClick={duplicate} disabled={busy}>
+                📋 複製
               </button>
               <button className="btn" onClick={save} disabled={busy}>
                 保存
