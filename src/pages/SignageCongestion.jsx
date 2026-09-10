@@ -44,6 +44,11 @@ function staffFreeGapsForDay(staffId, dateRecords, dateShifts, stores, homeBuild
   return computeFreeGaps(busy, rangeStart, rangeEnd);
 }
 
+function isSetCourse(name) {
+  return /^(松|竹|梅)/.test(name || "");
+}
+const SET_COURSE_DESC = "もみほぐし＋ドライヘッドスパ＋フットケア";
+
 function isFreeAt(freeGaps, slotStart, duration) {
   return freeGaps.some((g) => g.start <= slotStart && g.end >= slotStart + duration);
 }
@@ -223,7 +228,11 @@ export default function SignageCongestion() {
                         ¥{Number(m.price || 0).toLocaleString("ja-JP")}
                       </span>
                     </div>
-                    {m.minutes && <div className="signage-menu-item-time">{m.minutes}分</div>}
+                    {isSetCourse(m.name) ? (
+                      <div className="signage-menu-item-time">{SET_COURSE_DESC}</div>
+                    ) : (
+                      m.minutes && <div className="signage-menu-item-time">{m.minutes}分</div>
+                    )}
                   </div>
                 ))
               )}
