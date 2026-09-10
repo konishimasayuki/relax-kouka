@@ -32,7 +32,7 @@ function RequestCard({ r, onToggleStatus, onDelete, canDelete }) {
             </span>
           </div>
           <div className="muted" style={{ fontSize: 13, lineHeight: 1.8 }}>
-            希望日時: {r.desiredDate || "-"} {r.desiredTime || ""}
+            希望日時: {r.desiredDate || "-"} {r.desiredTime ? `${r.desiredTime}〜` : ""}
             <br />
             お電話番号: {r.phone || "-"}
             <br />
