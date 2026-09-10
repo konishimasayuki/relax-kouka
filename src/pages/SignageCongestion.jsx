@@ -3,7 +3,8 @@ import { api } from "../api.js";
 import { computeBusyRanges, computeFreeGaps, homeBuildingOf, toMin } from "../staffSchedule.js";
 
 const HOUR_START = 11;
-const HOUR_END = 23; // 11時〜23時まで表示
+const HOUR_END = 23; // 営業終了時刻（空き判定に使用）
+const LAST_SLOT_MIN = 22 * 60 + 30; // サイネージに表示する最後の時間枠
 const WEEK_LABEL = ["日", "月", "火", "水", "木", "金", "土"];
 
 function nowMin() {
@@ -104,7 +105,7 @@ export default function SignageCongestion() {
 
   // 30分刻みの時間スロット（分単位）。11:00〜23:00まで。
   const slots = [];
-  for (let m = HOUR_START * 60; m <= HOUR_END * 60; m += 30) slots.push(m);
+  for (let m = HOUR_START * 60; m <= LAST_SLOT_MIN; m += 30) slots.push(m);
 
   // 日付ごとに、スタッフごとの空き区間を計算
   const gapsByDate = {};
@@ -197,13 +198,6 @@ export default function SignageCongestion() {
                 </div>
               );
             })}
-          </div>
-
-          <div className="signage-legend">
-            <span>◎ 2名以上ご案内可</span>
-            <span>○ 1名ご案内可</span>
-            <span>△ 短いコースのみ空きあり</span>
-            <span>－ 空きなし</span>
           </div>
         </div>
 
