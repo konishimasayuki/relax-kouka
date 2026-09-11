@@ -65,6 +65,10 @@ export default function Settings() {
     fortuneGroupId: "",
     resendApiKey: "",
     resendFromEmail: "",
+    confirmEmailSubject: "",
+    confirmEmailBody: "",
+    doneEmailSubject: "",
+    doneEmailBody: "",
   });
   const [testEmailTo, setTestEmailTo] = useState("");
   const [notifyBusy, setNotifyBusy] = useState(false);
@@ -811,6 +815,61 @@ export default function Settings() {
               予約フォームでお客様が入力したメールアドレス宛に、「予約申請内容の確認メール（未確定である旨・確定後に再度メールする旨を明記）」と、
               サロン側で対応済みにした際の「予約確定メール」が自動送信されます。上のテスト送信ボタンで、実際に届く文面と全く同じ内容を確認できます。
             </p>
+
+            <hr style={{ margin: "18px 0", border: "none", borderTop: "1px solid var(--border)" }} />
+
+            <h3 style={{ fontSize: 14, margin: "0 0 6px" }}>メール文面の編集</h3>
+            <p className="muted" style={{ fontSize: 12, lineHeight: 1.7, marginTop: 0 }}>
+              以下の差し込み枠が使えます：
+              <code>{"{name}"}</code>（お客様名）　
+              <code>{"{desiredDate}"}</code>（希望日）　
+              <code>{"{desiredTime}"}</code>（希望時間）　
+              <code>{"{details}"}</code>（メニュー・金額などの内容。マッサージ／占いで自動的に内容が変わります）
+            </p>
+
+            <div className="field">
+              <label>①申請内容の確認メール　件名</label>
+              <input
+                type="text"
+                value={notifyConfig.confirmEmailSubject}
+                onChange={(e) =>
+                  setNotifyConfig({ ...notifyConfig, confirmEmailSubject: e.target.value })
+                }
+              />
+            </div>
+            <div className="field">
+              <label>①申請内容の確認メール　本文</label>
+              <textarea
+                rows={12}
+                style={{ width: "100%", fontFamily: "inherit", fontSize: 13, lineHeight: 1.7 }}
+                value={notifyConfig.confirmEmailBody}
+                onChange={(e) =>
+                  setNotifyConfig({ ...notifyConfig, confirmEmailBody: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="field">
+              <label>②予約確定メール　件名</label>
+              <input
+                type="text"
+                value={notifyConfig.doneEmailSubject}
+                onChange={(e) =>
+                  setNotifyConfig({ ...notifyConfig, doneEmailSubject: e.target.value })
+                }
+              />
+            </div>
+            <div className="field">
+              <label>②予約確定メール　本文</label>
+              <textarea
+                rows={10}
+                style={{ width: "100%", fontFamily: "inherit", fontSize: 13, lineHeight: 1.7 }}
+                value={notifyConfig.doneEmailBody}
+                onChange={(e) =>
+                  setNotifyConfig({ ...notifyConfig, doneEmailBody: e.target.value })
+                }
+              />
+            </div>
 
             <div className="modal-actions" style={{ justifyContent: "flex-start" }}>
               <button className="btn" disabled={notifyBusy} onClick={saveNotifyConfig}>
