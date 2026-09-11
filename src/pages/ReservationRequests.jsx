@@ -127,14 +127,11 @@ export default function ReservationRequests() {
   return (
     <div>
       <div className="page-head">
-        <h2>予約申請(デモ)</h2>
+        <h2>予約申請</h2>
         <button className="btn sm ghost" onClick={load} disabled={loading}>
           更新
         </button>
       </div>
-      <p className="muted" style={{ fontSize: 12.5, marginTop: -6 }}>
-        予約用ページ（booking.html）から届いた予約申請を表示します。まだ確定処理・LINE自動通知とは連携していないデモ表示です。
-      </p>
 
       {showMassage && (
         <div style={{ marginTop: 18 }}>
