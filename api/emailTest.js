@@ -1,35 +1,30 @@
 import { redis } from "./_redis.js";
 import { sendEmail } from "./_email.js";
+import { fillTemplate, detailsBlockFor, CONFIRM_SUBJECT_DEFAULT, CONFIRM_BODY_DEFAULT } from "./_emailTemplates.js";
 
 const KEY = "notify:config";
 
-// 実際の「ご予約申請の確認メール」と同じ文面・同じサンプルデータでテスト送信する
-function confirmSampleText(type) {
-  const lines = [
-    "山田 花子 様",
-    "",
-    "この度はご予約のお申し込みをいただき、誠にありがとうございます。",
-    "以下の内容でご予約申請を承りました。",
-    "",
-    "―――――――――――――――――",
-    "希望日時: 9/5（土） 15:00〜",
-  ];
-  if (type === "massage") {
-    lines.push("メニュー: レギュラー 60分", "オプション: なし", "金額: ¥8,000");
-  } else {
-    lines.push("コース: お試し 20分（¥2,800）", "人数: 1名");
+// サンプルデータ（マッサージ／占い）。実際の申請内容確認メールと同じテンプレート・同じ差し込み処理を使う。
+function sampleRequest(type) {
+  if (type === "fortune") {
+    return {
+      type: "fortune",
+      name: "山田 花子",
+      desiredDate: "2026-09-05",
+      desiredTime: "15:00",
+      course: "お試し 20分（¥2,800）",
+      people: "1",
+    };
   }
-  lines.push(
-    "―――――――――――――――――",
-    "",
-    "【ご確認ください】",
-    "この時点では、ご予約はまだ確定しておりません。",
-    "スタッフが空き状況を確認したうえで、あらためて「ご予約確定」のご連絡メールをお送りいたします。",
-    "確定のご連絡が届くまで、今しばらくお待ちくださいますようお願いいたします。",
-    "",
-    "※これはテスト送信です。実際の申請内容確認メールと同じ文面です。",
-  );
-  return lines.join("\n");
+  return {
+    type: "massage",
+    name: "山田 花子",
+    desiredDate: "2026-09-05",
+    desiredTime: "15:00",
+    menu: "レギュラー 60分",
+    option: "なし",
+    price: "¥8,000",
+  };
 }
 
 export default async function handler(req, res) {
@@ -39,14 +34,17 @@ export default async function handler(req, res) {
     const { to, type } = req.body || {};
     if (!to) return res.status(400).json({ error: "to (送信先メールアドレス) が必要です" });
     const config = (await redis.get(KEY)) || {};
-    const target = type === "fortune" ? "fortune" : "massage";
-    await sendEmail(
-      config.resendApiKey,
-      config.resendFromEmail,
-      to,
-      "【テスト】ご予約申請の確認（RE:LAX）",
-      confirmSampleText(target),
-    );
+    const sample = sampleRequest(type === "fortune" ? "fortune" : "massage");
+
+    const subject = `【テスト】${config.confirmEmailSubject || CONFIRM_SUBJECT_DEFAULT}`;
+    const body = fillTemplate(config.confirmEmailBody || CONFIRM_BODY_DEFAULT, {
+      name: sample.name,
+      desiredDate: sample.desiredDate,
+      desiredTime: sample.desiredTime,
+      details: detailsBlockFor(sample),
+    }) + "\n\n※これはテスト送信です。実際の申請内容確認メールと同じテンプレートを使用しています。";
+
+    await sendEmail(config.resendApiKey, config.resendFromEmail, to, subject, body);
     return res.json({ ok: true });
   } catch (e) {
     return res.status(500).json({ error: String(e?.message || e) });
