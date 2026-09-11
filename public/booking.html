@@ -934,11 +934,11 @@
     <div class="day-tabs">
       <div class="day-tab active" data-day="today">
         <div class="d-label">本日</div>
-        <div class="d-date">8/31（月）</div>
+        <div class="d-date" id="dayLabelToday">-</div>
       </div>
       <div class="day-tab" data-day="tomorrow">
         <div class="d-label">明日</div>
-        <div class="d-date">9/1（火）</div>
+        <div class="d-date" id="dayLabelTomorrow">-</div>
       </div>
     </div>
 
@@ -1652,6 +1652,9 @@
   }
 
   goStep(0);
+  document.getElementById("dayLabelToday").textContent = dayLabelOf("today");
+  document.getElementById("dayLabelTomorrow").textContent = dayLabelOf("tomorrow");
+
   loadRealMenuData();
   loadAvailability();
 
