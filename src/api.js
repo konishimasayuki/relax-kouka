@@ -100,6 +100,8 @@ export const api = {
     req(`bookingRequests?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
 
   receptionHistory: () => req("receptionHistory"),
+  sendConfirmEmail: (record) =>
+    req("sendConfirmEmail", { method: "POST", body: JSON.stringify({ record }) }),
 
   commissionRates: () => req("commissionRates"),
   saveCommissionRates: (c) =>
