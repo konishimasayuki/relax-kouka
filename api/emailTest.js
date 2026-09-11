@@ -39,6 +39,7 @@ export default async function handler(req, res) {
     const subject = `【テスト】${config.confirmEmailSubject || CONFIRM_SUBJECT_DEFAULT}`;
     const body = fillTemplate(config.confirmEmailBody || CONFIRM_BODY_DEFAULT, {
       name: sample.name,
+      store: type === "fortune" ? "杉の泉" : "BODY RECESS（パレス2階）",
       desiredDate: sample.desiredDate,
       desiredTime: sample.desiredTime,
       details: detailsBlockFor(sample),
