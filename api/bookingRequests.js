@@ -6,6 +6,9 @@ import { sendPushToAll } from "./_push.js";
 
 const NS = "bookingRequests";
 const NOTIFY_KEY = "notify:config";
+// 予約申請を「対応済み」にした際の確定メール自動送信は、誤操作事故防止のため一旦オフ。
+// 確定メールはタイムボードの「確定メールを送る」ボタンからの人力送信のみに統一する。
+const AUTO_DONE_EMAIL_ENABLED = false;
 
 function lineTextFor(r) {
   if (r.type === "massage") {
@@ -133,7 +136,10 @@ export default async function handler(req, res) {
       const config = (await redis.get(NOTIFY_KEY)) || {};
       if (isNew) {
         await notifyOnCreate(saved, config);
-      } else if (previous && previous.status !== "done" && saved.status === "done") {
+      } else if (AUTO_DONE_EMAIL_ENABLED && previous && previous.status !== "done" && saved.status === "done") {
+        // 「対応済みにする」は受け入れ操作（ドラッグでの受入含む）でも自動的にtrueになるため、
+        // 誤操作でお客様にメールが飛ぶ事故を防ぐ目的で、この自動送信は現在オフにしている。
+        // 確定メールはタイムボードの「確定メールを送る」ボタンから人力で送る運用。
         await notifyOnDone(saved, config);
       }
 
