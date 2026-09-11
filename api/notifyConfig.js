@@ -1,4 +1,10 @@
 import { redis } from "./_redis.js";
+import {
+  CONFIRM_SUBJECT_DEFAULT,
+  CONFIRM_BODY_DEFAULT,
+  DONE_SUBJECT_DEFAULT,
+  DONE_BODY_DEFAULT,
+} from "./_emailTemplates.js";
 
 const KEY = "notify:config";
 
@@ -9,6 +15,10 @@ function emptyConfig() {
     fortuneGroupId: "",
     resendApiKey: "",
     resendFromEmail: "",
+    confirmEmailSubject: CONFIRM_SUBJECT_DEFAULT,
+    confirmEmailBody: CONFIRM_BODY_DEFAULT,
+    doneEmailSubject: DONE_SUBJECT_DEFAULT,
+    doneEmailBody: DONE_BODY_DEFAULT,
   };
 }
 
