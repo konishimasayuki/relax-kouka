@@ -23,6 +23,7 @@ export default function BoardView() {
   const [sel, setSel] = useState(null);
   const selOriginalRef = useRef(null); // 編集モーダルを開いた時点の元データ（undo用）
   const [busy, setBusy] = useState(false);
+  const [confirmMailBusy, setConfirmMailBusy] = useState(false);
   const [undoStack, setUndoStack] = useState([]);
   const [undoBusy, setUndoBusy] = useState(false);
   const timerRef = useRef(null);
@@ -265,6 +266,29 @@ export default function BoardView() {
     return () => window.removeEventListener("keydown", onKeyDown);
     // eslint-disable-next-line
   }, [undo, sel]);
+
+  const sendConfirmEmailForSel = async () => {
+    if (!sel?.email) return;
+    if (sel.confirmEmailSentAt) {
+      const ok = confirm(
+        `このお客様には ${new Date(sel.confirmEmailSentAt).toLocaleString(
+          "ja-JP",
+        )} に確定メールを送信済みです。もう一度送信しますか？`,
+      );
+      if (!ok) return;
+    }
+    setConfirmMailBusy(true);
+    try {
+      const { record: savedRecord } = await api.sendConfirmEmail(sel);
+      setSel(savedRecord);
+      setRecords((prev) => prev.map((x) => (x.id === savedRecord.id ? savedRecord : x)));
+      alert("確定メールを送信しました。");
+    } catch (e) {
+      alert(`送信失敗: ${e.message}`);
+    } finally {
+      setConfirmMailBusy(false);
+    }
+  };
 
   const save = async () => {
     setBusy(true);
@@ -518,6 +542,36 @@ export default function BoardView() {
               <div className="field">
                 <label>携帯番号</label>
                 <input value={sel.phone || ""} onChange={(e) => updateSel({ phone: e.target.value })} />
+              </div>
+            </div>
+
+            <div className="field">
+              <label>メールアドレス</label>
+              <input
+                type="email"
+                value={sel.email || ""}
+                placeholder="お客様のメールアドレス（予約確定メールの送信先）"
+                onChange={(e) => updateSel({ email: e.target.value })}
+              />
+            </div>
+
+            <div className="field">
+              <label>予約確定メール</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <button
+                  className="btn sm"
+                  disabled={confirmMailBusy || !sel.email}
+                  onClick={sendConfirmEmailForSel}
+                >
+                  ✉️ {sel.confirmEmailSentAt ? "確定メールを再送する" : "確定メールを送る"}
+                </button>
+                {sel.confirmEmailSentAt ? (
+                  <span className="muted" style={{ fontSize: 12.5 }}>
+                    送信済み：{new Date(sel.confirmEmailSentAt).toLocaleString("ja-JP")}
+                  </span>
+                ) : (
+                  <span className="muted" style={{ fontSize: 12.5 }}>未送信</span>
+                )}
               </div>
             </div>
 
