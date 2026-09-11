@@ -2,6 +2,14 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // booking.spatheceada.com のトップページは、お客様向けの予約ページへ即リダイレクトする。
+      // Vercelのドメイン別ルーティング(has:host)が確実に効かないケースがあるため、
+      // 一番確実なこの方法（JSでの即時リダイレクト）を使う。
+      if (location.hostname === "booking.spatheceada.com" && location.pathname === "/") {
+        location.replace("/booking");
+      }
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#1f6feb" />
     <title>リラク業務管理</title>
