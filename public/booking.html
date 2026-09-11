@@ -1186,18 +1186,6 @@
   };
 
   const STORES = {
-    ceada: {
-      label: "Spa the Ceada",
-      sub: "棚湯女湯前",
-      hours: "15:00〜23:40",
-      tel: "内線5791／外線0977-23-7718",
-      note: "ベッド5台・5名様まで（6名様以上はBODY RECESSパレス館2Fをご利用いただけます）",
-      color: { chip: "#E2672F" },
-      flyers: [
-        { img: "f2", caption: "もみほぐし／フットケア／ドライヘッドスパ／組み合わせコース" },
-        { img: "f1", caption: "アロマオイルトリートメント" },
-      ],
-    },
     palace: {
       label: "BODY RECESS",
       sub: "パレス館2F",
@@ -1221,9 +1209,21 @@
         { img: "f5", caption: "アロマオイルトリートメント" },
       ],
     },
+    ceada: {
+      label: "Spa the Ceada",
+      sub: "棚湯女湯前",
+      hours: "15:00〜23:40",
+      tel: "内線5791／外線0977-23-7718",
+      note: "ベッド5台・5名様まで（6名様以上はBODY RECESSパレス館2Fをご利用いただけます）",
+      color: { chip: "#E2672F" },
+      flyers: [
+        { img: "f2", caption: "もみほぐし／フットケア／ドライヘッドスパ／組み合わせコース" },
+        { img: "f1", caption: "アロマオイルトリートメント" },
+      ],
+    },
   };
 
-  let currentStore = "ceada";
+  let currentStore = "palace";
 
   function renderStorePicker() {
     const el = document.getElementById("storePicker");
