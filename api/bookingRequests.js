@@ -33,56 +33,30 @@ function lineTextFor(r) {
   ].join("\n");
 }
 
-function confirmEmailText(r) {
-  const lines = [
-    `${r.name || "お客様"} 様`,
-    "",
-    "この度はご予約のお申し込みをいただき、誠にありがとうございます。",
-    "以下の内容でご予約申請を承りました。",
-    "",
-    "―――――――――――――――――",
-    `希望日時: ${r.desiredDate || "-"} ${r.desiredTime || ""}`,
-  ];
-  if (r.type === "massage") {
-    lines.push(`メニュー: ${r.menu || "-"}`, `オプション: ${r.option || "なし"}`, `金額: ${r.price || "-"}`);
-  } else {
-    lines.push(`コース: ${r.course || "-"}`, `人数: ${r.people || "-"}`);
-  }
-  lines.push(
-    "―――――――――――――――――",
-    "",
-    "【ご確認ください】",
-    "この時点では、ご予約はまだ確定しておりません。",
-    "スタッフが空き状況を確認したうえで、あらためて「ご予約確定」のご連絡メールをお送りいたします。",
-    "確定のご連絡が届くまで、今しばらくお待ちくださいますようお願いいたします。",
-    "",
-    "※このメールは自動送信です。",
-  );
-  return lines.join("\n");
+import { fillTemplate, detailsBlockFor, CONFIRM_SUBJECT_DEFAULT, CONFIRM_BODY_DEFAULT, DONE_SUBJECT_DEFAULT, DONE_BODY_DEFAULT } from "./_emailTemplates.js";
+
+function confirmEmailSubject(config) {
+  return config.confirmEmailSubject || CONFIRM_SUBJECT_DEFAULT;
+}
+function confirmEmailText(r, config) {
+  return fillTemplate(config.confirmEmailBody || CONFIRM_BODY_DEFAULT, {
+    name: r.name || "お客様",
+    desiredDate: r.desiredDate || "-",
+    desiredTime: r.desiredTime || "",
+    details: detailsBlockFor(r),
+  });
 }
 
-function doneEmailText(r) {
-  const lines = [
-    `${r.name || "お客様"} 様`,
-    "",
-    "お待たせいたしました。空き状況を確認し、下記の内容でご予約が確定いたしましたのでご連絡いたします。",
-    "",
-    "―――――――――――――――――",
-    `確定日時: ${r.desiredDate || "-"} ${r.desiredTime || ""}`,
-  ];
-  if (r.type === "massage") {
-    lines.push(`メニュー: ${r.menu || "-"}`, `オプション: ${r.option || "なし"}`, `金額: ${r.price || "-"}`);
-  } else {
-    lines.push(`コース: ${r.course || "-"}`, `人数: ${r.people || "-"}`);
-  }
-  lines.push(
-    "―――――――――――――――――",
-    "",
-    "当日はお気をつけてお越しくださいませ。スタッフ一同お待ちしております。",
-    "",
-    "※このメールは自動送信です。",
-  );
-  return lines.join("\n");
+function doneEmailSubject(config) {
+  return config.doneEmailSubject || DONE_SUBJECT_DEFAULT;
+}
+function doneEmailText(r, config) {
+  return fillTemplate(config.doneEmailBody || DONE_BODY_DEFAULT, {
+    name: r.name || "お客様",
+    desiredDate: r.desiredDate || "-",
+    desiredTime: r.desiredTime || "",
+    details: detailsBlockFor(r),
+  });
 }
 
 // LINE通知・メール送信は失敗しても予約申請の保存自体は成功させる（通知はベストエフォート）
@@ -105,13 +79,13 @@ async function notifyOnCreate(saved, config) {
     console.error("アプリ通知（新規申請）失敗", e);
   }
   try {
-    if (saved.email && config.resendApiKey && config.resendFromEmail) {
+    if (saved.email && config.resendApiKey) {
       await sendEmail(
         config.resendApiKey,
         config.resendFromEmail,
         saved.email,
-        "【ご予約申請の確認】RE:LAX",
-        confirmEmailText(saved),
+        confirmEmailSubject(config),
+        confirmEmailText(saved, config),
       );
     }
   } catch (e) {
@@ -121,13 +95,13 @@ async function notifyOnCreate(saved, config) {
 
 async function notifyOnDone(saved, config) {
   try {
-    if (saved.email && config.resendApiKey && config.resendFromEmail) {
+    if (saved.email && config.resendApiKey) {
       await sendEmail(
         config.resendApiKey,
         config.resendFromEmail,
         saved.email,
-        "【ご予約確定のお知らせ】RE:LAX",
-        doneEmailText(saved),
+        doneEmailSubject(config),
+        doneEmailText(saved, config),
       );
     }
   } catch (e) {
