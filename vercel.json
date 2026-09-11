@@ -1,10 +1,5 @@
 {
   "rewrites": [
-    {
-      "source": "/",
-      "has": [{ "type": "host", "value": "booking.spatheceada.com" }],
-      "destination": "/booking.html"
-    },
     { "source": "/booking", "destination": "/booking.html" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
