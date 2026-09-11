@@ -1,4 +1,4 @@
-import { redis, saveItem } from "./_redis.js";
+import { redis, saveItem, listAll } from "./_redis.js";
 import { sendEmail } from "./_email.js";
 import {
   fillTemplate,
@@ -23,6 +23,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Resend APIキーが未設定です（設定タブで入力してください）" });
     }
 
+    let storeName = "";
+    if (record.storeId) {
+      const stores = await listAll("store").catch(() => []);
+      storeName = stores.find((s) => s.id === record.storeId)?.name || "";
+    }
+
     const details = [
       `メニュー: ${record.course?.displayName || record.course?.name || record.course?.freeText || "-"}`,
       record.course?.optionName ? `オプション: ${record.course.optionName}` : null,
@@ -34,6 +40,7 @@ export default async function handler(req, res) {
     const subject = config.doneEmailSubject || DONE_SUBJECT_DEFAULT;
     const body = fillTemplate(config.doneEmailBody || DONE_BODY_DEFAULT, {
       name: record.customerName || "お客様",
+      store: storeName || "-",
       desiredDate: record.date,
       desiredTime: record.startTime || "",
       details,
