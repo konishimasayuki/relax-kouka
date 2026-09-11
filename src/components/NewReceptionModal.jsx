@@ -42,6 +42,7 @@ function emptyForm(date, storeId) {
     receptionist: "",
     room: "",
     phone: "",
+    email: "",
     amount: 0,
     note: "",
   };
@@ -467,6 +468,16 @@ export default function NewReceptionModal({
             <label>携帯番号</label>
             <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
           </div>
+        </div>
+
+        <div className="field">
+          <label>メールアドレス</label>
+          <input
+            type="email"
+            value={form.email}
+            placeholder="お客様のメールアドレス（予約確定メールの送信先）"
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
         </div>
 
         <div className="field">
