@@ -20,6 +20,7 @@ export default function TimeBoard() {
   const [sel, setSel] = useState(null);
   const selOriginalRef = useRef(null); // 編集モーダルを開いた時点の元データ（undo用）
   const [busy, setBusy] = useState(false);
+  const [confirmMailBusy, setConfirmMailBusy] = useState(false);
   const [newOpen, setNewOpen] = useState(false);
   const [breakModal, setBreakModal] = useState(null); // { editing } | null
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -108,7 +109,7 @@ export default function TimeBoard() {
 
   // 予約申請を受け入れて、実際の受付レコードとしてタイムボードに反映する（担当は未定のまま）。
   // 予約申請(デモ)タブ側も同じデータを見ているので、ステータスを更新すれば自動的に同期される。
-  const acceptBookingRequest = async (r) => {
+  const acceptBookingRequest = async (r, overrides = {}) => {
     setBusy(true);
     try {
       const priceNum = Number(String(r.price || "0").replace(/[^\d]/g, "")) || 0;
@@ -154,13 +155,14 @@ export default function TimeBoard() {
         nominate: false,
         pregnancy: false,
         femalePreferred: false,
-        staffId: "",
-        startTime: r.desiredTime || "",
+        staffId: overrides.staffId ?? "",
+        startTime: overrides.startTime || r.desiredTime || "",
         payment: "現金",
         paymentNote: "",
         receptionist: "",
         room: r.room || "",
         phone: r.phone || "",
+        email: r.email || "",
         amount: priceNum,
         note:
           "【予約申請より受入】" +
@@ -377,6 +379,30 @@ export default function TimeBoard() {
     // eslint-disable-next-line
   }, [undo, sel, newOpen, breakModal, historyOpen, attendanceModal]);
 
+  // 予約確定メールを送信する（送信済みなら再送の確認を挟む。二重送信の事故を防ぐため）
+  const sendConfirmEmailForSel = async () => {
+    if (!sel?.email) return;
+    if (sel.confirmEmailSentAt) {
+      const ok = confirm(
+        `このお客様には ${new Date(sel.confirmEmailSentAt).toLocaleString(
+          "ja-JP",
+        )} に確定メールを送信済みです。もう一度送信しますか？`,
+      );
+      if (!ok) return;
+    }
+    setConfirmMailBusy(true);
+    try {
+      const { record: savedRecord } = await api.sendConfirmEmail(sel);
+      setSel(savedRecord);
+      setRecords((prev) => prev.map((x) => (x.id === savedRecord.id ? savedRecord : x)));
+      alert("確定メールを送信しました。");
+    } catch (e) {
+      alert(`送信失敗: ${e.message}`);
+    } finally {
+      setConfirmMailBusy(false);
+    }
+  };
+
   const save = async () => {
     setBusy(true);
     try {
@@ -586,6 +612,9 @@ export default function TimeBoard() {
           hourWidth={80}
           bookingRequests={pendingBookingRequests}
           onAcceptBookingRequest={(r) => setAcceptReq(r)}
+          onAcceptBookingRequestDrop={(r, { staffId, startTime }) =>
+            acceptBookingRequest(r, { staffId, startTime })
+          }
         />
       )}
 
@@ -740,6 +769,41 @@ export default function TimeBoard() {
                 <label>携帯番号</label>
                 <input value={sel.phone || ""} onChange={(e) => updateSel({ phone: e.target.value })} />
               </div>
+            </div>
+
+            <div className="field">
+              <label>メールアドレス</label>
+              <input
+                type="email"
+                value={sel.email || ""}
+                placeholder="お客様のメールアドレス（予約確定メールの送信先）"
+                onChange={(e) => updateSel({ email: e.target.value })}
+              />
+            </div>
+
+            <div className="field">
+              <label>予約確定メール</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <button
+                  className="btn sm"
+                  disabled={confirmMailBusy || !sel.email}
+                  onClick={sendConfirmEmailForSel}
+                >
+                  ✉️ {sel.confirmEmailSentAt ? "確定メールを再送する" : "確定メールを送る"}
+                </button>
+                {sel.confirmEmailSentAt ? (
+                  <span className="muted" style={{ fontSize: 12.5 }}>
+                    送信済み：{new Date(sel.confirmEmailSentAt).toLocaleString("ja-JP")}
+                  </span>
+                ) : (
+                  <span className="muted" style={{ fontSize: 12.5 }}>未送信</span>
+                )}
+              </div>
+              {!sel.email && (
+                <span className="muted" style={{ fontSize: 12 }}>
+                  メールアドレスが未入力のため送信できません
+                </span>
+              )}
             </div>
 
             <div className="field">
