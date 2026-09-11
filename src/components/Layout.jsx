@@ -3,7 +3,7 @@ import { useState } from "react";
 const MENU = [
   { key: "dashboard", label: "ダッシュボード", ico: "📊" },
   { key: "timeboard", label: "タイムボード", ico: "🗓️" },
-  { key: "bookingRequests", label: "予約申請(デモ)", ico: "📮" },
+  { key: "bookingRequests", label: "予約申請", ico: "📮" },
   { key: "reception", label: "受付一覧表", ico: "📋" },
   { key: "shift", label: "シフト", ico: "🕒" },
   { key: "inventory", label: "在庫管理", ico: "📦" },
