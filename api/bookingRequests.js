@@ -3,6 +3,14 @@ import { deleteItem, listAll, saveItem } from "./_redis.js";
 import { sendLineMessage } from "./_line.js";
 import { sendEmail } from "./_email.js";
 import { sendPushToAll } from "./_push.js";
+import {
+  fillTemplate,
+  detailsBlockFor,
+  CONFIRM_SUBJECT_DEFAULT,
+  CONFIRM_BODY_DEFAULT,
+  DONE_SUBJECT_DEFAULT,
+  DONE_BODY_DEFAULT,
+} from "./_emailTemplates.js";
 
 const NS = "bookingRequests";
 const NOTIFY_KEY = "notify:config";
@@ -10,10 +18,24 @@ const NOTIFY_KEY = "notify:config";
 // 確定メールはタイムボードの「確定メールを送る」ボタンからの人力送信のみに統一する。
 const AUTO_DONE_EMAIL_ENABLED = false;
 
-function lineTextFor(r) {
+// マッサージは店舗が複数（パレス/宙館/Ceada）あるため実際の店舗名を引く。
+// 占いは「杉の泉」の1拠点のみなので固定文字列でよい。
+async function storeNameFor(r) {
+  if (r.type !== "massage") return "杉の泉";
+  if (!r.storeId) return "";
+  try {
+    const stores = await listAll("store");
+    return stores.find((s) => s.id === r.storeId)?.name || "";
+  } catch {
+    return "";
+  }
+}
+
+function lineTextFor(r, storeName) {
   if (r.type === "massage") {
     return [
       "【新規予約申請（マッサージ）】",
+      `店舗: ${storeName || "-"}`,
       `希望日時: ${r.desiredDate || "-"} ${r.desiredTime || ""}`,
       `お名前: ${r.name || "-"}`,
       `お電話番号: ${r.phone || "-"}`,
@@ -26,6 +48,7 @@ function lineTextFor(r) {
   }
   return [
     "【新規予約申請（占い）】",
+    `店舗: ${storeName || "杉の泉"}`,
     `コース: ${r.course || "-"}`,
     `希望日時: ${r.desiredDate || "-"} ${r.desiredTime || ""}`,
     `お名前: ${r.name || "-"}`,
@@ -36,14 +59,13 @@ function lineTextFor(r) {
   ].join("\n");
 }
 
-import { fillTemplate, detailsBlockFor, CONFIRM_SUBJECT_DEFAULT, CONFIRM_BODY_DEFAULT, DONE_SUBJECT_DEFAULT, DONE_BODY_DEFAULT } from "./_emailTemplates.js";
-
 function confirmEmailSubject(config) {
   return config.confirmEmailSubject || CONFIRM_SUBJECT_DEFAULT;
 }
-function confirmEmailText(r, config) {
+function confirmEmailText(r, config, storeName) {
   return fillTemplate(config.confirmEmailBody || CONFIRM_BODY_DEFAULT, {
     name: r.name || "お客様",
+    store: storeName || "-",
     desiredDate: r.desiredDate || "-",
     desiredTime: r.desiredTime || "",
     details: detailsBlockFor(r),
@@ -53,9 +75,10 @@ function confirmEmailText(r, config) {
 function doneEmailSubject(config) {
   return config.doneEmailSubject || DONE_SUBJECT_DEFAULT;
 }
-function doneEmailText(r, config) {
+function doneEmailText(r, config, storeName) {
   return fillTemplate(config.doneEmailBody || DONE_BODY_DEFAULT, {
     name: r.name || "お客様",
+    store: storeName || "-",
     desiredDate: r.desiredDate || "-",
     desiredTime: r.desiredTime || "",
     details: detailsBlockFor(r),
@@ -64,10 +87,11 @@ function doneEmailText(r, config) {
 
 // LINE通知・メール送信は失敗しても予約申請の保存自体は成功させる（通知はベストエフォート）
 async function notifyOnCreate(saved, config) {
+  const storeName = await storeNameFor(saved);
   try {
     const groupId = saved.type === "massage" ? config.massageGroupId : config.fortuneGroupId;
     if (config.lineToken && groupId) {
-      await sendLineMessage(config.lineToken, groupId, lineTextFor(saved));
+      await sendLineMessage(config.lineToken, groupId, lineTextFor(saved, storeName));
     }
   } catch (e) {
     console.error("LINE通知（新規申請）失敗", e);
@@ -76,7 +100,8 @@ async function notifyOnCreate(saved, config) {
     const title =
       saved.type === "massage" ? "新規予約申請（マッサージ）" : "新規予約申請（占い）";
     const time = saved.desiredTime ? `${saved.desiredTime}〜` : "時間未定";
-    const body = `${saved.desiredDate || ""} ${time} ${saved.name || ""}様`;
+    const storePart = storeName ? `［${storeName}］` : "";
+    const body = `${storePart}${saved.desiredDate || ""} ${time} ${saved.name || ""}様`;
     await sendPushToAll(title, body, "/");
   } catch (e) {
     console.error("アプリ通知（新規申請）失敗", e);
@@ -88,7 +113,7 @@ async function notifyOnCreate(saved, config) {
         config.resendFromEmail,
         saved.email,
         confirmEmailSubject(config),
-        confirmEmailText(saved, config),
+        confirmEmailText(saved, config, storeName),
       );
     }
   } catch (e) {
@@ -97,6 +122,7 @@ async function notifyOnCreate(saved, config) {
 }
 
 async function notifyOnDone(saved, config) {
+  const storeName = await storeNameFor(saved);
   try {
     if (saved.email && config.resendApiKey) {
       await sendEmail(
@@ -104,7 +130,7 @@ async function notifyOnDone(saved, config) {
         config.resendFromEmail,
         saved.email,
         doneEmailSubject(config),
-        doneEmailText(saved, config),
+        doneEmailText(saved, config, storeName),
       );
     }
   } catch (e) {
