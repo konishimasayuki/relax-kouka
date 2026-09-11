@@ -822,6 +822,7 @@ export default function Settings() {
             <p className="muted" style={{ fontSize: 12, lineHeight: 1.7, marginTop: 0 }}>
               以下の差し込み枠が使えます：
               <code>{"{name}"}</code>（お客様名）　
+              <code>{"{store}"}</code>（店舗名。お客様が場所を間違えないように必ず入れることをおすすめします）　
               <code>{"{desiredDate}"}</code>（希望日）　
               <code>{"{desiredTime}"}</code>（希望時間）　
               <code>{"{details}"}</code>（メニュー・金額などの内容。マッサージ／占いで自動的に内容が変わります）
