@@ -109,12 +109,17 @@ export default async function handler(req, res) {
       gapsByStaff[staffId] = computeFreeGaps(busy, rangeStart, rangeEnd);
     }
 
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
-      now.getDate(),
-    ).padStart(2, "0")}`;
+    // Vercelのサーバーは基本的にUTCで動作するため、getHours()等をそのまま使うと
+    // 日本時間との9時間のズレで「今日判定」や「現在時刻」が誤ることがある。
+    // ここでは常に日本時間(UTC+9)で明示的に計算する。
+    const nowUtcMs = Date.now();
+    const jst = new Date(nowUtcMs + 9 * 60 * 60 * 1000);
+    const todayStr = `${jst.getUTCFullYear()}-${String(jst.getUTCMonth() + 1).padStart(
+      2,
+      "0",
+    )}-${String(jst.getUTCDate()).padStart(2, "0")}`;
     const isToday = date === todayStr;
-    const nowMin = now.getHours() * 60 + now.getMinutes();
+    const nowMin = jst.getUTCHours() * 60 + jst.getUTCMinutes();
 
     const slots = [];
     for (let m = HOUR_START * 60; m <= 22 * 60 + 30; m += 30) slots.push(m);
