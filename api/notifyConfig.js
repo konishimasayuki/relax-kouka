@@ -27,10 +27,11 @@ export default async function handler(req, res) {
   try {
     if (req.method === "GET") {
       const data = await redis.get(KEY);
-      return res.json(data ? { ...emptyConfig(), ...data } : emptyConfig());
+      const merged = data ? { ...emptyConfig(), ...data } : emptyConfig();
+      return res.json(fallbackTemplates(merged));
     }
     if (req.method === "POST") {
-      const data = { ...emptyConfig(), ...req.body };
+      const data = fallbackTemplates({ ...emptyConfig(), ...req.body });
       await redis.set(KEY, data);
       return res.json(data);
     }
@@ -38,4 +39,16 @@ export default async function handler(req, res) {
   } catch (e) {
     return res.status(500).json({ error: String(e?.message || e) });
   }
+}
+
+// 件名・本文を空欄で保存（＝デフォルトに戻したい）場合に、空文字のまま保持されず
+// きちんとデフォルト文面にフォールバックするようにする
+function fallbackTemplates(data) {
+  return {
+    ...data,
+    confirmEmailSubject: data.confirmEmailSubject || CONFIRM_SUBJECT_DEFAULT,
+    confirmEmailBody: data.confirmEmailBody || CONFIRM_BODY_DEFAULT,
+    doneEmailSubject: data.doneEmailSubject || DONE_SUBJECT_DEFAULT,
+    doneEmailBody: data.doneEmailBody || DONE_BODY_DEFAULT,
+  };
 }
