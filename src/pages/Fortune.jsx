@@ -113,6 +113,8 @@ export default function Fortune() {
   const [resForm, setResForm] = useState(null);
   const [loadingRes, setLoadingRes] = useState(false);
   const [weekCounts, setWeekCounts] = useState({}); // date -> 件数（今日から14日分）
+  const [bookingRequests, setBookingRequests] = useState([]);
+  const [acceptReq, setAcceptReq] = useState(null);
 
   const loadWeekCounts = async () => {
     const today = todayStr();
@@ -148,6 +150,18 @@ export default function Fortune() {
     }
   };
 
+  const loadBookingRequests = async () => {
+    try {
+      setBookingRequests(await api.bookingRequests());
+    } catch {
+      // ベストエフォート
+    }
+  };
+
+  useEffect(() => {
+    loadBookingRequests();
+  }, []);
+
   useEffect(() => {
     loadReservations();
     // eslint-disable-next-line
@@ -179,6 +193,49 @@ export default function Fortune() {
   const recYoubi = WEEK_LABEL[new Date(recYY, recMM - 1, recDD).getDay()];
 
   const staffName = (id) => staffList.find((s) => s.id === id)?.name || "?";
+
+  // その日・未対応の占い予約申請だけを抽出
+  const pendingFortuneRequests = useMemo(
+    () =>
+      bookingRequests.filter(
+        (r) => r.type === "fortune" && r.desiredDate === date && r.status !== "done",
+      ),
+    [bookingRequests, date],
+  );
+
+  // 予約申請を受け入れて、実際の占い予約としてタイムボードに反映する（担当は未定のまま）
+  const acceptFortuneRequest = async (r) => {
+    setBusy(true);
+    try {
+      const minutesMatch = String(r.course || "").match(/(\d+)\s*分/);
+      const priceNum = Number(String(r.price || "0").replace(/[^\d]/g, "")) || 0;
+      const newRecord = {
+        ...emptyReservation(date),
+        customerName: r.name || "",
+        phone: r.phone || "",
+        minutes: minutesMatch ? Number(minutesMatch[1]) : 30,
+        price: priceNum,
+        staffId: "",
+        startTime: r.desiredTime || "",
+        room: r.room || "",
+        payment: "現金",
+        gender: [],
+        specialNote: "【予約申請より受入】" + (r.course || ""),
+      };
+      const saved = await api.saveFortuneReservation(newRecord);
+      setReservations((prev) => [...prev, saved]);
+
+      const updatedReq = { ...r, status: "done" };
+      await api.saveBookingRequest(updatedReq);
+      setBookingRequests((prev) => prev.map((x) => (x.id === r.id ? updatedReq : x)));
+
+      setAcceptReq(null);
+    } catch (e) {
+      alert(`受け入れ処理に失敗しました: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const shiftsByDate = useMemo(() => {
     const map = {};
@@ -380,6 +437,39 @@ export default function Fortune() {
                   </div>
                 );
               })}
+
+              {pendingFortuneRequests.length > 0 && (
+                <div className="tb-row tb-row-bookingreq">
+                  <div className="tb-bed" style={{ width: FTB_STAFF_COL_W }}>
+                    <span className="b-name muted">予約申請</span>
+                  </div>
+                  <div className="tb-lane" style={{ width: ftbLaneW }}>
+                    {ftbGridMarks.map((g, i) => (
+                      <div
+                        className={g.major ? "tb-gridline" : "tb-gridline-minor"}
+                        key={i}
+                        style={{ left: g.pos }}
+                      />
+                    ))}
+                    {pendingFortuneRequests
+                      .filter((r) => r.desiredTime)
+                      .map((r) => {
+                        const start = toMin(r.desiredTime);
+                        return (
+                          <div
+                            className="tb-block tb-block-bookingreq"
+                            key={r.id}
+                            style={ftbBlockStyle(start, 60, "#d9822b")}
+                            onClick={() => setAcceptReq(r)}
+                          >
+                            <div className="bl-course">申請 {r.course || ""}</div>
+                            <div className="bl-name">{r.name}様</div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -728,6 +818,36 @@ export default function Fortune() {
               </button>
               <button className="btn" onClick={saveReservation} disabled={busy}>
                 保存
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {acceptReq && (
+        <div className="modal-overlay" onClick={overlayClose(() => setAcceptReq(null))}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>予約申請を受け入れる</h3>
+            <p className="muted" style={{ marginTop: -8, lineHeight: 1.8 }}>
+              希望日時：{acceptReq.desiredDate} {acceptReq.desiredTime}〜
+              <br />
+              お名前：{acceptReq.name}様　部屋番号：{acceptReq.room || "-"}
+              <br />
+              電話番号：{acceptReq.phone || "-"}
+              <br />
+              コース：{acceptReq.course || "-"}　人数：{acceptReq.people || "-"}
+              <br />
+              金額：{acceptReq.price || "-"}
+            </p>
+            <p className="muted" style={{ fontSize: 12.5 }}>
+              受け入れると、担当未定のままタイムボードに追加されます。担当・詳細はあとから編集できます。
+            </p>
+            <div className="modal-actions">
+              <button className="btn gray" onClick={() => setAcceptReq(null)}>
+                キャンセル
+              </button>
+              <button className="btn" disabled={busy} onClick={() => acceptFortuneRequest(acceptReq)}>
+                受け入れる
               </button>
             </div>
           </div>
