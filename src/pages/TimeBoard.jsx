@@ -108,7 +108,7 @@ export default function TimeBoard() {
     stores.find((s) => s.isHome) || stores.find((s) => s.building?.includes("パレス")) || stores[0];
 
   // 予約申請を受け入れて、実際の受付レコードとしてタイムボードに反映する（担当は未定のまま）。
-  // 予約申請(デモ)タブ側も同じデータを見ているので、ステータスを更新すれば自動的に同期される。
+  // 予約申請タブ側も同じデータを見ているので、ステータスを更新すれば自動的に同期される。
   const acceptBookingRequest = async (r, overrides = {}) => {
     setBusy(true);
     try {
