@@ -69,6 +69,7 @@ export default function TimeBoardGrid({
   hourWidth = 56,
   bookingRequests = [],
   onAcceptBookingRequest,
+  onAcceptBookingRequestDrop,
 }) {
   const HOUR_W = hourWidth;
   const MIN_W = HOUR_W / 60;
@@ -108,15 +109,21 @@ export default function TimeBoardGrid({
   const [drag, setDrag] = useState(null);
 
   const findRecord = (id) => records.find((r) => r.id === id);
+  const findBookingReq = (id) => bookingRequests.find((r) => r.id === id);
 
-  const handleBlockPointerDown = (e, r) => {
+  const handleBlockPointerDown = (e, r, kind = "record") => {
     e.stopPropagation();
-    const rowIndex = staffIdsToday.indexOf(r.staffId); // 見つからなければ-1（＝未定行）
+    // 予約申請ブロックは専用の行にあるため、スタッフ行の一番下＋1のところから
+    // ドラッグを始めたものとして扱う（おおよその位置で構わない：最終的な担当・時間は
+    // ドロップ位置から計算するため、多少ずれても実害はない）。
+    const rowIndex =
+      kind === "bookingReq" ? staffIdsToday.length : staffIdsToday.indexOf(r.staffId);
     const info = {
       recordId: r.id,
+      kind,
       startX: e.clientX,
       startY: e.clientY,
-      origStartMin: toMin(r.startTime),
+      origStartMin: kind === "bookingReq" ? toMin(r.desiredTime) : toMin(r.startTime),
       origRowIndex: rowIndex,
       dxPx: 0,
       dyPx: 0,
@@ -160,6 +167,30 @@ export default function TimeBoardGrid({
     if (!d) return;
     clearTimeout(d.timer);
     dragRef.current = null;
+
+    if (d.kind === "bookingReq") {
+      const req = findBookingReq(d.recordId);
+      if (d.active && d.moved) {
+        if (req) {
+          const deltaMin = Math.round(d.dxPx / MIN_W / 10) * 10;
+          const newStartMin = Math.max(START_HOUR * 60, d.origStartMin + deltaMin);
+          const rowDelta = Math.round(d.dyPx / ROW_H);
+          let newRowIndex = d.origRowIndex + rowDelta;
+          newRowIndex = Math.max(-1, Math.min(staffIdsToday.length - 1, newRowIndex));
+          const newStaffId = newRowIndex === -1 ? "" : staffIdsToday[newRowIndex];
+          onAcceptBookingRequestDrop?.(req, {
+            startTime: minToHHMM(newStartMin),
+            staffId: newStaffId,
+          });
+        }
+      } else if (!d.moved && req) {
+        // 素早いクリック＝内容確認モーダルを開く（従来通り）
+        onAcceptBookingRequest?.(req);
+      }
+      setDrag(null);
+      return;
+    }
+
     const rec = findRecord(d.recordId);
     if (d.active && d.moved) {
       if (rec) {
@@ -698,12 +729,16 @@ export default function TimeBoardGrid({
                 const start = toMin(r.desiredTime);
                 const lane = bookingReqLaneOf.map.get(r.id) || 0;
                 const laneStyle = { top: lane * ROW_H + 4, height: ROW_H - 8 };
+                const dragStyle = dragTransform(r.id);
                 return (
                   <div
                     className="tb-block tb-block-bookingreq"
                     key={r.id}
-                    style={{ ...blockStyle(start, 60, "#d9822b"), ...laneStyle }}
-                    onClick={() => onAcceptBookingRequest?.(r)}
+                    style={{ ...blockStyle(start, 60, "#d9822b"), ...laneStyle, ...dragStyle }}
+                    onPointerDown={(e) => handleBlockPointerDown(e, r, "bookingReq")}
+                    onPointerMove={handleBlockPointerMove}
+                    onPointerUp={handleBlockPointerUp}
+                    onPointerCancel={handleBlockPointerUp}
                   >
                     <div className="bl-course">申請 {r.menu || ""}</div>
                     <div className="bl-name">{r.name}様</div>
