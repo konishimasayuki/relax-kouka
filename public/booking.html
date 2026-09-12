@@ -298,6 +298,13 @@
 
   .slot-time { width: 56px; font-size: 14px; font-weight: 500; }
 
+  .slot-empty {
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 13.5px;
+    padding: 24px 0;
+  }
+
   .slot-status {
     flex: 1;
     text-align: right;
@@ -1435,9 +1442,15 @@
   })();
 
   function renderSlots(listEl, slots, day) {
-    listEl.innerHTML = slots.map(s => {
-      const label = s.status === "open" ? "○ 空きあり" : s.status === "full" ? "× 満席" : "－ 受付終了";
-      const cls = s.status === "open" ? "open" : s.status === "full" ? "full" : "closed";
+    // 過ぎた時間（受付終了）は表示自体をしない
+    const visible = slots.filter(s => s.status !== "closed");
+    if (visible.length === 0) {
+      listEl.innerHTML = `<div class="slot-empty">本日のご案内可能な時間は終了しました</div>`;
+      return;
+    }
+    listEl.innerHTML = visible.map(s => {
+      const label = s.status === "open" ? "○ 空きあり" : "× 満席";
+      const cls = s.status === "open" ? "open" : "full";
       const clickable = s.status === "open" ? `onclick="selectSlot('${day}','${s.time}')"` : "";
       return `<div class="slot-row">
         <div class="slot-time">${s.time}</div>
