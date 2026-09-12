@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "../App.jsx";
 import { PAYMENTS, api, sortByOrder, staffDisplayName, todayStr } from "../api.js";
 import BreakModal from "../components/BreakModal.jsx";
+import CallTranscriptWidget from "../components/CallTranscriptWidget.jsx";
 import NewReceptionModal from "../components/NewReceptionModal.jsx";
 import TimeBoardGrid from "../components/TimeBoardGrid.jsx";
 import TimeInput10 from "../components/TimeInput10.jsx";
@@ -1012,6 +1013,8 @@ export default function TimeBoard() {
           </div>
         </div>
       )}
+
+      <CallTranscriptWidget />
     </div>
   );
 }
