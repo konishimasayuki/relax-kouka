@@ -17,19 +17,12 @@ function timeLabel() {
 export default function CallTranscriptWidget() {
   const [open, setOpen] = useState(false);
   const [listening, setListening] = useState(false);
-  const [speaker, setSpeaker] = useState("staff"); // "staff" | "customer"（次に確定するテキストのタグ）
-  const speakerRef = useRef("staff"); // onresultコールバック内で最新値を参照するため
-  const [lines, setLines] = useState([]); // [{ time, text, speaker }]
+  const [lines, setLines] = useState([]); // [{ time, text }]
   const [interim, setInterim] = useState("");
   const [error, setError] = useState("");
   const recognitionRef = useRef(null);
   const listeningRef = useRef(false); // onendでの自動再起動判定用（stateの非同期更新を待たない）
   const listRef = useRef(null);
-
-  const setSpeakerTag = (s) => {
-    speakerRef.current = s;
-    setSpeaker(s);
-  };
 
   useEffect(() => {
     return () => {
@@ -67,10 +60,7 @@ export default function CallTranscriptWidget() {
         else interimText += t;
       }
       if (finalText.trim()) {
-        setLines((prev) => [
-          ...prev,
-          { time: timeLabel(), text: finalText.trim(), speaker: speakerRef.current },
-        ]);
+        setLines((prev) => [...prev, { time: timeLabel(), text: finalText.trim() }]);
         setInterim("");
       } else {
         setInterim(interimText);
@@ -137,39 +127,22 @@ export default function CallTranscriptWidget() {
             </button>
           </div>
 
-          <div className="call-transcript-speaker">
-            <button
-              className={speaker === "customer" ? "ct-speaker-btn active customer" : "ct-speaker-btn"}
-              onClick={() => setSpeakerTag("customer")}
-            >
-              お客様が話す
-            </button>
-            <button
-              className={speaker === "staff" ? "ct-speaker-btn active staff" : "ct-speaker-btn"}
-              onClick={() => setSpeakerTag("staff")}
-            >
-              スタッフが話す
-            </button>
-          </div>
-
           <div className="call-transcript-body" ref={listRef}>
             {lines.length === 0 && !interim && (
               <div className="ct-empty">
-                「開始」を押し、話している方に合わせて上のボタン（お客様／スタッフ）を切り替えながらお使いください。
+                「開始」を押すと、通話の音声をリアルタイムで文字にしていきます。
                 <br />
-                （現状は音声だけからの自動的な話し手分けはまだ未対応です）
+                （現状はスタッフ・お客様の自動的な話し手分けはまだ未対応です）
               </div>
             )}
             {lines.map((l, i) => (
-              <div className={`ct-line ct-${l.speaker || "staff"}`} key={i}>
-                <span className="ct-tag">{l.speaker === "customer" ? "お客様" : "スタッフ"}</span>
+              <div className="ct-line" key={i}>
                 <span className="ct-time">{l.time}</span>
                 <span className="ct-text">{l.text}</span>
               </div>
             ))}
             {interim && (
-              <div className={`ct-line ct-interim ct-${speaker}`}>
-                <span className="ct-tag">{speaker === "customer" ? "お客様" : "スタッフ"}</span>
+              <div className="ct-line ct-interim">
                 <span className="ct-time">{timeLabel()}</span>
                 <span className="ct-text">{interim}</span>
               </div>
