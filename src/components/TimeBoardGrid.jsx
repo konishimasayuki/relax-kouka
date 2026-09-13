@@ -11,7 +11,6 @@ import {
 
 const START_HOUR = 11;
 const END_HOUR = 24; // 表示ラベルは 11〜23
-const TRAVEL_MIN = 20;
 const STAFF_COL_W = 96;
 const ROW_H = 52; // .tb-row の高さ（styles.cssと一致させること）
 
@@ -220,15 +219,6 @@ export default function TimeBoardGrid({
   const staffName = (id) => staffDisplayName(staff.find((s) => s.id === id)) || "?";
   const buildingOf = (storeId) => stores.find((s) => s.id === storeId)?.building || "";
 
-  // 本店＝ここが移動の起点・終点になる。isHomeフラグを優先し、
-  // 未設定の場合のみ建物名に「パレス」を含む店舗をフォールバックで使う。
-  const homeBuilding = useMemo(() => {
-    const home =
-      stores.find((s) => s.isHome) || stores.find((s) => s.building?.includes("パレス"));
-    return home?.building || stores[0]?.building || "";
-    // eslint-disable-next-line
-  }, [stores]);
-
   const todaysShifts = useMemo(() => shifts.filter((s) => s.date === date), [shifts, date]);
   const todaysBreaks = useMemo(() => breaks.filter((b) => b.date === date), [breaks, date]);
   // staffId -> { checkInTime, leaveTime }
@@ -278,41 +268,25 @@ export default function TimeBoardGrid({
         .filter((r) => r.staffId === staffId && r.startTime)
         .sort((a, b) => toMin(a.startTime) - toMin(b.startTime));
 
-      // 本店以外の場所は、同じ建物が連続する「滞在」ごとにまとめ、
-      // その滞在の前後にだけ移動20分を入れる（連続中は移動なし）。
-      // ただし同じ建物内でも前の施術の終了から次の開始まで60分以上空く場合は、
-      // 一度本店に戻っているとみなして滞在を区切り、その間にも移動を入れる。
-      // 状態を引き継ぐ方式ではなく、滞在単位でグループ化してから
-      // 判定するため、担当変更や時間変更の編集後も必ず正しく再計算される。
-      const STAY_GAP_LIMIT = 60; // 分
-      const stays = [];
-      for (const r of apps) {
-        const bld = buildingOf(r.storeId);
-        const last = stays[stays.length - 1];
-        if (last && last.building === bld) {
-          const lastApp = last.apps[last.apps.length - 1];
-          const lastAppEnd = toMin(lastApp.startTime) + totalMinutes(lastApp.course);
-          const gap = toMin(r.startTime) - lastAppEnd;
-          if (gap < STAY_GAP_LIMIT) {
-            last.apps.push(r);
-            continue;
-          }
-        }
-        stays.push({ building: bld, apps: [r] });
-      }
-
+      // 各予約の「メニューに設定されたインターバル（分）」をもとに移動時間を計算する。
+      // 本店・本店以外の区別はせず、メニューにインターバルが設定されていれば適用される。
+      // ただし連続する予約が同じ店舗（建物）であれば、その場所を離れないので移動は入れない。
+      // 前後どちらのメニューのインターバルも考慮し、大きい方の時間を確保する。
       const travels = [];
-      if (homeBuilding) {
-        for (const stay of stays) {
-          if (stay.building === homeBuilding) continue;
-          const first = stay.apps[0];
-          const last = stay.apps[stay.apps.length - 1];
-          const firstStart = toMin(first.startTime);
-          const lastStart = toMin(last.startTime);
-          const lastEnd = lastStart + totalMinutes(last.course);
-          travels.push({ start: firstStart - TRAVEL_MIN, end: firstStart });
-          travels.push({ start: lastEnd, end: lastEnd + TRAVEL_MIN });
-        }
+      for (let i = 0; i < apps.length; i++) {
+        const cur = apps[i];
+        const next = apps[i + 1];
+        if (!next) continue;
+        if (buildingOf(cur.storeId) === buildingOf(next.storeId)) continue; // 同じ場所なら移動なし
+
+        const curEnd = toMin(cur.startTime) + totalMinutes(cur.course);
+        const nextStart = toMin(next.startTime);
+        const gapMin = Math.max(
+          Number(cur.course?.intervalMin || 0),
+          Number(next.course?.intervalMin || 0),
+        );
+        if (gapMin <= 0) continue;
+        travels.push({ start: curEnd, end: Math.min(curEnd + gapMin, nextStart) });
       }
 
       const ranges = todaysShifts
@@ -335,7 +309,7 @@ export default function TimeBoardGrid({
     }
     return out;
     // eslint-disable-next-line
-  }, [staffIdsToday, records, todaysShifts, todaysBreaks, homeBuilding, stores, attendanceMap]);
+  }, [staffIdsToday, records, todaysShifts, todaysBreaks, stores, attendanceMap]);
 
   // 開始時間が未設定の予約（担当の有無に関わらず、これまでタイムボード上どこにも
   // 表示されず「見えない」まま件数だけカウントされてしまっていた）
