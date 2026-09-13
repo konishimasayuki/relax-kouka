@@ -560,6 +560,11 @@ export default function TimeBoardGrid({
                     >
                       <div className="bl-course">
                         {courseLbl}
+                        {r.nominate && (
+                          <span className="bl-nominate-badge" title="指名あり">
+                            指
+                          </span>
+                        )}
                         {r.note?.trim() && (
                           <span className="bl-special-badge" title={r.note}>
                             特
@@ -656,6 +661,11 @@ export default function TimeBoardGrid({
                   >
                     <div className="bl-course">
                       {courseLbl}
+                      {r.nominate && (
+                        <span className="bl-nominate-badge" title="指名あり">
+                          指
+                        </span>
+                      )}
                       {r.note?.trim() && (
                         <span className="bl-special-badge" title={r.note}>
                           特
