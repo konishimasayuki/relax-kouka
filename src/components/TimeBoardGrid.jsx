@@ -291,11 +291,17 @@ export default function TimeBoardGrid({
 
         const curEnd = toMin(cur.startTime) + totalMinutes(cur.course);
         const nextStart = toMin(next.startTime);
-        const gapMin = Math.max(intervalOf(cur), intervalOf(next));
-        if (gapMin <= 0) continue;
-        // 次の予約の直前（到着準備）として配置する。前の予約との間に余裕（空き時間）が
-        // あっても、移動ブロックは次の予約にくっつく形になる（前の予約側には寄せない）。
-        travels.push({ start: Math.max(curEnd, nextStart - gapMin), end: nextStart });
+        const availableGap = nextStart - curEnd;
+        if (availableGap <= 0) continue;
+
+        // 「前の予約の後」（片付け等）と「次の予約の前」（準備等）は別メニュー由来の
+        // 別々の時間なので、1つに合体させず両方を配置する。
+        // 隙間が足りない場合は、前の予約側を優先して確保し、残りを次の予約側にあてる。
+        const afterLen = Math.min(intervalOf(cur), availableGap);
+        const beforeLen = Math.min(intervalOf(next), availableGap - afterLen);
+
+        if (afterLen > 0) travels.push({ start: curEnd, end: curEnd + afterLen });
+        if (beforeLen > 0) travels.push({ start: nextStart - beforeLen, end: nextStart });
       }
 
       const ranges = todaysShifts
