@@ -237,7 +237,15 @@ export default function TimeBoard() {
     const cur = sel.course || {};
     if (!m) {
       updateSel({
-        course: { ...cur, menuId: "", name: "", displayName: "", minutes: "", color: "" },
+        course: {
+          ...cur,
+          menuId: "",
+          name: "",
+          displayName: "",
+          minutes: "",
+          color: "",
+          intervalMin: 0,
+        },
         amount: computeAmount("", cur.optionId, cur.couponId, cur.extensionId),
       });
       return;
@@ -250,6 +258,7 @@ export default function TimeBoard() {
         displayName: m.displayName,
         minutes: m.minutes,
         color: m.color,
+        intervalMin: m.interval ?? 0,
       },
       amount: computeAmount(m.id, cur.optionId, cur.couponId, cur.extensionId),
     });
