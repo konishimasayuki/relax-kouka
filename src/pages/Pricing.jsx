@@ -3,7 +3,7 @@ import { useApp } from "../App.jsx";
 import { COURSE_COLORS, api, sortByOrder, yen } from "../api.js";
 import { overlayClose } from "../modalUtils.js";
 
-function emptyMenu(storeId) {
+function emptyMenu(storeId, isHome) {
   return {
     id: "",
     storeId: storeId || "",
@@ -12,6 +12,7 @@ function emptyMenu(storeId) {
     minutes: 60,
     price: 0,
     color: "blue",
+    interval: isHome ? 0 : 20,
     order: 0,
   };
 }
@@ -236,7 +237,12 @@ export default function Pricing() {
       {tab === "course" && (
         <div>
           <div className="toolbar">
-            <button className="btn sm" onClick={() => setForm(emptyMenu(storeId))}>
+            <button
+              className="btn sm"
+              onClick={() =>
+                setForm(emptyMenu(storeId, stores.find((s) => s.id === storeId)?.isHome))
+              }
+            >
               ＋ コース追加
             </button>
           </div>
@@ -253,6 +259,7 @@ export default function Pricing() {
                     <th>表示名</th>
                     <th className="num">時間</th>
                     <th className="num">料金</th>
+                    <th className="num">インターバル</th>
                     <th />
                   </tr>
                 </thead>
@@ -274,6 +281,7 @@ export default function Pricing() {
                       <td>{m.displayName || <span className="muted">—</span>}</td>
                       <td className="num">{m.minutes}分</td>
                       <td className="num">{yen(m.price)}</td>
+                      <td className="num">{m.interval ?? 0}分</td>
                       <td>
                         <button
                           className="btn sm gray"
@@ -515,6 +523,14 @@ export default function Pricing() {
                   type="number"
                   value={form.price}
                   onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+                />
+              </div>
+              <div className="field">
+                <label>インターバル（分）</label>
+                <input
+                  type="number"
+                  value={form.interval ?? 0}
+                  onChange={(e) => setForm({ ...form, interval: Number(e.target.value) })}
                 />
               </div>
             </div>
