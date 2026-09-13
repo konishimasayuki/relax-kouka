@@ -19,6 +19,7 @@ function emptyRecord(storeId, date) {
       displayName: "",
       minutes: "",
       color: "",
+      intervalMin: 0,
       freeText: "",
       optionId: "",
       optionName: "",
@@ -508,6 +509,7 @@ export default function ReceptionList() {
                                     displayName: "",
                                     minutes: "",
                                     color: "",
+                                    intervalMin: 0,
                                   },
                                 });
                                 return;
@@ -520,6 +522,7 @@ export default function ReceptionList() {
                                   displayName: m.displayName,
                                   minutes: m.minutes,
                                   color: m.color,
+                                  intervalMin: m.interval ?? 0,
                                 },
                                 amount:
                                   m.price +
