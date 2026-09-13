@@ -293,7 +293,9 @@ export default function TimeBoardGrid({
         const nextStart = toMin(next.startTime);
         const gapMin = Math.max(intervalOf(cur), intervalOf(next));
         if (gapMin <= 0) continue;
-        travels.push({ start: curEnd, end: Math.min(curEnd + gapMin, nextStart) });
+        // 次の予約の直前（到着準備）として配置する。前の予約との間に余裕（空き時間）が
+        // あっても、移動ブロックは次の予約にくっつく形になる（前の予約側には寄せない）。
+        travels.push({ start: Math.max(curEnd, nextStart - gapMin), end: nextStart });
       }
 
       const ranges = todaysShifts
