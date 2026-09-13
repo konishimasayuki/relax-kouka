@@ -282,11 +282,24 @@ export default function TimeBoardGrid({
       // 本店・本店以外の区別はせず、メニューにインターバルが設定されていれば適用される。
       // ただし連続する予約が同じ店舗（建物）であれば、その場所を離れないので移動は入れない。
       // 前後どちらのメニューのインターバルも考慮し、大きい方の時間を確保する。
+      const ranges = todaysShifts
+        .filter((s) => s.staffId === staffId)
+        .map((s) => ({ start: toMin(s.start), end: toMin(s.end) }));
+      const shiftStart = ranges.length ? Math.min(...ranges.map((r) => r.start)) : dayStart;
+      const shiftEnd = ranges.length ? Math.max(...ranges.map((r) => r.end)) : dayEnd;
+
       const travels = [];
       for (let i = 0; i < apps.length; i++) {
         const cur = apps[i];
         const next = apps[i + 1];
-        if (!next) continue;
+
+        if (!next) {
+          // その日最後の予約：終わったあと「帰りの移動」を、シフト終了時刻の範囲内で確保する
+          const curEnd = toMin(cur.startTime) + totalMinutes(cur.course);
+          const afterLen = Math.min(intervalOf(cur), Math.max(shiftEnd - curEnd, 0));
+          if (afterLen > 0) travels.push({ start: curEnd, end: curEnd + afterLen });
+          continue;
+        }
         if (buildingOf(cur.storeId) === buildingOf(next.storeId)) continue; // 同じ場所なら移動なし
 
         const curEnd = toMin(cur.startTime) + totalMinutes(cur.course);
@@ -303,10 +316,14 @@ export default function TimeBoardGrid({
         if (afterLen > 0) travels.push({ start: curEnd, end: curEnd + afterLen });
         if (beforeLen > 0) travels.push({ start: nextStart - beforeLen, end: nextStart });
       }
+      // その日最初の予約：始まる前の「行きの移動」も、シフト開始時刻の範囲内で確保する
+      if (apps.length) {
+        const first = apps[0];
+        const firstStart = toMin(first.startTime);
+        const beforeLen = Math.min(intervalOf(first), Math.max(firstStart - shiftStart, 0));
+        if (beforeLen > 0) travels.push({ start: firstStart - beforeLen, end: firstStart });
+      }
 
-      const ranges = todaysShifts
-        .filter((s) => s.staffId === staffId)
-        .map((s) => ({ start: toMin(s.start), end: toMin(s.end) }));
       const offDuty = computeOffDuty(ranges, dayStart, dayEnd);
 
       // 途中退勤した場合は、退勤時刻以降を明示的に灰色にする
