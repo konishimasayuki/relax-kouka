@@ -61,6 +61,7 @@ export default function TimeBoardGrid({
   breaks = [],
   attendance = [],
   date,
+  menus = [],
   onSelect,
   onSelectBreak,
   onMove,
@@ -219,6 +220,15 @@ export default function TimeBoardGrid({
   const staffName = (id) => staffDisplayName(staff.find((s) => s.id === id)) || "?";
   const buildingOf = (storeId) => stores.find((s) => s.id === storeId)?.building || "";
 
+  // インターバルは「今のメニュー一覧の設定値」を優先して参照する。
+  // 受付レコード自体に保存されたintervalMin（選択時点のスナップショット）は、
+  // 該当メニューが見つからない場合（削除済み等）だけのフォールバックとして使う。
+  const intervalOf = (r) => {
+    const menu = menus.find((m) => m.id === r.course?.menuId);
+    if (menu) return Number(menu.interval || 0);
+    return Number(r.course?.intervalMin || 0);
+  };
+
   const todaysShifts = useMemo(() => shifts.filter((s) => s.date === date), [shifts, date]);
   const todaysBreaks = useMemo(() => breaks.filter((b) => b.date === date), [breaks, date]);
   // staffId -> { checkInTime, leaveTime }
@@ -281,10 +291,7 @@ export default function TimeBoardGrid({
 
         const curEnd = toMin(cur.startTime) + totalMinutes(cur.course);
         const nextStart = toMin(next.startTime);
-        const gapMin = Math.max(
-          Number(cur.course?.intervalMin || 0),
-          Number(next.course?.intervalMin || 0),
-        );
+        const gapMin = Math.max(intervalOf(cur), intervalOf(next));
         if (gapMin <= 0) continue;
         travels.push({ start: curEnd, end: Math.min(curEnd + gapMin, nextStart) });
       }
@@ -309,7 +316,7 @@ export default function TimeBoardGrid({
     }
     return out;
     // eslint-disable-next-line
-  }, [staffIdsToday, records, todaysShifts, todaysBreaks, stores, attendanceMap]);
+  }, [staffIdsToday, records, todaysShifts, todaysBreaks, stores, attendanceMap, menus]);
 
   // 開始時間が未設定の予約（担当の有無に関わらず、これまでタイムボード上どこにも
   // 表示されず「見えない」まま件数だけカウントされてしまっていた）
