@@ -608,6 +608,7 @@ export default function TimeBoard() {
           breaks={breaks}
           attendance={attendance}
           date={date}
+          menus={menus}
           onSelect={(r) => {
             selOriginalRef.current = r;
             setSel(r);
