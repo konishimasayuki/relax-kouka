@@ -546,6 +546,35 @@ export default function BoardView() {
             </div>
 
             <div className="field">
+              <div className="checks">
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={!!sel.nominate}
+                    onChange={(e) => updateSel({ nominate: e.target.checked })}
+                  />
+                  指名
+                </label>
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={!!sel.pregnancy}
+                    onChange={(e) => updateSel({ pregnancy: e.target.checked })}
+                  />
+                  妊婦
+                </label>
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={!!sel.femalePreferred}
+                    onChange={(e) => updateSel({ femalePreferred: e.target.checked })}
+                  />
+                  女性希望
+                </label>
+              </div>
+            </div>
+
+            <div className="field">
               <label>メールアドレス</label>
               <input
                 type="email"
