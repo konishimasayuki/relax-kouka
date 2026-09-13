@@ -391,6 +391,7 @@ export default function BoardView() {
             shifts={shifts}
             attendance={attendance}
             date={date}
+            menus={menus}
             onSelect={(r) => {
               selOriginalRef.current = r;
               setSel(r);
