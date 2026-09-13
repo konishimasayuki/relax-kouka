@@ -17,6 +17,7 @@ function emptyForm(date, storeId) {
       displayName: "",
       minutes: "",
       color: "",
+      intervalMin: 0,
       freeText: "",
       optionId: "",
       optionName: "",
@@ -114,7 +115,15 @@ export default function NewReceptionModal({
     if (!m) {
       setForm({
         ...form,
-        course: { ...form.course, menuId: "", name: "", displayName: "", minutes: "", color: "" },
+        course: {
+          ...form.course,
+          menuId: "",
+          name: "",
+          displayName: "",
+          minutes: "",
+          color: "",
+          intervalMin: 0,
+        },
         amount: computeAmount("", form.course.optionId, form.course.couponId, form.course.extensionId),
       });
       return;
@@ -128,6 +137,7 @@ export default function NewReceptionModal({
         displayName: m.displayName,
         minutes: m.minutes,
         color: m.color,
+        intervalMin: m.interval ?? 0,
       },
       amount: computeAmount(m.id, form.course.optionId, form.course.couponId, form.course.extensionId),
     });
