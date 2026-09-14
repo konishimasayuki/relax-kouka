@@ -13,6 +13,7 @@ const START_HOUR = 11;
 const END_HOUR = 24; // 表示ラベルは 11〜23
 const STAFF_COL_W = 96;
 const ROW_H = 52; // .tb-row の高さ（styles.cssと一致させること）
+const STAY_GAP_LIMIT = 60; // 分。同じ場所でもこれ以上空いたら一度戻ったとみなし移動を入れる
 
 function toMin(hhmm) {
   if (!hhmm) return null;
@@ -299,11 +300,16 @@ export default function TimeBoardGrid({
           if (afterLen > 0) travels.push({ start: curEnd, end: curEnd + afterLen });
           continue;
         }
-        if (buildingOf(cur.storeId) === buildingOf(next.storeId)) continue; // 同じ場所なら移動なし
-
         const curEnd = toMin(cur.startTime) + totalMinutes(cur.course);
         const nextStart = toMin(next.startTime);
         const availableGap = nextStart - curEnd;
+
+        // 同じ場所（建物）が続く場合は基本的に移動なし。
+        // ただし1時間（STAY_GAP_LIMIT）以上空く場合は、一度本店等に戻っているとみなし、
+        // 同じ場所でも移動を入れる。
+        const sameBuilding = buildingOf(cur.storeId) === buildingOf(next.storeId);
+        if (sameBuilding && availableGap < STAY_GAP_LIMIT) continue;
+
         if (availableGap <= 0) continue;
 
         // 「前の予約の後」（片付け等）と「次の予約の前」（準備等）は別メニュー由来の
