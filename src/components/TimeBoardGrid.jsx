@@ -285,8 +285,6 @@ export default function TimeBoardGrid({
       const ranges = todaysShifts
         .filter((s) => s.staffId === staffId)
         .map((s) => ({ start: toMin(s.start), end: toMin(s.end) }));
-      const shiftStart = ranges.length ? Math.min(...ranges.map((r) => r.start)) : dayStart;
-      const shiftEnd = ranges.length ? Math.max(...ranges.map((r) => r.end)) : dayEnd;
 
       const travels = [];
       for (let i = 0; i < apps.length; i++) {
@@ -294,9 +292,10 @@ export default function TimeBoardGrid({
         const next = apps[i + 1];
 
         if (!next) {
-          // その日最後の予約：終わったあと「帰りの移動」を、シフト終了時刻の範囲内で確保する
+          // その日最後の予約：終わったあと「帰りの移動」を、インターバル分そのまま確保する
+          // （シフト終了時刻ギリギリまで予約が入っていても、移動は切り詰めずに表示する）
           const curEnd = toMin(cur.startTime) + totalMinutes(cur.course);
-          const afterLen = Math.min(intervalOf(cur), Math.max(shiftEnd - curEnd, 0));
+          const afterLen = intervalOf(cur);
           if (afterLen > 0) travels.push({ start: curEnd, end: curEnd + afterLen });
           continue;
         }
@@ -316,11 +315,11 @@ export default function TimeBoardGrid({
         if (afterLen > 0) travels.push({ start: curEnd, end: curEnd + afterLen });
         if (beforeLen > 0) travels.push({ start: nextStart - beforeLen, end: nextStart });
       }
-      // その日最初の予約：始まる前の「行きの移動」も、シフト開始時刻の範囲内で確保する
+      // その日最初の予約：始まる前の「行きの移動」も、インターバル分そのまま確保する
       if (apps.length) {
         const first = apps[0];
         const firstStart = toMin(first.startTime);
-        const beforeLen = Math.min(intervalOf(first), Math.max(firstStart - shiftStart, 0));
+        const beforeLen = intervalOf(first);
         if (beforeLen > 0) travels.push({ start: firstStart - beforeLen, end: firstStart });
       }
 
