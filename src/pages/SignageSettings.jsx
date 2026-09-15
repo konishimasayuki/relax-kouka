@@ -112,6 +112,88 @@ export default function SignageSettings() {
       </div>
 
       <div className="card">
+        <strong>📺 テレビへの表示方法（HDMI接続）</strong>
+        <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.8, marginTop: 6 }}>
+          パソコンとテレビ（AQUOS等）をHDMIで繋ぎ、画面を「拡張」にした状態で使います。
+        </p>
+
+        <div className="field">
+          <label>① サイネージのURL（画面1：混雑状況）</label>
+          <div className="row">
+            <input
+              readOnly
+              value="https://relax-kouka.vercel.app/signage-congestion"
+              style={{ flex: 1 }}
+              onFocus={(e) => e.target.select()}
+            />
+            <button
+              className="btn sm ghost"
+              onClick={() =>
+                navigator.clipboard?.writeText("https://relax-kouka.vercel.app/signage-congestion")
+              }
+            >
+              コピー
+            </button>
+          </div>
+        </div>
+
+        <div className="field">
+          <label>② 自動で全画面表示させるコマンド（Chromeキオスクモード）</label>
+          <p className="muted" style={{ fontSize: 12, marginTop: 0 }}>
+            デスクトップで右クリック→「新規作成」→「ショートカット」を作り、参照先に下記を貼り付けます。
+            （Chromeのインストール場所が違う場合はパスの部分を実際の場所に置き換えてください）
+          </p>
+          <div className="row">
+            <textarea
+              readOnly
+              rows={2}
+              style={{ flex: 1, fontFamily: "monospace", fontSize: 12.5 }}
+              value={
+                '"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --kiosk https://relax-kouka.vercel.app/signage-congestion'
+              }
+              onFocus={(e) => e.target.select()}
+            />
+            <button
+              className="btn sm ghost"
+              onClick={() =>
+                navigator.clipboard?.writeText(
+                  '"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --kiosk https://relax-kouka.vercel.app/signage-congestion',
+                )
+              }
+            >
+              コピー
+            </button>
+          </div>
+        </div>
+
+        <div className="field">
+          <label>③ 起動時に自動で立ち上がるようにする</label>
+          <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.9, marginTop: 0 }}>
+            <code>Windowsキー + R</code> →{" "}
+            <code
+              style={{ cursor: "pointer", textDecoration: "underline" }}
+              onClick={() => navigator.clipboard?.writeText("shell:startup")}
+              title="クリックでコピー"
+            >
+              shell:startup
+            </code>{" "}
+            と入力してEnter（スタートアップフォルダが開きます）。②で作ったショートカットをこのフォルダにコピーすると、
+            パソコンを起動するだけで自動的にこの画面が表示されるようになります。
+          </p>
+        </div>
+
+        <div className="field">
+          <label>④ 手順まとめ</label>
+          <ol style={{ fontSize: 12.5, lineHeight: 1.9, margin: "4px 0 0", paddingLeft: 20 }}>
+            <li>HDMIでテレビに接続し、テレビ側の入力をそのHDMIに切り替える</li>
+            <li>パソコンの画面設定を「拡張」にする（Windowsキー + P）</li>
+            <li>上の①URLを使ってショートカットを作成（②のコマンドを貼り付け）</li>
+            <li>③の手順でスタートアップフォルダに入れておく</li>
+          </ol>
+        </div>
+      </div>
+
+      <div className="card">
         <strong>画面1：混雑状況の設定</strong>
         <div className="field" style={{ marginTop: 10 }}>
           <label>自動更新間隔（秒）</label>
