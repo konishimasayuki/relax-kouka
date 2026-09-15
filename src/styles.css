@@ -528,8 +528,8 @@ table.grid th.num {
 .tb-hour {
   flex: 0 0 auto;
   text-align: center;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   color: var(--muted);
   border-left: 1px solid var(--border);
   padding: 6px 0;
