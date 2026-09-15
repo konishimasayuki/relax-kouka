@@ -100,6 +100,12 @@ export default function SignageSettings() {
           </button>
           <button
             className="btn sm"
+            onClick={() => window.open("/signage-congestion", "_blank", "width=1280,height=720")}
+          >
+            画面1（混雑状況・横長）を開く
+          </button>
+          <button
+            className="btn sm"
             onClick={() => window.open("/signage-promo", "_blank", "width=960,height=540")}
           >
             画面2（宣伝・横長）を開く
