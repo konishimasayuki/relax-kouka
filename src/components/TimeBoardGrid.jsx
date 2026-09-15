@@ -114,11 +114,11 @@ export default function TimeBoardGrid({
 
   const handleBlockPointerDown = (e, r, kind = "record") => {
     e.stopPropagation();
-    // 予約申請ブロックは専用の行にあるため、スタッフ行の一番下＋1のところから
-    // ドラッグを始めたものとして扱う（おおよその位置で構わない：最終的な担当・時間は
-    // ドロップ位置から計算するため、多少ずれても実害はない）。
+    // 予約申請・未定の予約はどちらも「スタッフ行の下」に表示されているため、
+    // ドラッグの基準位置もスタッフ行の一番下＋1として扱う（おおよその位置で構わない：
+    // 最終的な担当・時間はドロップ位置から計算するため、多少ずれても実害はない）。
     const rowIndex =
-      kind === "bookingReq" ? staffIdsToday.length : staffIdsToday.indexOf(r.staffId);
+      kind === "bookingReq" || !r.staffId ? staffIdsToday.length : staffIdsToday.indexOf(r.staffId);
     const info = {
       recordId: r.id,
       kind,
