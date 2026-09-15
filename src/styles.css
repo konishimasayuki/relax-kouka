@@ -531,7 +531,7 @@ table.grid th.num {
   font-size: 16px;
   font-weight: 700;
   color: var(--muted);
-  border-left: 1px solid var(--border);
+  border-left: 1.5px solid #94a3b8;
   padding: 6px 0;
 }
 
