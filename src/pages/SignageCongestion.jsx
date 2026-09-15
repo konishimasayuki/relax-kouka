@@ -235,7 +235,9 @@ export default function SignageCongestion() {
                         ¥{Number(m.price || 0).toLocaleString("ja-JP")}
                       </span>
                     </div>
-                    {isSetCourse(m.name) ? (
+                    {m.description?.trim() ? (
+                      <div className="signage-menu-item-time">{m.description}</div>
+                    ) : isSetCourse(m.name) ? (
                       <div className="signage-menu-item-time">{SET_COURSE_DESC}</div>
                     ) : (
                       m.minutes && <div className="signage-menu-item-time">{m.minutes}分</div>
