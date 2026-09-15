@@ -13,6 +13,7 @@ function emptyMenu(storeId, isHome) {
     price: 0,
     color: "blue",
     interval: isHome ? 0 : 20,
+    description: "",
     order: 0,
   };
 }
@@ -260,6 +261,7 @@ export default function Pricing() {
                     <th className="num">時間</th>
                     <th className="num">料金</th>
                     <th className="num">インターバル</th>
+                    <th>説明</th>
                     <th />
                   </tr>
                 </thead>
@@ -282,6 +284,7 @@ export default function Pricing() {
                       <td className="num">{m.minutes}分</td>
                       <td className="num">{yen(m.price)}</td>
                       <td className="num">{m.interval ?? 0}分</td>
+                      <td>{m.description || <span className="muted">—</span>}</td>
                       <td>
                         <button
                           className="btn sm gray"
@@ -531,6 +534,15 @@ export default function Pricing() {
                   type="number"
                   value={form.interval ?? 0}
                   onChange={(e) => setForm({ ...form, interval: Number(e.target.value) })}
+                />
+              </div>
+              <div className="field">
+                <label>説明（サイネージのメニュー欄に表示）</label>
+                <input
+                  type="text"
+                  value={form.description ?? ""}
+                  placeholder="空欄なら時間（例：40分）が表示されます"
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
                 />
               </div>
             </div>
