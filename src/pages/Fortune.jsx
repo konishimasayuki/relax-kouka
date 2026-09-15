@@ -479,7 +479,7 @@ export default function Fortune() {
       <div className="toolbar" style={{ marginTop: 0 }}>
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         <span className="muted" style={{ fontSize: 12 }}>
-          セルをクリックしてそのまま編集（チェックはスタッフの確認用です）。タイムボードと同じデータなので、どちらを編集しても両方に反映されます。
+          セルをクリックしてそのまま編集（チェックはスタッフの確認用です）。どちらを編集しても両方に反映されます。
         </span>
         <button className="btn sm ghost" onClick={() => window.print()}>
           🖨️ 印刷
