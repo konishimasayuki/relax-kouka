@@ -124,7 +124,10 @@ export default function SignageSettings() {
         </p>
 
         <div className="field">
-          <label>① サイネージのURL（画面1：混雑状況）</label>
+          <label>① サイネージのURL（画面1：混雑状況・横長のテレビにそのまま対応）</label>
+          <p className="muted" style={{ fontSize: 12, marginTop: 0 }}>
+            このURLは画面サイズに合わせて自動でレイアウトが調整されるため、縦長・横長どちらのテレビでも同じものを使えます。
+          </p>
           <div className="row">
             <input
               readOnly
