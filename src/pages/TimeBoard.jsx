@@ -560,11 +560,7 @@ export default function TimeBoard() {
 
   return (
     <div>
-      <div className="page-head">
-        <h2>タイムボード</h2>
-      </div>
-
-      <div className="toolbar">
+      <div className="toolbar" style={{ marginTop: 0 }}>
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         <button className="btn sm" onClick={() => setNewOpen(true)}>
           ＋ 新規受付
@@ -620,7 +616,7 @@ export default function TimeBoard() {
             setEditCheckInTime(rec?.checkInTime || "");
             setAttendanceModal(staffId);
           }}
-          hourWidth={92}
+          hourWidth={97}
           bookingRequests={pendingBookingRequests}
           onAcceptBookingRequest={(r) => setAcceptReq(r)}
           onAcceptBookingRequestDrop={(r, { staffId, startTime }) =>
