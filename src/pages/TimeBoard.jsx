@@ -620,7 +620,7 @@ export default function TimeBoard() {
             setEditCheckInTime(rec?.checkInTime || "");
             setAttendanceModal(staffId);
           }}
-          hourWidth={80}
+          hourWidth={92}
           bookingRequests={pendingBookingRequests}
           onAcceptBookingRequest={(r) => setAcceptReq(r)}
           onAcceptBookingRequestDrop={(r, { staffId, startTime }) =>
