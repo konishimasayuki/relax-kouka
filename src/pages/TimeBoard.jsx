@@ -161,6 +161,7 @@ export default function TimeBoard() {
         payment: "現金",
         paymentNote: "",
         receptionist: "",
+        stayBuilding: r.stayBuilding || "",
         room: r.room || "",
         phone: r.phone || "",
         email: r.email || "",
@@ -769,6 +770,18 @@ export default function TimeBoard() {
 
             <div className="row">
               <div className="field">
+                <label>宿泊棟</label>
+                <select
+                  value={sel.stayBuilding || ""}
+                  onChange={(e) => updateSel({ stayBuilding: e.target.value })}
+                >
+                  <option value="">未選択</option>
+                  <option value="宙館">宙館</option>
+                  <option value="星館">星館</option>
+                  <option value="虹館">虹館</option>
+                </select>
+              </div>
+              <div className="field">
                 <label>部屋番号</label>
                 <input value={sel.room || ""} onChange={(e) => updateSel({ room: e.target.value })} />
               </div>
@@ -1026,7 +1039,8 @@ export default function TimeBoard() {
             <p className="muted" style={{ marginTop: -8, lineHeight: 1.8 }}>
               希望日時：{acceptReq.desiredDate} {acceptReq.desiredTime}〜
               <br />
-              お名前：{acceptReq.name}様　部屋番号：{acceptReq.room || "-"}
+              お名前：{acceptReq.name}様　宿泊棟：{acceptReq.stayBuilding || "-"}　部屋番号：
+              {acceptReq.room || "-"}
               <br />
               電話番号：{acceptReq.phone || "-"}
               <br />
