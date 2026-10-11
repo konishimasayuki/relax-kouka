@@ -2447,9 +2447,9 @@ table.grid th.num {
 /* ---------- シフト：1ヶ月まとめ入力の日付チェックボックス一覧 ---------- */
 .month-day-checks {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-  max-height: 220px;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 5px;
+  max-height: 240px;
   overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -2461,4 +2461,12 @@ table.grid th.num {
   gap: 3px;
   font-size: 12.5px;
   justify-content: center;
+  white-space: nowrap;
+  padding: 2px 0;
+}
+.month-day-check.sun {
+  color: #d6453d;
+}
+.month-day-check.sat {
+  color: #2f6fd6;
 }
