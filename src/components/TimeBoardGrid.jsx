@@ -11,6 +11,7 @@ import {
 
 const START_HOUR = 11;
 const END_HOUR = 24; // 表示ラベルは 11〜23
+const CLOSE_MIN = 23 * 60 + 40; // 閉店時刻(23:40)。これ以降は全レーン共通でグレー表示にする
 const STAFF_COL_W = 96;
 const ROW_H = 52; // .tb-row の高さ（styles.cssと一致させること）
 const STAY_GAP_LIMIT = 60; // 分。同じ場所でもこれ以上空いたら一度戻ったとみなし移動を入れる
@@ -513,6 +514,7 @@ export default function TimeBoardGrid({
                 </span>
               </div>
               <div className="tb-lane" style={{ width: laneW }}>
+                <div className="tb-closed" style={fillStyle(CLOSE_MIN, END_HOUR * 60)} />
                 {offDuty.map((o, i) => (
                   <div className="tb-offduty" key={`o${i}`} style={fillStyle(o.start, o.end)} />
                 ))}
@@ -638,6 +640,7 @@ export default function TimeBoardGrid({
               <span className="b-name muted">未定</span>
             </div>
             <div className="tb-lane" style={{ width: laneW }}>
+              <div className="tb-closed" style={fillStyle(CLOSE_MIN, END_HOUR * 60)} />
               {gridMarks.map((g, i) => (
                 <div
                   className={g.major ? "tb-gridline" : "tb-gridline-minor"}
@@ -748,6 +751,7 @@ export default function TimeBoardGrid({
               <span className="b-name muted">予約申請</span>
             </div>
             <div className="tb-lane" style={{ width: laneW }}>
+              <div className="tb-closed" style={fillStyle(CLOSE_MIN, END_HOUR * 60)} />
               {gridMarks.map((g, i) => (
                 <div
                   className={g.major ? "tb-gridline" : "tb-gridline-minor"}
