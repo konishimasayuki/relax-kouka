@@ -620,6 +620,9 @@ export default function TimeBoard() {
         <button className="btn sm" onClick={() => setNewOpen(true)}>
           ＋ 新規受付
         </button>
+        <button className="btn sm ghost" onClick={load} disabled={loading}>
+          🔄 更新
+        </button>
         <button className="btn sm ghost" onClick={() => setBreakModal({ editing: null })}>
           ☕ 休憩
         </button>
