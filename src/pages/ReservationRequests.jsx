@@ -42,6 +42,8 @@ function RequestCard({ r, onToggleStatus, onDelete, canDelete }) {
                 <br />
               </>
             )}
+            宿泊棟: {r.stayBuilding || "-"}
+            <br />
             お部屋番号: {r.room || "-"}
             <br />
             {isMassage ? (
