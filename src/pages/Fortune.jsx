@@ -58,6 +58,7 @@ function emptyReservation(date) {
     staffId: "",
     gender: [],
     payment: "現金",
+    stayBuilding: "",
     room: "",
     checked: false,
     specialNote: "",
@@ -217,6 +218,7 @@ export default function Fortune() {
         price: priceNum,
         staffId: "",
         startTime: r.desiredTime || "",
+        stayBuilding: r.stayBuilding || "",
         room: r.room || "",
         payment: "現金",
         gender: [],
@@ -789,6 +791,18 @@ export default function Fortune() {
                 </select>
               </div>
               <div className="field">
+                <label>宿泊棟</label>
+                <select
+                  value={resForm.stayBuilding || ""}
+                  onChange={(e) => setResForm({ ...resForm, stayBuilding: e.target.value })}
+                >
+                  <option value="">未選択</option>
+                  <option value="宙館">宙館</option>
+                  <option value="星館">星館</option>
+                  <option value="虹館">虹館</option>
+                </select>
+              </div>
+              <div className="field">
                 <label>部屋番号</label>
                 <input
                   value={resForm.room || ""}
@@ -831,7 +845,8 @@ export default function Fortune() {
             <p className="muted" style={{ marginTop: -8, lineHeight: 1.8 }}>
               希望日時：{acceptReq.desiredDate} {acceptReq.desiredTime}〜
               <br />
-              お名前：{acceptReq.name}様　部屋番号：{acceptReq.room || "-"}
+              お名前：{acceptReq.name}様　宿泊棟：{acceptReq.stayBuilding || "-"}　部屋番号：
+              {acceptReq.room || "-"}
               <br />
               電話番号：{acceptReq.phone || "-"}
               <br />
