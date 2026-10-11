@@ -997,6 +997,8 @@ export default function Fortune() {
               <br />
               電話番号：{acceptReq.phone || "-"}
               <br />
+              メールアドレス：{acceptReq.email || "-"}
+              <br />
               コース：{acceptReq.course || "-"}　人数：{acceptReq.people || "-"}
               <br />
               金額：{acceptReq.price || "-"}
