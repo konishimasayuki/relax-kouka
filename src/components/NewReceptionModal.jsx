@@ -41,6 +41,7 @@ function emptyForm(date, storeId) {
     payment: "現金",
     paymentNote: "",
     receptionist: "",
+    stayBuilding: "",
     room: "",
     phone: "",
     email: "",
@@ -470,6 +471,18 @@ export default function NewReceptionModal({
         </div>
 
         <div className="row">
+          <div className="field">
+            <label>宿泊棟</label>
+            <select
+              value={form.stayBuilding}
+              onChange={(e) => setForm({ ...form, stayBuilding: e.target.value })}
+            >
+              <option value="">未選択</option>
+              <option value="宙館">宙館</option>
+              <option value="星館">星館</option>
+              <option value="虹館">虹館</option>
+            </select>
+          </div>
           <div className="field">
             <label>部屋番号</label>
             <input value={form.room} onChange={(e) => setForm({ ...form, room: e.target.value })} />
