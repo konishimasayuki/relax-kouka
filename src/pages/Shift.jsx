@@ -9,7 +9,12 @@ const HOUR_END = 24; // 表示ラベルは 11〜23
 const HOUR_W = 60;
 const MIN_W = HOUR_W / 60;
 const NOTE_W = 200;
-const WEEK_LABEL = ["日", "月", "火", "水", "木", "金", "土"];
+const WEEK_LABEL = ["月", "火", "水", "木", "金", "土", "日"];
+
+// JSの Date#getDay()（0=日〜6=土）を、月曜始まりのインデックス（0=月〜6=日）に変換する
+function mondayFirstIndex(jsWeekday) {
+  return (jsWeekday + 6) % 7;
+}
 
 function toMin(hhmm) {
   if (!hhmm) return 0;
@@ -24,14 +29,14 @@ function fmt(d) {
   return `${y}-${m}-${day}`;
 }
 
-// 指定日を含む週（日曜始まり）の7日分を返す
+// 指定日を含む週（月曜始まり）の7日分を返す
 function buildWeekGrid(dateStr) {
   const [y, m, d] = dateStr.split("-").map(Number);
   const base = new Date(y, m - 1, d);
-  const sunday = new Date(y, m - 1, d - base.getDay());
+  const monday = new Date(y, m - 1, d - mondayFirstIndex(base.getDay()));
   const cells = [];
   for (let i = 0; i < 7; i++) {
-    const dd = new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate() + i);
+    const dd = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
     cells.push({ day: dd.getDate(), dateStr: fmt(dd) });
   }
   return cells;
@@ -40,7 +45,7 @@ function buildWeekGrid(dateStr) {
 function buildMonthGrid(monthStr) {
   const [y, m] = monthStr.split("-").map(Number);
   const first = new Date(y, m - 1, 1);
-  const startWeekday = first.getDay();
+  const startWeekday = mondayFirstIndex(first.getDay());
   const daysInMonth = new Date(y, m, 0).getDate();
   const prevMonthDays = new Date(y, m - 1, 0).getDate();
   const cells = [];
@@ -76,10 +81,10 @@ function daysInMonthOf(monthStr) {
   return new Date(y, m, 0).getDate();
 }
 
-// 指定の月・日の曜日ラベルを返す（0=日,6=土）
+// 指定の月・日の曜日インデックスを返す（0=月〜6=日。WEEK_LABELと対応）
 function weekdayOf(monthStr, day) {
   const [y, m] = monthStr.split("-").map(Number);
-  return new Date(y, m - 1, day).getDay();
+  return mondayFirstIndex(new Date(y, m - 1, day).getDay());
 }
 
 function emptyMonthForm(monthStr) {
@@ -502,13 +507,23 @@ export default function Shift() {
                   全解除
                 </button>
               </div>
+              <div className="month-day-cal-head">
+                {WEEK_LABEL.map((w, i) => (
+                  <div key={w} className={i === 6 ? "sun" : i === 5 ? "sat" : ""}>
+                    {w}
+                  </div>
+                ))}
+              </div>
               <div className="month-day-checks">
+                {Array.from({ length: weekdayOf(monthForm.month, 1) }).map((_, i) => (
+                  <div key={`blank${i}`} className="month-day-blank" />
+                ))}
                 {Object.keys(monthForm.checked)
                   .map(Number)
                   .sort((a, b) => a - b)
                   .map((d) => {
                     const w = weekdayOf(monthForm.month, d);
-                    const wcls = w === 0 ? "sun" : w === 6 ? "sat" : "";
+                    const wcls = w === 6 ? "sun" : w === 5 ? "sat" : "";
                     const dateStr = `${monthForm.month}-${String(d).padStart(2, "0")}`;
                     const existing = (shiftsByDate[dateStr] || []).find(
                       (s) => s.staffId === monthForm.staffId,
@@ -526,7 +541,7 @@ export default function Shift() {
                           }
                         />
                         <span>
-                          {d}（{WEEK_LABEL[w]}）
+                          {d}
                           {existing && (
                             <span className="month-day-existing">
                               {existing.start}-{existing.end}
