@@ -2457,16 +2457,26 @@ table.grid th.num {
 }
 .month-day-check {
   display: flex;
-  align-items: center;
-  gap: 3px;
+  align-items: flex-start;
+  gap: 4px;
   font-size: 12.5px;
   justify-content: center;
   white-space: nowrap;
-  padding: 2px 0;
+  padding: 3px 2px;
+}
+.month-day-check input[type="checkbox"] {
+  margin-top: 2px;
 }
 .month-day-check.sun {
   color: #d6453d;
 }
 .month-day-check.sat {
   color: #2f6fd6;
+}
+.month-day-existing {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #e8822b;
+  margin-top: 1px;
 }
