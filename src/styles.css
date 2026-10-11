@@ -620,6 +620,16 @@ table.grid th.num {
   pointer-events: none;
 }
 
+/* 閉店時刻(23:40)以降：シフト外より少し濃いグレーで、営業時間外とひと目で分かるようにする */
+.tb-closed {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(71, 85, 105, 0.22);
+  z-index: 0;
+  pointer-events: none;
+}
+
 .tb-note {
   flex: 0 0 auto;
   padding: 0 12px;
@@ -780,6 +790,11 @@ table.grid th.num {
 .shift-cal-cell .cal-more {
   font-size: 9px;
   color: var(--muted);
+}
+
+/* 週間シフトは月間より1日あたりの情報量が多いため、セルを縦に広くとる */
+.shift-cal-grid-week .shift-cal-cell {
+  min-height: 140px;
 }
 
 /* ---------- レスポンシブ ---------- */
