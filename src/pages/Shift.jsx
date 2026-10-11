@@ -70,6 +70,19 @@ function emptyShift(date) {
   return { id: "", staffId: "", date, start: "11:00", end: "23:00", note: "" };
 }
 
+// 指定の月の日数を返す
+function daysInMonthOf(monthStr) {
+  const [y, m] = monthStr.split("-").map(Number);
+  return new Date(y, m, 0).getDate();
+}
+
+function emptyMonthForm(monthStr) {
+  const days = daysInMonthOf(monthStr);
+  const checked = {};
+  for (let d = 1; d <= days; d++) checked[d] = true;
+  return { staffId: "", month: monthStr, start: "11:00", end: "23:00", checked };
+}
+
 export default function Shift() {
   const { staff } = useApp();
   const [date, setDate] = useState(todayStr());
@@ -77,6 +90,7 @@ export default function Shift() {
   const [loading, setLoading] = useState(false);
   const [month, setMonth] = useState(() => date.slice(0, 7));
   const [form, setForm] = useState(null);
+  const [monthForm, setMonthForm] = useState(null);
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
@@ -127,6 +141,42 @@ export default function Shift() {
     } finally {
       setBusy(false);
     }
+  };
+
+  // 1ヶ月まとめて入力：チェックが入っている日だけ、同じ開始・終了時刻でシフトを一括登録する
+  const saveMonthShifts = async () => {
+    if (!monthForm.staffId) return alert("スタッフを選択してください");
+    const days = Object.entries(monthForm.checked)
+      .filter(([, v]) => v)
+      .map(([d]) => Number(d));
+    if (days.length === 0) return alert("日付を1つ以上選択してください");
+    setBusy(true);
+    try {
+      await Promise.all(
+        days.map((d) =>
+          api.saveShift({
+            id: "",
+            staffId: monthForm.staffId,
+            date: `${monthForm.month}-${String(d).padStart(2, "0")}`,
+            start: monthForm.start,
+            end: monthForm.end,
+            note: "",
+          }),
+        ),
+      );
+      await load();
+      setMonthForm(null);
+    } catch (e) {
+      alert(`保存失敗: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const toggleAllMonthDays = (value) => {
+    const next = {};
+    for (const d in monthForm.checked) next[d] = value;
+    setMonthForm({ ...monthForm, checked: next });
   };
 
   const del = async (id) => {
@@ -189,7 +239,10 @@ export default function Shift() {
             明日
           </button>
           <button className="btn sm" onClick={() => setForm(emptyShift(date))}>
-            ＋ シフト追加
+            ＋ シフト追加（単日）
+          </button>
+          <button className="btn sm ghost" onClick={() => setMonthForm(emptyMonthForm(month))}>
+            ＋ シフト追加（1ヶ月）
           </button>
         </div>
 
@@ -383,6 +436,93 @@ export default function Shift() {
               )}
               <button className="btn" onClick={save} disabled={busy}>
                 保存
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {monthForm && (
+        <div className="modal-overlay" onClick={overlayClose(() => setMonthForm(null))}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>シフトを1ヶ月まとめて追加</h3>
+            <div className="field">
+              <label>スタッフ</label>
+              <select
+                value={monthForm.staffId}
+                onChange={(e) => setMonthForm({ ...monthForm, staffId: e.target.value })}
+              >
+                <option value="">選択してください</option>
+                {staff
+                  .filter((s) => s.active)
+                  .map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div className="field">
+              <label>対象の月</label>
+              <input
+                type="month"
+                value={monthForm.month}
+                onChange={(e) => setMonthForm(emptyMonthForm(e.target.value))}
+              />
+            </div>
+            <div className="row">
+              <div className="field">
+                <label>開始</label>
+                <TimeInput10
+                  value={monthForm.start}
+                  onChange={(v) => setMonthForm({ ...monthForm, start: v })}
+                />
+              </div>
+              <div className="field">
+                <label>終了</label>
+                <TimeInput10
+                  value={monthForm.end}
+                  onChange={(v) => setMonthForm({ ...monthForm, end: v })}
+                />
+              </div>
+            </div>
+            <div className="field">
+              <label>対象日（チェックした日だけ登録されます）</label>
+              <div className="toolbar" style={{ marginTop: 0, marginBottom: 6 }}>
+                <button className="btn sm ghost" onClick={() => toggleAllMonthDays(true)}>
+                  全選択
+                </button>
+                <button className="btn sm ghost" onClick={() => toggleAllMonthDays(false)}>
+                  全解除
+                </button>
+              </div>
+              <div className="month-day-checks">
+                {Object.keys(monthForm.checked)
+                  .map(Number)
+                  .sort((a, b) => a - b)
+                  .map((d) => (
+                    <label key={d} className="check month-day-check">
+                      <input
+                        type="checkbox"
+                        checked={monthForm.checked[d]}
+                        onChange={(e) =>
+                          setMonthForm({
+                            ...monthForm,
+                            checked: { ...monthForm.checked, [d]: e.target.checked },
+                          })
+                        }
+                      />
+                      {d}
+                    </label>
+                  ))}
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="btn gray" onClick={() => setMonthForm(null)}>
+                キャンセル
+              </button>
+              <button className="btn" onClick={saveMonthShifts} disabled={busy}>
+                まとめて保存
               </button>
             </div>
           </div>
