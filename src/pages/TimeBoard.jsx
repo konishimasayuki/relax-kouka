@@ -59,6 +59,38 @@ export default function TimeBoard() {
     setUndoStack([]);
   }, [date, ready]);
 
+  // ローディング表示を出さずに裏で読み直す（1分おきの自動更新用）。
+  // 失敗しても画面は今の状態のまま（次回のタイマーでまた試す）。
+  const silentReload = async () => {
+    try {
+      const [rec, sh, br, att, bookingReqs] = await Promise.all([
+        api.reception(date),
+        api.shifts(),
+        api.breaks(),
+        api.attendance(date),
+        api.bookingRequests().catch(() => []),
+      ]);
+      setRecords(rec);
+      setShifts(sh);
+      setBreaks(br);
+      setAttendance(att);
+      setBookingRequests(bookingReqs);
+    } catch {
+      // ベストエフォート：失敗しても何もしない
+    }
+  };
+
+  // 1分おきに自動更新。ただし何かモーダルを開いて編集中・ドラッグ中はその邪魔をしないよう見送る。
+  useEffect(() => {
+    if (!ready) return;
+    const id = setInterval(() => {
+      if (sel || newOpen || breakModal || historyOpen || attendanceModal || acceptReq) return;
+      silentReload();
+    }, 60000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line
+  }, [date, ready, sel, newOpen, breakModal, historyOpen, attendanceModal, acceptReq]);
+
   const openBoardWindow = () => {
     window.open("/board", "relaxBoard", "width=1280,height=720,noopener");
   };
