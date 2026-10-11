@@ -509,6 +509,10 @@ export default function Shift() {
                   .map((d) => {
                     const w = weekdayOf(monthForm.month, d);
                     const wcls = w === 0 ? "sun" : w === 6 ? "sat" : "";
+                    const dateStr = `${monthForm.month}-${String(d).padStart(2, "0")}`;
+                    const existing = (shiftsByDate[dateStr] || []).find(
+                      (s) => s.staffId === monthForm.staffId,
+                    );
                     return (
                       <label key={d} className={`check month-day-check ${wcls}`}>
                         <input
@@ -521,7 +525,14 @@ export default function Shift() {
                             })
                           }
                         />
-                        {d}（{WEEK_LABEL[w]}）
+                        <span>
+                          {d}（{WEEK_LABEL[w]}）
+                          {existing && (
+                            <span className="month-day-existing">
+                              {existing.start}-{existing.end}
+                            </span>
+                          )}
+                        </span>
                       </label>
                     );
                   })}
