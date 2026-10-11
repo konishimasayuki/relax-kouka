@@ -59,7 +59,7 @@ export default function TimeBoard() {
     setUndoStack([]);
   }, [date, ready]);
 
-  // ローディング表示を出さずに裏で読み直す（1分おきの自動更新用）。
+  // ローディング表示を出さずに裏で読み直す（20秒おきの自動更新用）。
   // 失敗しても画面は今の状態のまま（次回のタイマーでまた試す）。
   const silentReload = async () => {
     try {
@@ -80,13 +80,13 @@ export default function TimeBoard() {
     }
   };
 
-  // 1分おきに自動更新。ただし何かモーダルを開いて編集中・ドラッグ中はその邪魔をしないよう見送る。
+  // 20秒おきに自動更新。ただし何かモーダルを開いて編集中・ドラッグ中はその邪魔をしないよう見送る。
   useEffect(() => {
     if (!ready) return;
     const id = setInterval(() => {
       if (sel || newOpen || breakModal || historyOpen || attendanceModal || acceptReq) return;
       silentReload();
-    }, 60000);
+    }, 20000);
     return () => clearInterval(id);
     // eslint-disable-next-line
   }, [date, ready, sel, newOpen, breakModal, historyOpen, attendanceModal, acceptReq]);
