@@ -170,13 +170,22 @@ export default function Shift() {
       <div className="card">
         <div className="toolbar">
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          <button className="btn sm ghost" onClick={() => setDate(shiftDateStr(date, -1))}>
+          <button
+            className={date === shiftDateStr(todayStr(), -1) ? "btn sm" : "btn sm ghost"}
+            onClick={() => setDate(shiftDateStr(todayStr(), -1))}
+          >
             昨日
           </button>
-          <button className="btn sm ghost" onClick={() => setDate(todayStr())}>
+          <button
+            className={date === todayStr() ? "btn sm" : "btn sm ghost"}
+            onClick={() => setDate(todayStr())}
+          >
             今日
           </button>
-          <button className="btn sm ghost" onClick={() => setDate(shiftDateStr(date, 1))}>
+          <button
+            className={date === shiftDateStr(todayStr(), 1) ? "btn sm" : "btn sm ghost"}
+            onClick={() => setDate(shiftDateStr(todayStr(), 1))}
+          >
             明日
           </button>
           <button className="btn sm" onClick={() => setForm(emptyShift(date))}>
