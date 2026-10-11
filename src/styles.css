@@ -2443,3 +2443,22 @@ table.grid th.num {
   padding: 8px 10px;
   border-top: 1px solid var(--border);
 }
+
+/* ---------- シフト：1ヶ月まとめ入力の日付チェックボックス一覧 ---------- */
+.month-day-checks {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+}
+.month-day-check {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12.5px;
+  justify-content: center;
+}
