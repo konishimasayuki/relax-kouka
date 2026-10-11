@@ -24,6 +24,19 @@ function fmt(d) {
   return `${y}-${m}-${day}`;
 }
 
+// 指定日を含む週（日曜始まり）の7日分を返す
+function buildWeekGrid(dateStr) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const base = new Date(y, m - 1, d);
+  const sunday = new Date(y, m - 1, d - base.getDay());
+  const cells = [];
+  for (let i = 0; i < 7; i++) {
+    const dd = new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate() + i);
+    cells.push({ day: dd.getDate(), dateStr: fmt(dd) });
+  }
+  return cells;
+}
+
 function buildMonthGrid(monthStr) {
   const [y, m] = monthStr.split("-").map(Number);
   const first = new Date(y, m - 1, 1);
@@ -44,6 +57,13 @@ function buildMonthGrid(monthStr) {
     next++;
   }
   return cells;
+}
+
+// "YYYY-MM-DD" 文字列から±N日した日付文字列を返す
+function shiftDateStr(dateStr, delta) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const next = new Date(y, m - 1, d + delta);
+  return fmt(next);
 }
 
 function emptyShift(date) {
@@ -86,6 +106,7 @@ export default function Shift() {
     return map;
   }, [shifts]);
 
+  const weekDays = useMemo(() => buildWeekGrid(date), [date]);
   const monthDays = useMemo(() => buildMonthGrid(month), [month]);
 
   const shiftMonth = (delta) => {
@@ -149,6 +170,15 @@ export default function Shift() {
       <div className="card">
         <div className="toolbar">
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <button className="btn sm ghost" onClick={() => setDate(shiftDateStr(date, -1))}>
+            昨日
+          </button>
+          <button className="btn sm ghost" onClick={() => setDate(todayStr())}>
+            今日
+          </button>
+          <button className="btn sm ghost" onClick={() => setDate(shiftDateStr(date, 1))}>
+            明日
+          </button>
           <button className="btn sm" onClick={() => setForm(emptyShift(date))}>
             ＋ シフト追加
           </button>
@@ -203,6 +233,46 @@ export default function Shift() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* ---- 週間シフト ---- */}
+      <div className="card">
+        <div className="toolbar cal-toolbar">
+          <button className="btn sm ghost" onClick={() => setDate(shiftDateStr(date, -7))}>
+            ◀
+          </button>
+          <strong>
+            {weekDays[0].dateStr} 〜 {weekDays[6].dateStr}
+          </strong>
+          <button className="btn sm ghost" onClick={() => setDate(shiftDateStr(date, 7))}>
+            ▶
+          </button>
+        </div>
+        <div className="shift-cal-head">
+          {WEEK_LABEL.map((w) => (
+            <div key={w}>{w}</div>
+          ))}
+        </div>
+        <div className="shift-cal-grid shift-cal-grid-week">
+          {weekDays.map((d) => {
+            const list = shiftsByDate[d.dateStr] || [];
+            return (
+              <div
+                key={d.dateStr}
+                className={`shift-cal-cell ${d.dateStr === date ? "today" : ""}`}
+                onClick={() => setDate(d.dateStr)}
+              >
+                <div className="cal-date">{d.day}</div>
+                {list.map((s) => (
+                  <div key={s.id} className="cal-shift" style={{ color: staffColor(s.staffId, staff) }}>
+                    {staffName(s.staffId)}
+                    {s.start.slice(0, 2)}-{s.end.slice(0, 2)}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* ---- 月間シフト ---- */}
