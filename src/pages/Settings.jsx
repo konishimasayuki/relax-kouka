@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useApp } from "../App.jsx";
-import { api, STAFF_COLOR_PALETTE, staffColor } from "../api.js";
+import { api, sortByOrder, STAFF_COLOR_PALETTE, staffColor } from "../api.js";
 import NotificationBell from "../components/NotificationBell.jsx";
 import { overlayClose } from "../modalUtils.js";
 
@@ -29,8 +29,9 @@ const emptyStaff = {
   isAdmin: false,
   active: true,
   commissionRate: 45,
+  order: 0,
 };
-const emptyFortuneStaff = { id: "", name: "", loginId: "", password: "" };
+const emptyFortuneStaff = { id: "", name: "", loginId: "", password: "", order: 0 };
 const emptyMaterial = { id: "", name: "", unit: "個", order: 0, genreId: "" };
 const emptyGenre = { id: "", name: "" };
 const emptyCoupon = { id: "", name: "", discountAmount: 0 };
@@ -227,6 +228,33 @@ export default function Settings() {
   };
 
   const reloadFortuneStaff = () => api.fortuneStaff().then(setFortuneStaffList);
+
+  const sortedStaff = sortByOrder(staff);
+  const sortedFortuneStaff = sortByOrder(fortuneStaffList);
+
+  // 隣同士のorderを入れ替えて並び替える（マッサージ・占い共通のロジック）
+  const moveStaffItem = async (list, index, direction, saveFn, reloadFn) => {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= list.length) return;
+    const a = list[index];
+    const b = list[targetIndex];
+    const aOrder = a.order ?? index;
+    const bOrder = b.order ?? targetIndex;
+    setBusy(true);
+    try {
+      await Promise.all([saveFn({ ...a, order: bOrder }), saveFn({ ...b, order: aOrder })]);
+      await reloadFn();
+    } catch (e) {
+      alert(`並び替え失敗: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const moveStaff = (index, direction) =>
+    moveStaffItem(sortedStaff, index, direction, api.saveStaff, refreshMaster);
+  const moveFortuneStaff = (index, direction) =>
+    moveStaffItem(sortedFortuneStaff, index, direction, api.saveFortuneStaff, reloadFortuneStaff);
 
   const saveFortuneStaff = async () => {
     if (!fortuneStaffForm.name.trim()) return alert("氏名を入力してください");
@@ -453,7 +481,7 @@ export default function Settings() {
             </button>
           </div>
           {staff.length === 0 && <div className="empty">スタッフが登録されていません</div>}
-          {staff.map((s) => (
+          {sortedStaff.map((s, i) => (
             <div className="card" key={s.id}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ flex: 1 }}>
@@ -479,6 +507,22 @@ export default function Settings() {
                     ID: {s.loginId} ／ PW: {s.password} ／ 生年月日: {s.birthday || "—"}
                   </div>
                 </div>
+                <button
+                  className="btn sm gray"
+                  style={{ padding: "2px 8px" }}
+                  disabled={busy}
+                  onClick={() => moveStaff(i, -1)}
+                >
+                  ▲
+                </button>
+                <button
+                  className="btn sm gray"
+                  style={{ padding: "2px 8px" }}
+                  disabled={busy}
+                  onClick={() => moveStaff(i, 1)}
+                >
+                  ▼
+                </button>
                 <button className="btn sm ghost" onClick={() => setStaffForm({ ...s })}>
                   編集
                 </button>
@@ -503,7 +547,7 @@ export default function Settings() {
           {fortuneStaffList.length === 0 && (
             <div className="empty">占いスタッフが登録されていません</div>
           )}
-          {fortuneStaffList.map((s) => (
+          {sortedFortuneStaff.map((s, i) => (
             <div className="card" key={s.id}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ flex: 1 }}>
@@ -512,6 +556,22 @@ export default function Settings() {
                     ID: {s.loginId} ／ PW: {s.password}
                   </div>
                 </div>
+                <button
+                  className="btn sm gray"
+                  style={{ padding: "2px 8px" }}
+                  disabled={busy}
+                  onClick={() => moveFortuneStaff(i, -1)}
+                >
+                  ▲
+                </button>
+                <button
+                  className="btn sm gray"
+                  style={{ padding: "2px 8px" }}
+                  disabled={busy}
+                  onClick={() => moveFortuneStaff(i, 1)}
+                >
+                  ▼
+                </button>
                 <button className="btn sm ghost" onClick={() => setFortuneStaffForm({ ...s })}>
                   編集
                 </button>
