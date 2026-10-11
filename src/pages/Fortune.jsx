@@ -60,6 +60,7 @@ function emptyReservation(date) {
     payment: "現金",
     stayBuilding: "",
     room: "",
+    email: "",
     checked: false,
     specialNote: "",
   };
@@ -109,6 +110,7 @@ export default function Fortune() {
   const [month, setMonth] = useState(() => todayStr().slice(0, 7));
   const [shiftForm, setShiftForm] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [confirmMailBusy, setConfirmMailBusy] = useState(false);
 
   const [date, setDate] = useState(todayStr());
   const [reservations, setReservations] = useState([]);
@@ -221,6 +223,7 @@ export default function Fortune() {
         startTime: r.desiredTime || "",
         stayBuilding: r.stayBuilding || "",
         room: r.room || "",
+        email: r.email || "",
         payment: "現金",
         gender: [],
         specialNote: "【予約申請より受入】" + (r.course || ""),
@@ -354,6 +357,30 @@ export default function Fortune() {
     width: Math.max((endMin - startMin) * FTB_MIN_W, 0),
   });
 
+  // 占い予約の確定メールを送信する（送信済みなら再送の確認を挟む。二重送信の事故を防ぐため）
+  const sendConfirmEmailForRes = async () => {
+    if (!resForm?.email) return;
+    if (resForm.confirmEmailSentAt) {
+      const ok = confirm(
+        `このお客様には ${new Date(resForm.confirmEmailSentAt).toLocaleString(
+          "ja-JP",
+        )} に確定メールを送信済みです。もう一度送信しますか？`,
+      );
+      if (!ok) return;
+    }
+    setConfirmMailBusy(true);
+    try {
+      const { record: savedRecord } = await api.sendConfirmEmail(resForm, "fortune");
+      setResForm(savedRecord);
+      setReservations((prev) => prev.map((x) => (x.id === savedRecord.id ? savedRecord : x)));
+      alert("確定メールを送信しました。");
+    } catch (e) {
+      alert(`送信失敗: ${e.message}`);
+    } finally {
+      setConfirmMailBusy(false);
+    }
+  };
+
   const saveReservation = async () => {
     if (!resForm.customerName.trim()) return alert("お客様名を入力してください");
     setBusy(true);
@@ -456,6 +483,11 @@ export default function Fortune() {
                                   特
                                 </span>
                               )}
+                              {r.email && !r.confirmEmailSentAt && (
+                                <span className="bl-unsent-badge" title="確定メール未送信">
+                                  未
+                                </span>
+                              )}
                             </div>
                             <div className="bl-name">{r.customerName}様</div>
                           </div>
@@ -501,6 +533,11 @@ export default function Fortune() {
                             {r.specialNote?.trim() && (
                               <span className="bl-special-badge" title={r.specialNote}>
                                 特
+                              </span>
+                            )}
+                            {r.email && !r.confirmEmailSentAt && (
+                              <span className="bl-unsent-badge" title="確定メール未送信">
+                                未
                               </span>
                             )}
                           </div>
@@ -883,6 +920,44 @@ export default function Fortune() {
                 />
               </div>
             </div>
+
+            <div className="field">
+              <label>メールアドレス</label>
+              <input
+                type="email"
+                value={resForm.email || ""}
+                placeholder="お客様のメールアドレス（予約確定メールの送信先）"
+                onChange={(e) => setResForm({ ...resForm, email: e.target.value })}
+              />
+            </div>
+
+            <div className="field">
+              <label>予約確定メール</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <button
+                  className="btn sm"
+                  disabled={confirmMailBusy || !resForm.email}
+                  onClick={sendConfirmEmailForRes}
+                >
+                  ✉️ {resForm.confirmEmailSentAt ? "確定メールを再送する" : "確定メールを送る"}
+                </button>
+                {resForm.confirmEmailSentAt ? (
+                  <span className="muted" style={{ fontSize: 12.5 }}>
+                    送信済み：{new Date(resForm.confirmEmailSentAt).toLocaleString("ja-JP")}
+                  </span>
+                ) : (
+                  <span className="muted" style={{ fontSize: 12.5 }}>
+                    未送信
+                  </span>
+                )}
+              </div>
+              {!resForm.email && (
+                <span className="muted" style={{ fontSize: 12 }}>
+                  メールアドレスが未入力のため送信できません
+                </span>
+              )}
+            </div>
+
             <div className="field">
               <label>メモ</label>
               <input
