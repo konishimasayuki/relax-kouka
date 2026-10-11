@@ -2445,24 +2445,51 @@ table.grid th.num {
 }
 
 /* ---------- シフト：1ヶ月まとめ入力の日付チェックボックス一覧 ---------- */
+.month-day-cal-head {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+  padding: 0 8px;
+  margin-top: 6px;
+}
+.month-day-cal-head .sun {
+  color: var(--red);
+}
+.month-day-cal-head .sat {
+  color: var(--blue);
+}
+
 .month-day-checks {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
-  gap: 5px;
-  max-height: 240px;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  max-height: 280px;
   overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 8px;
+  margin-top: 4px;
+}
+.month-day-blank {
+  visibility: hidden;
 }
 .month-day-check {
   display: flex;
-  align-items: flex-start;
-  gap: 4px;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
   font-size: 12.5px;
-  justify-content: center;
+  justify-content: flex-start;
   white-space: nowrap;
-  padding: 3px 2px;
+  padding: 4px 2px;
+  border-radius: 6px;
+}
+.month-day-check:hover {
+  background: var(--bg-soft);
 }
 .month-day-check input[type="checkbox"] {
   margin-top: 2px;
