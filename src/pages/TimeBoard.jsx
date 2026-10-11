@@ -1101,6 +1101,8 @@ export default function TimeBoard() {
               <br />
               電話番号：{acceptReq.phone || "-"}
               <br />
+              メールアドレス：{acceptReq.email || "-"}
+              <br />
               メニュー：{acceptReq.menu || "-"}　オプション：{acceptReq.option || "なし"}
               <br />
               金額：{acceptReq.price || "-"}
