@@ -391,7 +391,8 @@
     color: var(--ink-soft);
     margin-bottom: 6px;
   }
-  .field-group input {
+  .field-group input,
+  .field-group select {
     width: 100%;
     border: 1px solid var(--stone);
     border-radius: 10px;
@@ -401,7 +402,8 @@
     background: var(--white);
     color: var(--ink);
   }
-  .field-group input:focus {
+  .field-group input:focus,
+  .field-group select:focus {
     outline: none;
     border-color: var(--wine);
   }
@@ -993,6 +995,15 @@
       <input type="email" id="custEmail" placeholder="example@mail.com">
     </div>
     <div class="field-group">
+      <label>宿泊棟</label>
+      <select id="custStayBuilding">
+        <option value="">選択してください</option>
+        <option value="宙館">宙館</option>
+        <option value="星館">星館</option>
+        <option value="虹館">虹館</option>
+      </select>
+    </div>
+    <div class="field-group">
       <label>お部屋番号</label>
       <input type="text" id="custRoom" placeholder="例：705">
     </div>
@@ -1145,6 +1156,15 @@
     <div class="fortune-field-group">
       <label>メールアドレス</label>
       <input type="email" id="fEmail" placeholder="example@mail.com">
+    </div>
+    <div class="fortune-field-group">
+      <label>宿泊棟</label>
+      <select id="fStayBuilding">
+        <option value="">選択してください</option>
+        <option value="宙館">宙館</option>
+        <option value="星館">星館</option>
+        <option value="虹館">虹館</option>
+      </select>
     </div>
     <div class="fortune-field-group">
       <label>お部屋番号</label>
@@ -1586,9 +1606,10 @@
       const name = document.getElementById("custName").value.trim();
       const phone = document.getElementById("custPhone").value.trim();
       const email = document.getElementById("custEmail").value.trim();
+      const stayBuilding = document.getElementById("custStayBuilding").value;
       const room = document.getElementById("custRoom").value.trim();
-      if (!name || !phone || !room || !email) {
-        alert("お名前・お電話番号・メールアドレス・お部屋番号をご入力ください");
+      if (!name || !phone || !room || !email || !stayBuilding) {
+        alert("お名前・お電話番号・メールアドレス・宿泊棟・お部屋番号をご入力ください");
         return;
       }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -1602,6 +1623,7 @@
         name,
         phone,
         email,
+        stayBuilding,
         room,
         storeId: STORES[currentStore]?.realId || "",
         desiredDate: isoDateOf(state.day),
@@ -1634,11 +1656,12 @@
     const name = document.getElementById("fName").value.trim();
     const phone = document.getElementById("fPhone").value.trim();
     const email = document.getElementById("fEmail").value.trim();
+    const stayBuilding = document.getElementById("fStayBuilding").value;
     const room = document.getElementById("fRoom").value.trim();
     const date = document.getElementById("fDate").value;
     const time = document.getElementById("fTime").value;
-    if (!name || !phone || !room || !date || !time || !email) {
-      alert("ご希望日・ご希望時間・お名前・お電話番号・メールアドレス・お部屋番号をご入力ください");
+    if (!name || !phone || !room || !date || !time || !email || !stayBuilding) {
+      alert("ご希望日・ご希望時間・お名前・お電話番号・メールアドレス・宿泊棟・お部屋番号をご入力ください");
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -1653,6 +1676,7 @@
       name,
       phone,
       email,
+      stayBuilding,
       room,
       desiredDate: date,
       desiredTime: time,
