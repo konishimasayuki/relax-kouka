@@ -141,6 +141,28 @@ export default function Inventory() {
     }
   };
 
+  // 同じジャンル内で隣同士のorderを入れ替えて並び替える
+  const moveMaterial = async (groupItems, index, direction) => {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= groupItems.length) return;
+    const a = groupItems[index];
+    const b = groupItems[targetIndex];
+    const aOrder = a.order ?? index;
+    const bOrder = b.order ?? targetIndex;
+    setBusy(true);
+    try {
+      await Promise.all([
+        api.saveMaterial({ ...a, order: bOrder }),
+        api.saveMaterial({ ...b, order: aOrder }),
+      ]);
+      await load();
+    } catch (e) {
+      alert(`並び替え失敗: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const delLog = async (id) => {
     if (!confirm("この履歴を取り消しますか？（在庫数に反映されます）")) return;
     await api.deleteStockLog(id);
@@ -209,10 +231,11 @@ export default function Inventory() {
                     ))}
                     <th className="num">合計</th>
                     <th />
+                    <th />
                   </tr>
                 </thead>
                 <tbody>
-                  {group.items.map((m) => {
+                  {group.items.map((m, i) => {
                     const perStore = stockMap[m.id] || {};
                     const total = activeStores.reduce((s, st) => s + (perStore[st.id] || 0), 0);
                     return (
@@ -226,6 +249,24 @@ export default function Inventory() {
                         ))}
                         <td className="num">
                           <strong>{total}</strong>
+                        </td>
+                        <td>
+                          <button
+                            className="btn sm gray"
+                            style={{ padding: "2px 8px" }}
+                            disabled={busy}
+                            onClick={() => moveMaterial(group.items, i, -1)}
+                          >
+                            ▲
+                          </button>
+                          <button
+                            className="btn sm gray"
+                            style={{ padding: "2px 8px" }}
+                            disabled={busy}
+                            onClick={() => moveMaterial(group.items, i, 1)}
+                          >
+                            ▼
+                          </button>
                         </td>
                         <td>
                           <button
