@@ -77,6 +77,7 @@ const FTB_HOUR_END = 24; // 表示ラベルは 11〜23
 const FTB_HOUR_W = 70;
 const FTB_MIN_W = FTB_HOUR_W / 60;
 const FTB_STAFF_COL_W = 88;
+const FTB_ROW_H = 52; // .tb-row の高さ（styles.cssと一致させること）
 
 function toMin(hhmm) {
   if (!hhmm) return null;
@@ -318,6 +319,31 @@ export default function Fortune() {
   for (let m = 0; m <= ftbTotalMin; m += 10) {
     ftbGridMarks.push({ pos: m * FTB_MIN_W, major: m % 60 === 0 });
   }
+  // 担当未定（staffId未設定）の予約を抽出し、時間が重なる場合は段を分けて並べる
+  const unassignedApps = useMemo(() => view.filter((r) => !r.staffId && r.startTime), [view]);
+  const unassignedLaneOf = useMemo(() => {
+    const map = new Map();
+    const laneEnds = [];
+    for (const r of unassignedApps) {
+      const s = toMin(r.startTime);
+      const e = s + (r.minutes || 30);
+      let placed = false;
+      for (let i = 0; i < laneEnds.length; i++) {
+        if (laneEnds[i] <= s) {
+          laneEnds[i] = e;
+          map.set(r.id, i);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        laneEnds.push(e);
+        map.set(r.id, laneEnds.length - 1);
+      }
+    }
+    return { map, laneCount: laneEnds.length || 1 };
+  }, [unassignedApps]);
+
   const ftbBlockStyle = (startMin, minutes, color) => ({
     left: (startMin - FTB_HOUR_START * 60) * FTB_MIN_W,
     width: Math.max(minutes * FTB_MIN_W - 2, 10),
@@ -366,7 +392,7 @@ export default function Fortune() {
           </button>
         </div>
 
-        {staffIdsToday.length === 0 ? (
+        {staffIdsToday.length === 0 && unassignedApps.length === 0 ? (
           <div className="empty">本日出勤予定のスタッフがいません（下のシフト表で登録してください）</div>
         ) : (
           <div className="tb-scroll">
@@ -439,6 +465,52 @@ export default function Fortune() {
                   </div>
                 );
               })}
+
+              {unassignedApps.length > 0 && (
+                <div
+                  className="tb-row"
+                  style={{ height: FTB_ROW_H * unassignedLaneOf.laneCount }}
+                >
+                  <div className="tb-bed" style={{ width: FTB_STAFF_COL_W }}>
+                    <span className="b-name muted">未定</span>
+                  </div>
+                  <div className="tb-lane" style={{ width: ftbLaneW }}>
+                    {ftbGridMarks.map((g, i) => (
+                      <div
+                        className={g.major ? "tb-gridline" : "tb-gridline-minor"}
+                        key={i}
+                        style={{ left: g.pos }}
+                      />
+                    ))}
+                    {unassignedApps.map((r) => {
+                      const start = toMin(r.startTime);
+                      const lane = unassignedLaneOf.map.get(r.id) || 0;
+                      return (
+                        <div
+                          className="tb-block"
+                          key={r.id}
+                          style={{
+                            ...ftbBlockStyle(start, r.minutes || 30, "#64748b"),
+                            top: lane * FTB_ROW_H + 4,
+                            height: FTB_ROW_H - 8,
+                          }}
+                          onClick={() => setResForm({ ...r })}
+                        >
+                          <div className="bl-course">
+                            {r.minutes}分
+                            {r.specialNote?.trim() && (
+                              <span className="bl-special-badge" title={r.specialNote}>
+                                特
+                              </span>
+                            )}
+                          </div>
+                          <div className="bl-name">{r.customerName}様</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {pendingFortuneRequests.length > 0 && (
                 <div className="tb-row tb-row-bookingreq">
