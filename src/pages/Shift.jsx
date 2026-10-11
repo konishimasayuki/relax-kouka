@@ -76,6 +76,12 @@ function daysInMonthOf(monthStr) {
   return new Date(y, m, 0).getDate();
 }
 
+// 指定の月・日の曜日ラベルを返す（0=日,6=土）
+function weekdayOf(monthStr, day) {
+  const [y, m] = monthStr.split("-").map(Number);
+  return new Date(y, m - 1, day).getDay();
+}
+
 function emptyMonthForm(monthStr) {
   const days = daysInMonthOf(monthStr);
   const checked = {};
@@ -500,21 +506,25 @@ export default function Shift() {
                 {Object.keys(monthForm.checked)
                   .map(Number)
                   .sort((a, b) => a - b)
-                  .map((d) => (
-                    <label key={d} className="check month-day-check">
-                      <input
-                        type="checkbox"
-                        checked={monthForm.checked[d]}
-                        onChange={(e) =>
-                          setMonthForm({
-                            ...monthForm,
-                            checked: { ...monthForm.checked, [d]: e.target.checked },
-                          })
-                        }
-                      />
-                      {d}
-                    </label>
-                  ))}
+                  .map((d) => {
+                    const w = weekdayOf(monthForm.month, d);
+                    const wcls = w === 0 ? "sun" : w === 6 ? "sat" : "";
+                    return (
+                      <label key={d} className={`check month-day-check ${wcls}`}>
+                        <input
+                          type="checkbox"
+                          checked={monthForm.checked[d]}
+                          onChange={(e) =>
+                            setMonthForm({
+                              ...monthForm,
+                              checked: { ...monthForm.checked, [d]: e.target.checked },
+                            })
+                          }
+                        />
+                        {d}（{WEEK_LABEL[w]}）
+                      </label>
+                    );
+                  })}
               </div>
             </div>
             <div className="modal-actions">
