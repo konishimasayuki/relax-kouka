@@ -546,6 +546,18 @@ export default function BoardView() {
 
             <div className="row">
               <div className="field">
+                <label>宿泊棟</label>
+                <select
+                  value={sel.stayBuilding || ""}
+                  onChange={(e) => updateSel({ stayBuilding: e.target.value })}
+                >
+                  <option value="">未選択</option>
+                  <option value="宙館">宙館</option>
+                  <option value="星館">星館</option>
+                  <option value="虹館">虹館</option>
+                </select>
+              </div>
+              <div className="field">
                 <label>部屋番号</label>
                 <input value={sel.room || ""} onChange={(e) => updateSel({ room: e.target.value })} />
               </div>
