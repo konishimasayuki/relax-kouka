@@ -81,6 +81,9 @@ export default function TimeBoard() {
   };
 
   // 20秒おきに自動更新。ただし何かモーダルを開いて編集中・ドラッグ中はその邪魔をしないよう見送る。
+  // ※ブラウザは「裏に回っているタブ」の定期更新を大幅に遅らせる仕様があるため、
+  // 　裏に回っていた場合はこのタイマーが期待通りの間隔で動かないことがある。
+  // 　そのための保険として、タブが前面に戻ってきた瞬間にも即座に読み直す（下のuseEffect）。
   useEffect(() => {
     if (!ready) return;
     const id = setInterval(() => {
@@ -88,6 +91,24 @@ export default function TimeBoard() {
       silentReload();
     }, 20000);
     return () => clearInterval(id);
+    // eslint-disable-next-line
+  }, [date, ready, sel, newOpen, breakModal, historyOpen, attendanceModal, acceptReq]);
+
+  // タブが裏に回っていて定期更新が遅れていても、前面に戻ってきた瞬間・ウィンドウに
+  // フォーカスが戻った瞬間に必ず最新状態に追いつくようにする。
+  useEffect(() => {
+    if (!ready) return;
+    const onWake = () => {
+      if (document.hidden) return;
+      if (sel || newOpen || breakModal || historyOpen || attendanceModal || acceptReq) return;
+      silentReload();
+    };
+    document.addEventListener("visibilitychange", onWake);
+    window.addEventListener("focus", onWake);
+    return () => {
+      document.removeEventListener("visibilitychange", onWake);
+      window.removeEventListener("focus", onWake);
+    };
     // eslint-disable-next-line
   }, [date, ready, sel, newOpen, breakModal, historyOpen, attendanceModal, acceptReq]);
 
