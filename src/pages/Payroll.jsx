@@ -65,8 +65,17 @@ export default function Payroll() {
 
   const selectedStaff = staff.find((s) => s.id === staffId);
 
-  const rateOf = (day) =>
-    rateOverrides.find((r) => r.staffId === staffId && r.month === month && r.day === day);
+  // BODY RECESS / Ceada は独立した表なので、上書きした歩合率も店舗グループごとに別物として扱う。
+  // groupが保存されていない過去データ（この区別を導入する前のもの）は、
+  // どちらの表からも見える状態のまま残し、次にどちらかで編集した時点で片方に確定する。
+  const rateOf = (day, group) =>
+    rateOverrides.find(
+      (r) =>
+        r.staffId === staffId &&
+        r.month === month &&
+        r.day === day &&
+        (!r.group || r.group === group),
+    );
 
   // "HH:MM" を分に変換
   const toMinutes = (hhmm) => {
@@ -126,7 +135,7 @@ export default function Payroll() {
       );
       cumTaxIn += taxIn;
 
-      const override = rateOf(day);
+      const override = rateOf(day, commissionKey);
       const autoRate = autoRateFor(date, commissionKey);
       const rate = override ? Number(override.rate) : autoRate;
       const commission = rate === null ? 0 : Math.round(taxEx * (rate / 100));
@@ -181,15 +190,16 @@ export default function Payroll() {
   const totalsBodyRecess = useMemo(() => sumRows(rowsBodyRecess), [rowsBodyRecess]);
   const totalsCeada = useMemo(() => sumRows(rowsCeada), [rowsCeada]);
 
-  const saveRate = async (day, newRate) => {
+  const saveRate = async (day, newRate, group) => {
     setSavingDay(day);
     try {
-      const existing = rateOf(day);
+      const existing = rateOf(day, group);
       await api.savePayrollRate({
         id: existing?.id || "",
         staffId,
         month,
         day,
+        group,
         rate: Number(newRate),
       });
       const rates = await api.payrollRates();
@@ -229,14 +239,20 @@ export default function Payroll() {
         <div className="empty">読み込み中…</div>
       ) : (
         <>
-          {renderSheet("BODY RECESS（パレス／宙館）", rowsBodyRecess, totalsBodyRecess, BILLING_COMPANY)}
-          {renderSheet("Spa the Ceada", rowsCeada, totalsCeada, "株式会社Spa the Ceada")}
+          {renderSheet(
+            "BODY RECESS（パレス／宙館）",
+            rowsBodyRecess,
+            totalsBodyRecess,
+            BILLING_COMPANY,
+            "bodyRecess",
+          )}
+          {renderSheet("Spa the Ceada", rowsCeada, totalsCeada, "株式会社Spa the Ceada", "ceada")}
         </>
       )}
     </div>
   );
 
-  function renderSheet(storeLabel, rows, totals, billingCompany) {
+  function renderSheet(storeLabel, rows, totals, billingCompany, group) {
     return (
       <div className="sheet-scroll payroll-sheet" style={{ marginBottom: 24 }}>
         <div className="sheet">
@@ -287,7 +303,7 @@ export default function Payroll() {
                         value={r.rate === null ? "" : r.rate}
                         placeholder="-"
                         disabled={savingDay === r.day}
-                        onChange={(e) => saveRate(r.day, e.target.value)}
+                        onChange={(e) => saveRate(r.day, e.target.value, group)}
                       />
                       %
                     </span>
