@@ -5,6 +5,7 @@ import BreakModal from "../components/BreakModal.jsx";
 import CallTranscriptWidget from "../components/CallTranscriptWidget.jsx";
 import NewReceptionModal from "../components/NewReceptionModal.jsx";
 import TimeBoardGrid from "../components/TimeBoardGrid.jsx";
+import TimeInput1 from "../components/TimeInput1.jsx";
 import TimeInput10 from "../components/TimeInput10.jsx";
 import { overlayClose } from "../modalUtils.js";
 
@@ -936,7 +937,7 @@ export default function TimeBoard() {
                     className="modal-actions"
                     style={{ justifyContent: "center", marginBottom: 4 }}
                   >
-                    <TimeInput10 value={editCheckInTime} onChange={setEditCheckInTime} />
+                    <TimeInput1 value={editCheckInTime} onChange={setEditCheckInTime} />
                   </div>
                   {rec.leaveTime && (
                     <p className="muted" style={{ marginTop: 0 }}>
