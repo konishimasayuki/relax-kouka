@@ -581,6 +581,11 @@ export default function TimeBoardGrid({
                             特
                           </span>
                         )}
+                        {r.email && !r.confirmEmailSentAt && (
+                          <span className="bl-unsent-badge" title="確定メール未送信">
+                            未
+                          </span>
+                        )}
                       </div>
                       <div className="bl-name">{r.customerName}様</div>
                     </div>,
@@ -680,6 +685,11 @@ export default function TimeBoardGrid({
                       {r.note?.trim() && (
                         <span className="bl-special-badge" title={r.note}>
                           特
+                        </span>
+                      )}
+                      {r.email && !r.confirmEmailSentAt && (
+                        <span className="bl-unsent-badge" title="確定メール未送信">
+                          未
                         </span>
                       )}
                     </div>
