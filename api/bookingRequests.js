@@ -40,6 +40,7 @@ function lineTextFor(r, storeName) {
       `お名前: ${r.name || "-"}`,
       `お電話番号: ${r.phone || "-"}`,
       `メールアドレス: ${r.email || "-"}`,
+      `宿泊棟: ${r.stayBuilding || "-"}`,
       `お部屋番号: ${r.room || "-"}`,
       `メニュー: ${r.menu || "-"}`,
       `オプション: ${r.option || "なし"}`,
@@ -54,6 +55,7 @@ function lineTextFor(r, storeName) {
     `お名前: ${r.name || "-"}`,
     `お電話番号: ${r.phone || "-"}`,
     `メールアドレス: ${r.email || "-"}`,
+    `宿泊棟: ${r.stayBuilding || "-"}`,
     `お部屋番号: ${r.room || "-"}`,
     `人数: ${r.people || "-"}`,
   ].join("\n");
