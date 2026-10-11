@@ -6,11 +6,14 @@ import {
   DONE_BODY_DEFAULT,
 } from "./_emailTemplates.js";
 
+// マッサージ（受付レコード）・占い（占い予約）の両方に対応する。
+// typeが"fortune"ならfortunereservation名前空間・占い用の項目で、
+// それ以外（省略時含む）は今まで通りマッサージの受付レコードとして扱う。
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   try {
     if (req.method !== "POST") return res.status(405).end();
-    const { record } = req.body || {};
+    const { record, type } = req.body || {};
     if (!record?.id || !record?.date) {
       return res.status(400).json({ error: "record（id・date）が必要です" });
     }
@@ -23,19 +26,25 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Resend APIキーが未設定です（設定タブで入力してください）" });
     }
 
+    const isFortune = type === "fortune";
+
     let storeName = "";
-    if (record.storeId) {
+    if (isFortune) {
+      storeName = "杉の泉";
+    } else if (record.storeId) {
       const stores = await listAll("store").catch(() => []);
       storeName = stores.find((s) => s.id === record.storeId)?.name || "";
     }
 
-    const details = [
-      `メニュー: ${record.course?.displayName || record.course?.name || record.course?.freeText || "-"}`,
-      record.course?.optionName ? `オプション: ${record.course.optionName}` : null,
-      `金額: ¥${Number(record.amount || 0).toLocaleString("ja-JP")}`,
-    ]
-      .filter(Boolean)
-      .join("\n");
+    const details = isFortune
+      ? [`コース: ${record.minutes ? `${record.minutes}分` : "-"}`, `金額: ¥${Number(record.price || 0).toLocaleString("ja-JP")}`].join("\n")
+      : [
+          `メニュー: ${record.course?.displayName || record.course?.name || record.course?.freeText || "-"}`,
+          record.course?.optionName ? `オプション: ${record.course.optionName}` : null,
+          `金額: ¥${Number(record.amount || 0).toLocaleString("ja-JP")}`,
+        ]
+          .filter(Boolean)
+          .join("\n");
 
     const subject = config.doneEmailSubject || DONE_SUBJECT_DEFAULT;
     const body = fillTemplate(config.doneEmailBody || DONE_BODY_DEFAULT, {
@@ -49,7 +58,7 @@ export default async function handler(req, res) {
     await sendEmail(config.resendApiKey, config.resendFromEmail, record.email, subject, body);
 
     const sentAt = new Date().toISOString();
-    const ns = `rec:${record.date}`;
+    const ns = isFortune ? `fortunereservation:${record.date}` : `rec:${record.date}`;
     const updated = { ...record, confirmEmailSentAt: sentAt };
     const saved = await saveItem(ns, updated);
 
