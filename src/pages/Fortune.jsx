@@ -977,6 +977,28 @@ export default function Fortune() {
               <button className="btn gray" onClick={() => setResForm(null)}>
                 キャンセル
               </button>
+              {resForm.id && (
+                <button
+                  className="btn danger"
+                  onClick={async () => {
+                    if (!confirm("この予約を削除しますか？")) return;
+                    setBusy(true);
+                    try {
+                      await api.deleteFortuneReservation(resForm.id, date);
+                      await loadReservations();
+                      await loadWeekCounts();
+                      setResForm(null);
+                    } catch (e) {
+                      alert(`削除失敗: ${e.message}`);
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                  disabled={busy}
+                >
+                  削除
+                </button>
+              )}
               <button className="btn" onClick={saveReservation} disabled={busy}>
                 保存
               </button>
