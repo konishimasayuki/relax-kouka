@@ -594,7 +594,17 @@ export default function TimeBoardGrid({
                           </span>
                         )}
                       </div>
-                      <div className="bl-name">{r.customerName}様</div>
+                      <div className="bl-name">
+                        {r.customerName}様
+                        {r.calledAt && (
+                          <span
+                            className="bl-called-badge"
+                            title={`電話連絡済み：${new Date(r.calledAt).toLocaleString("ja-JP")}`}
+                          >
+                            📞済
+                          </span>
+                        )}
+                      </div>
                     </div>,
                     optionMins > 0 && (
                       <div
@@ -709,7 +719,17 @@ export default function TimeBoardGrid({
                         </span>
                       )}
                     </div>
-                    <div className="bl-name">{r.customerName}様</div>
+                    <div className="bl-name">
+                      {r.customerName}様
+                      {r.calledAt && (
+                        <span
+                          className="bl-called-badge"
+                          title={`電話連絡済み：${new Date(r.calledAt).toLocaleString("ja-JP")}`}
+                        >
+                          📞済
+                        </span>
+                      )}
+                    </div>
                   </div>,
                   optionMins > 0 && (
                     <div
