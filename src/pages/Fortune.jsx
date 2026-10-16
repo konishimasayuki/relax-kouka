@@ -488,6 +488,14 @@ export default function Fortune() {
                                   未
                                 </span>
                               )}
+                              {r.confirmEmailSentAt && (
+                                <span
+                                  className="bl-sent-badge"
+                                  title={`確定メール送信済み：${new Date(r.confirmEmailSentAt).toLocaleString("ja-JP")}`}
+                                >
+                                  メ済
+                                </span>
+                              )}
                             </div>
                             <div className="bl-name">{r.customerName}様</div>
                           </div>
@@ -538,6 +546,14 @@ export default function Fortune() {
                             {r.email && !r.confirmEmailSentAt && (
                               <span className="bl-unsent-badge" title="確定メール未送信">
                                 未
+                              </span>
+                            )}
+                            {r.confirmEmailSentAt && (
+                              <span
+                                className="bl-sent-badge"
+                                title={`確定メール送信済み：${new Date(r.confirmEmailSentAt).toLocaleString("ja-JP")}`}
+                              >
+                                メ済
                               </span>
                             )}
                           </div>
