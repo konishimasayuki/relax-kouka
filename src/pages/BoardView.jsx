@@ -276,6 +276,19 @@ export default function BoardView() {
     // eslint-disable-next-line
   }, [undo, sel]);
 
+  // 電話連絡したかどうかのチェック。チェックを入れた/外した瞬間にその場で保存する。
+  const toggleCalled = async (checked) => {
+    const updated = { ...sel, calledAt: checked ? new Date().toISOString() : "" };
+    setSel(updated);
+    try {
+      const saved = await api.saveReception(updated);
+      setSel(saved);
+      setRecords((prev) => prev.map((x) => (x.id === saved.id ? saved : x)));
+    } catch (e) {
+      alert(`保存失敗: ${e.message}`);
+    }
+  };
+
   const sendConfirmEmailForSel = async () => {
     if (!sel?.email) return;
     if (sel.confirmEmailSentAt) {
@@ -624,6 +637,22 @@ export default function BoardView() {
                   <span className="muted" style={{ fontSize: 12.5 }}>未送信</span>
                 )}
               </div>
+            </div>
+
+            <div className="field">
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={!!sel.calledAt}
+                  onChange={(e) => toggleCalled(e.target.checked)}
+                />
+                電話連絡済み
+              </label>
+              {sel.calledAt && (
+                <span className="muted" style={{ fontSize: 12.5, marginLeft: 8 }}>
+                  {new Date(sel.calledAt).toLocaleString("ja-JP")}
+                </span>
+              )}
             </div>
 
             <div className="modal-actions">
