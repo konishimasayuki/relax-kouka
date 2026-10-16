@@ -511,7 +511,17 @@ export default function Fortune() {
                                 </span>
                               )}
                             </div>
-                            <div className="bl-name">{r.customerName}様</div>
+                            <div className="bl-name">
+                              {r.customerName}様
+                              {r.calledAt && (
+                                <span
+                                  className="bl-called-badge"
+                                  title={`電話連絡済み：${new Date(r.calledAt).toLocaleString("ja-JP")}`}
+                                >
+                                  📞済
+                                </span>
+                              )}
+                            </div>
                           </div>
                         );
                       })}
@@ -571,7 +581,17 @@ export default function Fortune() {
                               </span>
                             )}
                           </div>
-                          <div className="bl-name">{r.customerName}様</div>
+                          <div className="bl-name">
+                            {r.customerName}様
+                            {r.calledAt && (
+                              <span
+                                className="bl-called-badge"
+                                title={`電話連絡済み：${new Date(r.calledAt).toLocaleString("ja-JP")}`}
+                              >
+                                📞済
+                              </span>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
