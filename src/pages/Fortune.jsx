@@ -61,6 +61,7 @@ function emptyReservation(date) {
     stayBuilding: "",
     room: "",
     email: "",
+    calledAt: "",
     checked: false,
     specialNote: "",
   };
@@ -358,6 +359,19 @@ export default function Fortune() {
   });
 
   // 占い予約の確定メールを送信する（送信済みなら再送の確認を挟む。二重送信の事故を防ぐため）
+  // 電話連絡したかどうかのチェック。チェックを入れた/外した瞬間にその場で保存する。
+  const toggleCalled = async (checked) => {
+    const updated = { ...resForm, calledAt: checked ? new Date().toISOString() : "" };
+    setResForm(updated);
+    try {
+      const saved = await api.saveFortuneReservation(updated);
+      setResForm(saved);
+      setReservations((prev) => prev.map((x) => (x.id === saved.id ? saved : x)));
+    } catch (e) {
+      alert(`保存失敗: ${e.message}`);
+    }
+  };
+
   const sendConfirmEmailForRes = async () => {
     if (!resForm?.email) return;
     if (resForm.confirmEmailSentAt) {
@@ -970,6 +984,22 @@ export default function Fortune() {
               {!resForm.email && (
                 <span className="muted" style={{ fontSize: 12 }}>
                   メールアドレスが未入力のため送信できません
+                </span>
+              )}
+            </div>
+
+            <div className="field">
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={!!resForm.calledAt}
+                  onChange={(e) => toggleCalled(e.target.checked)}
+                />
+                電話連絡済み
+              </label>
+              {resForm.calledAt && (
+                <span className="muted" style={{ fontSize: 12.5, marginLeft: 8 }}>
+                  {new Date(resForm.calledAt).toLocaleString("ja-JP")}
                 </span>
               )}
             </div>
