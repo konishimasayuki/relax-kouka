@@ -305,6 +305,19 @@
     padding: 24px 0;
   }
 
+  .booking-stop-notice {
+    background: #fdecec;
+    color: #9c2d2d;
+    border: 1px solid #f3b6b6;
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 13.5px;
+    line-height: 1.8;
+    font-weight: 700;
+    text-align: center;
+    margin: 10px 0 14px;
+  }
+
   .slot-status {
     flex: 1;
     text-align: right;
@@ -940,6 +953,10 @@
   <section class="screen visible" data-screen="0">
     <select id="bookingStoreSelect" class="store-select" onchange="switchBookingStore(this.value)"></select>
 
+    <div id="bookingStopNotice" class="booking-stop-notice" style="display:none;">
+      ただいまネット予約を一時停止しております。お電話にてお問い合わせください。
+    </div>
+
     <div class="day-tabs">
       <div class="day-tab active" data-day="today">
         <div class="d-label">本日</div>
@@ -1035,6 +1052,10 @@
      ========================================================= -->
 <div class="fortune-wrap">
   <div class="fortune-stars"></div>
+
+  <div id="fortuneStopNotice" class="booking-stop-notice" style="display:none;">
+    ただいまネット予約を一時停止しております。お電話にてお問い合わせください。
+  </div>
 
   <div class="fortune-logo">
     <svg viewBox="0 -6 200 96" fill="none">
@@ -1270,6 +1291,7 @@
     renderBookingStoreSelect();
     if (getCurrentScreen() === 1) renderMenus();
     if (getCurrentScreen() === 2) renderOptions();
+    applyBookingStopUI();
   }
 
   function switchBookingStore(key) {
@@ -1280,6 +1302,7 @@
     renderMenuSection();
     if (getCurrentScreen() === 1) renderMenus();
     if (getCurrentScreen() === 2) renderOptions();
+    applyBookingStopUI();
   }
 
   function renderBookingStoreSelect() {
@@ -1398,6 +1421,43 @@
     } catch (e) {
       console.error("メニューデータの取得に失敗しました", e);
     }
+  }
+
+  // ネット予約の一時停止設定（店舗ごと・占いで個別。日付が変わると自動的にリセットされる）
+  let bookingStopConfig = {};
+  function isStoppedToday(key) {
+    return bookingStopConfig[key] === isoDateOf("today");
+  }
+  async function loadBookingStop() {
+    try {
+      bookingStopConfig = await fetch("/api/bookingStop").then(r => r.json());
+      applyBookingStopUI();
+    } catch (e) {
+      console.error("ネット予約停止設定の取得に失敗しました", e);
+    }
+  }
+  // 現在選択中の店舗・占いについて、停止中なら案内バナーを出し、空き状況・進む操作を止める。
+  // 停止していない時は、曜日タブの表示切り替え（today/tomorrow）を邪魔しないよう何もしない。
+  function applyBookingStopUI() {
+    const massageStopped = isStoppedToday(STORES[currentStore]?.realId || "");
+    const massageNotice = document.getElementById("bookingStopNotice");
+    const todayList = document.getElementById("slotListToday");
+    const tomorrowList = document.getElementById("slotListTomorrow");
+    if (massageNotice) massageNotice.style.display = massageStopped ? "block" : "none";
+    if (massageStopped) {
+      if (todayList) todayList.style.display = "none";
+      if (tomorrowList) tomorrowList.style.display = "none";
+    } else {
+      const activeDay = document.querySelector(".day-tab.active")?.dataset.day || "today";
+      if (todayList) todayList.style.display = activeDay === "today" ? "flex" : "none";
+      if (tomorrowList) tomorrowList.style.display = activeDay === "tomorrow" ? "flex" : "none";
+    }
+
+    const fortuneStopped = isStoppedToday("fortune");
+    const fortuneNotice = document.getElementById("fortuneStopNotice");
+    if (fortuneNotice) fortuneNotice.style.display = fortuneStopped ? "block" : "none";
+    const fortuneBtn = document.querySelector(".fortune-submit");
+    if (fortuneBtn) fortuneBtn.disabled = fortuneStopped;
   }
 
   let state = { day:"today", slot:null, menu:null, option:"" };
@@ -1603,6 +1663,10 @@
     if (cur === 1 && state.menu) goStep(2);
     else if (cur === 2) goStep(3);
     else if (cur === 3) {
+      if (isStoppedToday(STORES[currentStore]?.realId || "")) {
+        alert("ただいまネット予約を一時停止しております。お電話にてお問い合わせください。");
+        return;
+      }
       const name = document.getElementById("custName").value.trim();
       const phone = document.getElementById("custPhone").value.trim();
       const email = document.getElementById("custEmail").value.trim();
@@ -1653,6 +1717,10 @@
 
   // ---- 杉の泉（占い）予約の送信 ----
   function submitFortune() {
+    if (isStoppedToday("fortune")) {
+      alert("ただいまネット予約を一時停止しております。お電話にてお問い合わせください。");
+      return;
+    }
     const name = document.getElementById("fName").value.trim();
     const phone = document.getElementById("fPhone").value.trim();
     const email = document.getElementById("fEmail").value.trim();
@@ -1694,6 +1762,7 @@
 
   loadRealMenuData();
   loadAvailability();
+  loadBookingStop();
 
   // ---- ローディング画面 ----
   // ページの全リソース（大きなメニュー画像など）の読み込みが終わり、
