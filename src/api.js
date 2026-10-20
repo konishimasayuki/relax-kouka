@@ -102,6 +102,9 @@ export const api = {
   receptionHistory: () => req("receptionHistory"),
   sendConfirmEmail: (record, type) =>
     req("sendConfirmEmail", { method: "POST", body: JSON.stringify({ record, type }) }),
+  bookingStopConfig: () => req("bookingStop"),
+  saveBookingStop: (key, date) =>
+    req("bookingStop", { method: "POST", body: JSON.stringify({ key, date }) }),
   previewConfirmEmail: (record, type) =>
     req("previewConfirmEmail", { method: "POST", body: JSON.stringify({ record, type }) }),
   sendCustomEmail: (to, subject, body) =>
