@@ -365,6 +365,22 @@ export default function Fortune() {
   // 占い予約の確定メールを送信する（送信済みなら再送の確認を挟む。二重送信の事故を防ぐため）
   // 電話連絡したかどうかのチェック。チェックを入れた/外した瞬間にその場で保存する。
   // 任意の件名・本文でメールを送る（電話番号が間違っている等、テンプレートと異なる連絡をしたい時用）
+  // 「任意の内容でメールを送る」を開く。まだ何も書いていなければ、
+  // 確定メールの文面（設定タブの②）をベースに初期値として読み込む。
+  const openCustomMail = async () => {
+    const next = !customMailOpen;
+    setCustomMailOpen(next);
+    if (next && !customMailSubject && !customMailBody) {
+      try {
+        const { subject, body } = await api.previewConfirmEmail(resForm, "fortune");
+        setCustomMailSubject(subject);
+        setCustomMailBody(body);
+      } catch {
+        // ベストエフォート
+      }
+    }
+  };
+
   const sendCustomMail = async () => {
     if (!resForm?.email) return;
     if (!customMailSubject.trim() || !customMailBody.trim()) {
@@ -1053,7 +1069,7 @@ export default function Fortune() {
               <button
                 type="button"
                 className="btn sm ghost"
-                onClick={() => setCustomMailOpen((v) => !v)}
+                onClick={openCustomMail}
               >
                 ✏️ 任意の内容でメールを送る{customMailOpen ? "（閉じる）" : ""}
               </button>
