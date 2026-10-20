@@ -102,6 +102,8 @@ export const api = {
   receptionHistory: () => req("receptionHistory"),
   sendConfirmEmail: (record, type) =>
     req("sendConfirmEmail", { method: "POST", body: JSON.stringify({ record, type }) }),
+  sendCustomEmail: (to, subject, body) =>
+    req("sendCustomEmail", { method: "POST", body: JSON.stringify({ to, subject, body }) }),
 
   commissionRates: () => req("commissionRates"),
   saveCommissionRates: (c) =>
