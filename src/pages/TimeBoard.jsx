@@ -9,6 +9,13 @@ import TimeInput1 from "../components/TimeInput1.jsx";
 import TimeInput10 from "../components/TimeInput10.jsx";
 import { overlayClose } from "../modalUtils.js";
 
+const TB_WEEK_LABEL = ["日", "月", "火", "水", "木", "金", "土"];
+// "YYYY-MM-DD" 文字列から曜日ラベルを返す
+function tbWeekdayLabelOf(dateStr) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return TB_WEEK_LABEL[new Date(y, m - 1, d).getDay()];
+}
+
 export default function TimeBoard() {
   const { stores, staff, menus, options, coupons, extensions, ready } = useApp();
   const [date, setDate] = useState(todayStr());
@@ -655,6 +662,9 @@ export default function TimeBoard() {
     <div>
       <div className="toolbar" style={{ marginTop: 0 }}>
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        <span className="muted" style={{ fontSize: 13, fontWeight: 700 }}>
+          （{tbWeekdayLabelOf(date)}）
+        </span>
         <button className="btn sm" onClick={() => setNewOpen(true)}>
           ＋ 新規受付
         </button>
