@@ -24,6 +24,10 @@ export default function BoardView() {
   const selOriginalRef = useRef(null); // 編集モーダルを開いた時点の元データ（undo用）
   const [busy, setBusy] = useState(false);
   const [confirmMailBusy, setConfirmMailBusy] = useState(false);
+  const [customMailOpen, setCustomMailOpen] = useState(false);
+  const [customMailSubject, setCustomMailSubject] = useState("");
+  const [customMailBody, setCustomMailBody] = useState("");
+  const [customMailBusy, setCustomMailBusy] = useState(false);
   const [undoStack, setUndoStack] = useState([]);
   const [undoBusy, setUndoBusy] = useState(false);
   const timerRef = useRef(null);
@@ -277,6 +281,27 @@ export default function BoardView() {
   }, [undo, sel]);
 
   // 電話連絡したかどうかのチェック。チェックを入れた/外した瞬間にその場で保存する。
+  // 任意の件名・本文でメールを送る（電話番号が間違っている等、テンプレートと異なる連絡をしたい時用）
+  const sendCustomMail = async () => {
+    if (!sel?.email) return;
+    if (!customMailSubject.trim() || !customMailBody.trim()) {
+      return alert("件名・本文を入力してください");
+    }
+    if (!confirm(`${sel.email} 宛にこの内容でメールを送信しますか？`)) return;
+    setCustomMailBusy(true);
+    try {
+      await api.sendCustomEmail(sel.email, customMailSubject, customMailBody);
+      alert("メールを送信しました。");
+      setCustomMailSubject("");
+      setCustomMailBody("");
+      setCustomMailOpen(false);
+    } catch (e) {
+      alert(`送信失敗: ${e.message}`);
+    } finally {
+      setCustomMailBusy(false);
+    }
+  };
+
   const toggleCalled = async (checked) => {
     const updated = { ...sel, calledAt: checked ? new Date().toISOString() : "" };
     setSel(updated);
@@ -652,6 +677,50 @@ export default function BoardView() {
                 <span className="muted" style={{ fontSize: 12.5, marginLeft: 8 }}>
                   {new Date(sel.calledAt).toLocaleString("ja-JP")}
                 </span>
+              )}
+            </div>
+
+            <div className="field">
+              <button
+                type="button"
+                className="btn sm ghost"
+                onClick={() => setCustomMailOpen((v) => !v)}
+              >
+                ✏️ 任意の内容でメールを送る{customMailOpen ? "（閉じる）" : ""}
+              </button>
+              {customMailOpen && (
+                <div style={{ marginTop: 8 }}>
+                  {!sel.email && (
+                    <p className="muted" style={{ fontSize: 12.5 }}>
+                      メールアドレスが未入力のため送信できません
+                    </p>
+                  )}
+                  <div className="field">
+                    <label>件名</label>
+                    <input
+                      value={customMailSubject}
+                      onChange={(e) => setCustomMailSubject(e.target.value)}
+                      placeholder="例：ご予約内容の確認（お電話番号について）"
+                    />
+                  </div>
+                  <div className="field">
+                    <label>本文</label>
+                    <textarea
+                      rows={6}
+                      style={{ width: "100%", fontFamily: "inherit", fontSize: 13, lineHeight: 1.7 }}
+                      value={customMailBody}
+                      onChange={(e) => setCustomMailBody(e.target.value)}
+                      placeholder="お客様にお送りする内容を自由に入力してください"
+                    />
+                  </div>
+                  <button
+                    className="btn sm"
+                    disabled={customMailBusy || !sel.email}
+                    onClick={sendCustomMail}
+                  >
+                    送信する
+                  </button>
+                </div>
               )}
             </div>
 
