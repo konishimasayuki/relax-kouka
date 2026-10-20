@@ -16,6 +16,16 @@ function tbWeekdayLabelOf(dateStr) {
   return TB_WEEK_LABEL[new Date(y, m - 1, d).getDay()];
 }
 
+// "YYYY-MM-DD" 文字列から±N日した日付文字列を返す
+function tbShiftDateStr(dateStr, delta) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const next = new Date(y, m - 1, d + delta);
+  const yy = next.getFullYear();
+  const mm = String(next.getMonth() + 1).padStart(2, "0");
+  const dd = String(next.getDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
+}
+
 export default function TimeBoard() {
   const { stores, staff, menus, options, coupons, extensions, ready } = useApp();
   const [date, setDate] = useState(todayStr());
@@ -677,7 +687,13 @@ export default function TimeBoard() {
   return (
     <div>
       <div className="toolbar" style={{ marginTop: 0 }}>
+        <button className="btn sm ghost" onClick={() => setDate(tbShiftDateStr(date, -1))}>
+          ◀
+        </button>
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        <button className="btn sm ghost" onClick={() => setDate(tbShiftDateStr(date, 1))}>
+          ▶
+        </button>
         <span className="muted" style={{ fontSize: 13, fontWeight: 700 }}>
           （{tbWeekdayLabelOf(date)}）
         </span>
