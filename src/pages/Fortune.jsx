@@ -112,6 +112,10 @@ export default function Fortune() {
   const [shiftForm, setShiftForm] = useState(null);
   const [busy, setBusy] = useState(false);
   const [confirmMailBusy, setConfirmMailBusy] = useState(false);
+  const [customMailOpen, setCustomMailOpen] = useState(false);
+  const [customMailSubject, setCustomMailSubject] = useState("");
+  const [customMailBody, setCustomMailBody] = useState("");
+  const [customMailBusy, setCustomMailBusy] = useState(false);
 
   const [date, setDate] = useState(todayStr());
   const [reservations, setReservations] = useState([]);
@@ -360,6 +364,27 @@ export default function Fortune() {
 
   // 占い予約の確定メールを送信する（送信済みなら再送の確認を挟む。二重送信の事故を防ぐため）
   // 電話連絡したかどうかのチェック。チェックを入れた/外した瞬間にその場で保存する。
+  // 任意の件名・本文でメールを送る（電話番号が間違っている等、テンプレートと異なる連絡をしたい時用）
+  const sendCustomMail = async () => {
+    if (!resForm?.email) return;
+    if (!customMailSubject.trim() || !customMailBody.trim()) {
+      return alert("件名・本文を入力してください");
+    }
+    if (!confirm(`${resForm.email} 宛にこの内容でメールを送信しますか？`)) return;
+    setCustomMailBusy(true);
+    try {
+      await api.sendCustomEmail(resForm.email, customMailSubject, customMailBody);
+      alert("メールを送信しました。");
+      setCustomMailSubject("");
+      setCustomMailBody("");
+      setCustomMailOpen(false);
+    } catch (e) {
+      alert(`送信失敗: ${e.message}`);
+    } finally {
+      setCustomMailBusy(false);
+    }
+  };
+
   const toggleCalled = async (checked) => {
     const updated = { ...resForm, calledAt: checked ? new Date().toISOString() : "" };
     setResForm(updated);
@@ -1021,6 +1046,50 @@ export default function Fortune() {
                 <span className="muted" style={{ fontSize: 12.5, marginLeft: 8 }}>
                   {new Date(resForm.calledAt).toLocaleString("ja-JP")}
                 </span>
+              )}
+            </div>
+
+            <div className="field">
+              <button
+                type="button"
+                className="btn sm ghost"
+                onClick={() => setCustomMailOpen((v) => !v)}
+              >
+                ✏️ 任意の内容でメールを送る{customMailOpen ? "（閉じる）" : ""}
+              </button>
+              {customMailOpen && (
+                <div style={{ marginTop: 8 }}>
+                  {!resForm.email && (
+                    <p className="muted" style={{ fontSize: 12.5 }}>
+                      メールアドレスが未入力のため送信できません
+                    </p>
+                  )}
+                  <div className="field">
+                    <label>件名</label>
+                    <input
+                      value={customMailSubject}
+                      onChange={(e) => setCustomMailSubject(e.target.value)}
+                      placeholder="例：ご予約内容の確認（お電話番号について）"
+                    />
+                  </div>
+                  <div className="field">
+                    <label>本文</label>
+                    <textarea
+                      rows={6}
+                      style={{ width: "100%", fontFamily: "inherit", fontSize: 13, lineHeight: 1.7 }}
+                      value={customMailBody}
+                      onChange={(e) => setCustomMailBody(e.target.value)}
+                      placeholder="お客様にお送りする内容を自由に入力してください"
+                    />
+                  </div>
+                  <button
+                    className="btn sm"
+                    disabled={customMailBusy || !resForm.email}
+                    onClick={sendCustomMail}
+                  >
+                    送信する
+                  </button>
+                </div>
               )}
             </div>
 
