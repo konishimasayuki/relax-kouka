@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useApp } from "../App.jsx";
-import { api, sortByOrder, STAFF_COLOR_PALETTE, staffColor } from "../api.js";
+import { api, sortByOrder, STAFF_COLOR_PALETTE, staffColor, todayStr } from "../api.js";
 import NotificationBell from "../components/NotificationBell.jsx";
 import { overlayClose } from "../modalUtils.js";
 
@@ -88,6 +88,8 @@ export default function Settings() {
   const [rateBusy, setRateBusy] = useState(false);
   const [rateSaved, setRateSaved] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [bookingStop, setBookingStop] = useState({});
+  const [bookingStopBusy, setBookingStopBusy] = useState(false);
 
   useEffect(() => {
     if (tab === "fortuneStaff") api.fortuneStaff().then(setFortuneStaffList).catch(() => {});
@@ -111,7 +113,26 @@ export default function Settings() {
     if (tab === "commissionRate") {
       api.commissionRates().then(setCommissionRates).catch(() => {});
     }
+    if (tab === "bookingStop") {
+      api.bookingStopConfig().then(setBookingStop).catch(() => {});
+    }
   }, [tab]);
+
+  // 停止中かどうかは「保存されている日付が今日かどうか」で判定する。
+  // 日付が変わればここがfalseになり、自動的に停止解除された状態に戻る。
+  const isStoppedToday = (key) => bookingStop[key] === todayStr();
+
+  const toggleBookingStop = async (key) => {
+    setBookingStopBusy(true);
+    try {
+      const data = await api.saveBookingStop(key, isStoppedToday(key) ? "" : todayStr());
+      setBookingStop(data);
+    } catch (e) {
+      alert(`保存失敗: ${e.message}`);
+    } finally {
+      setBookingStopBusy(false);
+    }
+  };
 
   const saveNotifyConfig = async () => {
     setNotifyBusy(true);
@@ -437,6 +458,12 @@ export default function Settings() {
           onClick={() => setTab("pushNotify")}
         >
           プッシュ通知設定
+        </button>
+        <button
+          className={tab === "bookingStop" ? "btn sm" : "btn sm gray"}
+          onClick={() => setTab("bookingStop")}
+        >
+          ネット予約設定
         </button>
       </div>
 
@@ -1024,6 +1051,77 @@ export default function Settings() {
               オン・オフはこの設定タブを開いた端末ごとに個別に切り替わります。他のスタッフの端末には影響しません。
               iPhoneの場合は「ホーム画面に追加」した状態（iOS16.4以降）でないと通知が届きません。
             </p>
+          </div>
+        </div>
+      )}
+
+      {tab === "bookingStop" && (
+        <div>
+          <div className="card">
+            <h3 style={{ fontSize: 15, margin: "0 0 4px" }}>ネット予約設定</h3>
+            <p className="muted" style={{ fontSize: 12.5, marginTop: 0, lineHeight: 1.8 }}>
+              満室等で一時的にネット予約を止めたい店舗だけ「本日は停止する」を押してください。
+              お客様の予約ページでは「ただいまネット予約を一時停止しております。お電話にてお問い合わせください」と表示され、予約できなくなります。
+              <br />
+              <strong>押し忘れ・消し忘れ対策として、日付が変わると自動的に停止は解除されます。</strong>
+              （停止したい日はその日のうちに押してください）
+            </p>
+
+            {stores.map((s) => {
+              const stopped = isStoppedToday(s.id);
+              return (
+                <div
+                  key={s.id}
+                  className="card"
+                  style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <strong>{s.name}</strong>
+                    {stopped ? (
+                      <span className="pill" style={{ background: "#e8734a", marginLeft: 8 }}>
+                        本日停止中
+                      </span>
+                    ) : (
+                      <span className="pill gray" style={{ marginLeft: 8 }}>
+                        通常受付中
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    className={stopped ? "btn sm" : "btn sm danger"}
+                    disabled={bookingStopBusy}
+                    onClick={() => toggleBookingStop(s.id)}
+                  >
+                    {stopped ? "停止を解除する" : "本日は停止する"}
+                  </button>
+                </div>
+              );
+            })}
+
+            <div
+              className="card"
+              style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}
+            >
+              <div style={{ flex: 1 }}>
+                <strong>杉の泉（占い）</strong>
+                {isStoppedToday("fortune") ? (
+                  <span className="pill" style={{ background: "#e8734a", marginLeft: 8 }}>
+                    本日停止中
+                  </span>
+                ) : (
+                  <span className="pill gray" style={{ marginLeft: 8 }}>
+                    通常受付中
+                  </span>
+                )}
+              </div>
+              <button
+                className={isStoppedToday("fortune") ? "btn sm" : "btn sm danger"}
+                disabled={bookingStopBusy}
+                onClick={() => toggleBookingStop("fortune")}
+              >
+                {isStoppedToday("fortune") ? "停止を解除する" : "本日は停止する"}
+              </button>
+            </div>
           </div>
         </div>
       )}
