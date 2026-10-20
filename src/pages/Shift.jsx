@@ -16,6 +16,12 @@ function mondayFirstIndex(jsWeekday) {
   return (jsWeekday + 6) % 7;
 }
 
+// "YYYY-MM-DD" 文字列から曜日ラベル（月〜日）を返す
+function weekdayLabelOf(dateStr) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return WEEK_LABEL[mondayFirstIndex(new Date(y, m - 1, d).getDay())];
+}
+
 function toMin(hhmm) {
   if (!hhmm) return 0;
   const [h, m] = hhmm.split(":").map(Number);
@@ -231,6 +237,9 @@ export default function Shift() {
       <div className="card">
         <div className="toolbar">
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <span className="muted" style={{ fontSize: 13, fontWeight: 700 }}>
+            （{weekdayLabelOf(date)}）
+          </span>
           <button
             className={date === shiftDateStr(todayStr(), -1) ? "btn sm" : "btn sm ghost"}
             onClick={() => setDate(shiftDateStr(todayStr(), -1))}
