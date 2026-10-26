@@ -1370,18 +1370,20 @@
   let allRealOptions = [];
   let allRealStores = [];
 
+  // リラク業務管理（料金設定タブ）と全く同じ並び順になるよう、同じロジックで並び替える。
+  // orderが未設定の項目は、元の配列での並び順（Redisでの登録順）にフォールバックする。
+  function sortByOrderLocal(list) {
+    return list
+      .map((x, i) => ({ ...x, _idx: i }))
+      .sort((a, b) => (a.order ?? a._idx) - (b.order ?? b._idx));
+  }
   function menusForCurrentStore() {
     const realId = STORES[currentStore]?.realId;
-    return allRealMenus
-      .filter(m => m.storeId === realId)
-      .sort((a, b) => (a.order || 0) - (b.order || 0))
-      .map(formatMenu);
+    return sortByOrderLocal(allRealMenus.filter(m => m.storeId === realId)).map(formatMenu);
   }
   function optionsForCurrentStore() {
     const realId = STORES[currentStore]?.realId;
-    const real = allRealOptions
-      .filter(o => o.storeId === realId)
-      .sort((a, b) => (a.order || 0) - (b.order || 0));
+    const real = sortByOrderLocal(allRealOptions.filter(o => o.storeId === realId));
     return [{ id: "", name: "なし", desc: "", price: "¥0", rawPrice: 0 }, ...real.map(formatOption)];
   }
   function formatMenu(m) {
