@@ -1382,22 +1382,26 @@
     const real = allRealOptions
       .filter(o => o.storeId === realId)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
-    return [{ id: "", name: "なし", desc: "", price: "¥0" }, ...real.map(formatOption)];
+    return [{ id: "", name: "なし", desc: "", price: "¥0", rawPrice: 0 }, ...real.map(formatOption)];
   }
   function formatMenu(m) {
+    const rawPrice = Number(m.price || 0);
     return {
       id: m.id,
       name: m.name,
       desc: m.minutes ? `${m.minutes}分` : "",
-      price: `¥${Number(m.price || 0).toLocaleString("ja-JP")}`,
+      price: `¥${rawPrice.toLocaleString("ja-JP")}`,
+      rawPrice,
     };
   }
   function formatOption(o) {
+    const rawPrice = Number(o.price || 0);
     return {
       id: o.id,
       name: o.name,
       desc: o.minutes ? `+${o.minutes}分` : "",
-      price: `+¥${Number(o.price || 0).toLocaleString("ja-JP")}`,
+      price: `+¥${rawPrice.toLocaleString("ja-JP")}`,
+      rawPrice,
     };
   }
 
@@ -1604,11 +1608,13 @@
     const dayLabel = dayLabelOf(state.day);
     const menu = menusForCurrentStore().find(m => m.id === state.menu);
     const option = optionsForCurrentStore().find(o => o.id === state.option);
+    const totalPrice = (menu?.rawPrice || 0) + (option?.rawPrice || 0);
+    const totalLabel = menu ? `¥${totalPrice.toLocaleString("ja-JP")}` : "-";
     document.getElementById("summaryBox").innerHTML = `
       <div class="summary-row"><span class="s-label">日時</span><span class="s-value">${dayLabel} ${state.slot}〜</span></div>
       <div class="summary-row"><span class="s-label">メニュー</span><span class="s-value">${menu ? menu.name : "-"}</span></div>
       <div class="summary-row"><span class="s-label">オプション</span><span class="s-value">${option ? option.name : "なし"}</span></div>
-      <div class="summary-row"><span class="s-label">お支払い目安</span><span class="s-value">${menu ? menu.price : "-"}</span></div>
+      <div class="summary-row"><span class="s-label">お支払い目安</span><span class="s-value">${totalLabel}</span></div>
     `;
   }
 
@@ -1682,6 +1688,7 @@
       }
       const menu = menusForCurrentStore().find(m => m.id === state.menu);
       const option = optionsForCurrentStore().find(o => o.id === state.option);
+      const totalPrice = (menu?.rawPrice || 0) + (option?.rawPrice || 0);
       submitBookingRequest({
         type: "massage",
         name,
@@ -1694,7 +1701,7 @@
         desiredTime: state.slot || "",
         menu: menu ? menu.name : "",
         option: option ? option.name : "なし",
-        price: menu ? menu.price : "",
+        price: menu ? `¥${totalPrice.toLocaleString("ja-JP")}` : "",
       });
       goStep(4);
     }
