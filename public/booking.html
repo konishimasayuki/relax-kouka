@@ -954,7 +954,8 @@
     <select id="bookingStoreSelect" class="store-select" onchange="switchBookingStore(this.value)"></select>
 
     <div id="bookingStopNotice" class="booking-stop-notice" style="display:none;">
-      ただいまネット予約を一時停止しております。お電話にてお問い合わせください。
+      本日はネット予約の受付を終了しました（満室のため、本日いっぱい停止しております）。<br>
+      お電話にてお問い合わせください。
     </div>
 
     <div class="day-tabs">
@@ -1359,6 +1360,7 @@
       slotsTomorrow = tomorrow;
       renderSlots(document.getElementById("slotListToday"), slotsToday, "today");
       renderSlots(document.getElementById("slotListTomorrow"), slotsTomorrow, "tomorrow");
+      applyBookingStopUI();
     } catch (e) {
       console.error("空き状況の取得に失敗しました", e);
     }
@@ -1450,6 +1452,8 @@
     const todayList = document.getElementById("slotListToday");
     const tomorrowList = document.getElementById("slotListTomorrow");
     if (massageNotice) massageNotice.style.display = massageStopped ? "block" : "none";
+    const dayTabsEl = document.querySelector(".day-tabs");
+    if (dayTabsEl) dayTabsEl.style.display = massageStopped ? "none" : "";
     if (massageStopped) {
       if (todayList) todayList.style.display = "none";
       if (tomorrowList) tomorrowList.style.display = "none";
@@ -1552,10 +1556,15 @@
       const day = tab.dataset.day;
       document.getElementById("slotListToday").style.display = day === "today" ? "flex" : "none";
       document.getElementById("slotListTomorrow").style.display = day === "tomorrow" ? "flex" : "none";
+      applyBookingStopUI();
     });
   });
 
   function selectSlot(day, time) {
+    if (isStoppedToday(STORES[currentStore]?.realId || "")) {
+      applyBookingStopUI();
+      return;
+    }
     state.day = day;
     state.slot = time;
     const dayLabel = dayLabelOf(day);
