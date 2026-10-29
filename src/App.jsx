@@ -8,6 +8,7 @@ import Fortune from "./pages/Fortune.jsx";
 import IndividualDaily from "./pages/IndividualDaily.jsx";
 import Inventory from "./pages/Inventory.jsx";
 import Login from "./pages/Login.jsx";
+import NotifySettings from "./pages/NotifySettings.jsx";
 import Payroll from "./pages/Payroll.jsx";
 import Pricing from "./pages/Pricing.jsx";
 import ReceptionList from "./pages/ReceptionList.jsx";
@@ -34,6 +35,7 @@ const PAGES = {
   customers: CustomerRoster,
   pricing: Pricing,
   settings: Settings,
+  notifySettings: NotifySettings,
   signageSettings: SignageSettings,
   debugRequests: DebugRequests,
 };
@@ -97,7 +99,12 @@ export default function App() {
   // 管理者権限のないスタッフは、ダッシュボード／料金／顧客名簿／設定／デバッグ依頼に入れない
   const RESTRICTED_PAGES = ["dashboard", "pricing", "customers", "settings", "signageSettings", "debugRequests"];
   useEffect(() => {
-    if (role === "fortune" && page !== "fortune" && page !== "bookingRequests") {
+    if (
+      role === "fortune" &&
+      page !== "fortune" &&
+      page !== "bookingRequests" &&
+      page !== "notifySettings"
+    ) {
       setPage("fortune");
       return;
     }
