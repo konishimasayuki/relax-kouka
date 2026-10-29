@@ -1665,7 +1665,7 @@
     return Number(document.querySelector(".screen.visible").dataset.screen);
   }
 
-  function handleCta() {
+  async function handleCta() {
     const cur = getCurrentScreen();
     if (cur === 1 && state.menu) goStep(2);
     else if (cur === 2) goStep(3);
@@ -1690,7 +1690,7 @@
       const menu = menusForCurrentStore().find(m => m.id === state.menu);
       const option = optionsForCurrentStore().find(o => o.id === state.option);
       const totalPrice = (menu?.rawPrice || 0) + (option?.rawPrice || 0);
-      submitBookingRequest({
+      const result = await submitBookingRequest({
         type: "massage",
         name,
         phone,
@@ -1704,12 +1704,20 @@
         option: option ? option.name : "なし",
         price: menu ? `¥${totalPrice.toLocaleString("ja-JP")}` : "",
       });
+      if (result.stopped) {
+        alert("ただいまネット予約を一時停止しております。お電話にてお問い合わせください。");
+        applyBookingStopUI();
+        return;
+      }
       goStep(4);
     }
   }
 
   // 予約申請APIへの送信（失敗しても画面遷移はブロックしない：ネットワーク不調時にお客様を
   // 足止めしないため。送信結果はコンソールにのみ記録する）
+  // 戻り値: { stopped: true } ならサーバー側でネット予約停止と判定されたことを示す
+  // （この場合は呼び出し側で完了画面に進ませてはいけない）。
+  // それ以外の通信エラー等は、今まで通りお客様を足止めしないためベストエフォートで無視する。
   async function submitBookingRequest(payload) {
     try {
       const res = await fetch("/api/bookingRequests", {
@@ -1717,14 +1725,17 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      if (res.status === 409) return { stopped: true };
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return { stopped: false };
     } catch (e) {
       console.error("予約申請の送信に失敗しました", e);
+      return { stopped: false };
     }
   }
 
   // ---- 杉の泉（占い）予約の送信 ----
-  function submitFortune() {
+  async function submitFortune() {
     if (isStoppedToday("fortune")) {
       alert("ただいまネット予約を一時停止しております。お電話にてお問い合わせください。");
       return;
@@ -1747,7 +1758,7 @@
     const courseSelect = document.getElementById("fCourse");
     const course = courseSelect.options[courseSelect.selectedIndex].text;
     const people = document.getElementById("fPeople").value;
-    submitBookingRequest({
+    const result = await submitBookingRequest({
       type: "fortune",
       name,
       phone,
@@ -1759,6 +1770,11 @@
       course,
       people: `${people}名`,
     });
+    if (result.stopped) {
+      alert("ただいまネット予約を一時停止しております。お電話にてお問い合わせください。");
+      applyBookingStopUI();
+      return;
+    }
     document.querySelectorAll(".fortune-wrap").forEach(el => el.style.display = "none");
     document.getElementById("fortuneDoneWrap").style.display = "block";
     window.scrollTo(0, document.body.scrollHeight);
