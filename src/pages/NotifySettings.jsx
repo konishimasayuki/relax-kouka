@@ -1,3 +1,4 @@
+import BookingStopPanel from "../components/BookingStopPanel.jsx";
 import NotificationBell from "../components/NotificationBell.jsx";
 
 // 管理者専用の「設定」ページとは別に、占い師個人ログイン・一般スタッフも含めて
@@ -25,6 +26,8 @@ export default function NotifySettings() {
           iPhoneの場合は「ホーム画面に追加」した状態（iOS16.4以降）でないと通知が届きません。
         </p>
       </div>
+
+      <BookingStopPanel />
     </div>
   );
 }
