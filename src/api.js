@@ -103,8 +103,8 @@ export const api = {
   sendConfirmEmail: (record, type) =>
     req("sendConfirmEmail", { method: "POST", body: JSON.stringify({ record, type }) }),
   bookingStopConfig: () => req("bookingStop"),
-  saveBookingStop: (key, date) =>
-    req("bookingStop", { method: "POST", body: JSON.stringify({ key, date }) }),
+  saveBookingStop: (key, date, actorName, label) =>
+    req("bookingStop", { method: "POST", body: JSON.stringify({ key, date, actorName, label }) }),
   previewConfirmEmail: (record, type) =>
     req("previewConfirmEmail", { method: "POST", body: JSON.stringify({ record, type }) }),
   sendCustomEmail: (to, subject, body) =>
