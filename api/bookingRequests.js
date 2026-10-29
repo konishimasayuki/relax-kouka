@@ -14,6 +14,22 @@ import {
 
 const NS = "bookingRequests";
 const NOTIFY_KEY = "notify:config";
+const BOOKING_STOP_KEY = "booking:stop";
+
+// Vercelのサーバーは基本的にUTCで動作するため、日本時間での「今日」を明示的に計算する。
+function todayStrJST() {
+  const jst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  return `${jst.getUTCFullYear()}-${String(jst.getUTCMonth() + 1).padStart(2, "0")}-${String(
+    jst.getUTCDate(),
+  ).padStart(2, "0")}`;
+}
+
+// ネット予約が一時停止されていないかをサーバー側でも必ず確認する。
+// （画面側の表示切り替えだけだと、停止前に開いたままのページから送信されてしまう可能性があるため）
+async function isBookingStoppedToday(key) {
+  const data = (await redis.get(BOOKING_STOP_KEY)) || {};
+  return data[key] === todayStrJST();
+}
 // 予約申請を「対応済み」にした際の確定メール自動送信は、誤操作事故防止のため一旦オフ。
 // 確定メールはタイムボードの「確定メールを送る」ボタンからの人力送信のみに統一する。
 const AUTO_DONE_EMAIL_ENABLED = false;
@@ -152,6 +168,16 @@ export default async function handler(req, res) {
     if (req.method === "POST") {
       const body = req.body || {};
       const isNew = !body.id;
+
+      if (isNew) {
+        const stopKey = body.type === "fortune" ? "fortune" : body.storeId || "";
+        if (stopKey && (await isBookingStoppedToday(stopKey))) {
+          return res
+            .status(409)
+            .json({ error: "ただいまネット予約を一時停止しております。お電話にてお問い合わせください。" });
+        }
+      }
+
       const previous = isNew ? null : await redis.get(`${NS}:${body.id}`);
 
       const data = {
