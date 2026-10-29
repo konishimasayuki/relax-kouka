@@ -13,6 +13,7 @@ const MENU = [
   { key: "customers", label: "顧客名簿", ico: "👥" },
   { key: "pricing", label: "料金", ico: "💰" },
   { key: "settings", label: "設定", ico: "⚙️" },
+  { key: "notifySettings", label: "通知設定", ico: "🔔" },
   { key: "signageSettings", label: "サイネージ設定", ico: "📺" },
   { key: "debugRequests", label: "デバッグ依頼", ico: "🛠️" },
 ];
@@ -22,7 +23,9 @@ export default function Layout({ page, setPage, role, staffSession, isAdminUser,
   const RESTRICTED = ["dashboard", "pricing", "customers", "settings", "signageSettings", "debugRequests"];
   let menu = MENU;
   if (role === "fortune") {
-    menu = MENU.filter((m) => m.key === "fortune" || m.key === "bookingRequests");
+    menu = MENU.filter(
+      (m) => m.key === "fortune" || m.key === "bookingRequests" || m.key === "notifySettings",
+    );
   } else if (role === "staff" && !isAdminUser) {
     menu = MENU.filter((m) => !RESTRICTED.includes(m.key));
   }
