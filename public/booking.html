@@ -1504,15 +1504,14 @@
     sel.innerHTML = opts.join("");
   })();
 
-  // 占いの「ご希望日」セレクトを本日から60日分生成
-  // （ネイティブの type="date" 入力は端末によって表示幅が崩れることがあるため選択式にしている）
+  // 占いの「ご希望日」セレクトは本日・明日の2日分のみ（マッサージ側と同じ考え方）
   (function buildFortuneDateOptions() {
     const sel = document.getElementById("fDate");
     if (!sel) return;
     const youbi = ["日","月","火","水","木","金","土"];
     const opts = [`<option value="">選択してください</option>`];
     const base = new Date();
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 2; i++) {
       const d = new Date(base);
       d.setDate(base.getDate() + i);
       const y = d.getFullYear();
