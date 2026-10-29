@@ -3,7 +3,7 @@ import { useApp } from "../App.jsx";
 import { api, todayStr } from "../api.js";
 
 export default function BookingStopPanel() {
-  const { stores, staffSession, isAdminUser } = useApp();
+  const { stores, staffSession, isAdminUser, role } = useApp();
   const [data, setData] = useState({ _history: [] });
   const [busy, setBusy] = useState(false);
 
@@ -34,10 +34,16 @@ export default function BookingStopPanel() {
     }
   };
 
-  const items = [
-    ...stores.map((s) => ({ key: s.id, label: s.name })),
-    { key: "fortune", label: "杉の泉（占い）" },
-  ];
+  // 占いユーザーには占いの停止だけ、マッサージの一般スタッフにはマッサージの店舗だけを見せる。
+  // 管理者（admin/debug、または管理者権限のあるスタッフ）には両方を見せる。
+  const massageItems = stores.map((s) => ({ key: s.id, label: s.name }));
+  const fortuneItem = { key: "fortune", label: "杉の泉（占い）" };
+  const items =
+    role === "fortune"
+      ? [fortuneItem]
+      : role === "staff" && !isAdminUser
+        ? massageItems
+        : [...massageItems, fortuneItem];
 
   return (
     <div className="card">
@@ -83,27 +89,33 @@ export default function BookingStopPanel() {
 
       <div className="field" style={{ marginTop: 14 }}>
         <label>操作履歴（新しい順）</label>
-        {(!data._history || data._history.length === 0) && (
-          <p className="muted" style={{ fontSize: 12.5 }}>
-            まだ操作履歴はありません
-          </p>
-        )}
-        {data._history && data._history.length > 0 && (
-          <div style={{ maxHeight: 240, overflowY: "auto", fontSize: 12.5, lineHeight: 1.9 }}>
-            {data._history.map((h, i) => (
-              <div
-                key={i}
-                style={{ borderBottom: "1px solid var(--border)", padding: "4px 0" }}
-              >
-                {new Date(h.at).toLocaleString("ja-JP")}　
-                <strong>{h.actorName}</strong>さんが「{h.label}」を
-                <strong style={{ color: h.action === "stop" ? "#e8734a" : "#2f9e44" }}>
-                  {h.action === "stop" ? " 停止" : " 停止解除"}
-                </strong>
-              </div>
-            ))}
-          </div>
-        )}
+        {(() => {
+          const allowedKeys = new Set(items.map((it) => it.key));
+          const visibleHistory = (data._history || []).filter((h) => allowedKeys.has(h.key));
+          if (visibleHistory.length === 0) {
+            return (
+              <p className="muted" style={{ fontSize: 12.5 }}>
+                まだ操作履歴はありません
+              </p>
+            );
+          }
+          return (
+            <div style={{ maxHeight: 240, overflowY: "auto", fontSize: 12.5, lineHeight: 1.9 }}>
+              {visibleHistory.map((h, i) => (
+                <div
+                  key={i}
+                  style={{ borderBottom: "1px solid var(--border)", padding: "4px 0" }}
+                >
+                  {new Date(h.at).toLocaleString("ja-JP")}　
+                  <strong>{h.actorName}</strong>さんが「{h.label}」を
+                  <strong style={{ color: h.action === "stop" ? "#e8734a" : "#2f9e44" }}>
+                    {h.action === "stop" ? " 停止" : " 停止解除"}
+                  </strong>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
