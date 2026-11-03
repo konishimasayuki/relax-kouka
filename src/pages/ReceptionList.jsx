@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "../App.jsx";
-import { PAYMENTS, api, sortByOrder, staffDisplayName, todayStr } from "../api.js";
+import {
+  PAYMENTS,
+  api,
+  recordBrand,
+  sortByOrder,
+  staffDisplayName,
+  todayStr,
+} from "../api.js";
 import NewReceptionModal from "../components/NewReceptionModal.jsx";
 import SignaturePad from "../components/SignaturePad.jsx";
 import TimeInput10 from "../components/TimeInput10.jsx";
@@ -208,20 +215,17 @@ export default function ReceptionList() {
   const [yy, mm, dd] = date.split("-").map(Number);
   const youbi = "日月火水木金土"[new Date(yy, mm - 1, dd).getDay()];
   // 紙の様式に合わせて1ページ最大20行。
-  // 店舗グループ（BODY RECESS=パレス／宙館、Spa the Ceada）ごとに別の受付表として分け、
+  // 売上の帰属先（料金設定のコースごとに設定：BODY RECESS / Spa the Ceada）で別の受付表として分け、
   // 21件以上になる場合はページ（NO.）を分けて続ける。
+  // コースに帰属先が未設定なら、従来通り店舗（Ceadaかどうか）で判定する。
   const PAGE_SIZE = 20;
-  const storeById = useMemo(() => Object.fromEntries(stores.map((s) => [s.id, s])), [stores]);
-  const isCeadaStore = (storeId) => storeById[storeId]?.building === "Ceada";
   const bodyRecessRecords = useMemo(
-    () => view.filter((r) => !isCeadaStore(r.storeId)),
-    // eslint-disable-next-line
-    [view, storeById],
+    () => view.filter((r) => recordBrand(r, menus, stores) !== "ceada"),
+    [view, menus, stores],
   );
   const ceadaRecords = useMemo(
-    () => view.filter((r) => isCeadaStore(r.storeId)),
-    // eslint-disable-next-line
-    [view, storeById],
+    () => view.filter((r) => recordBrand(r, menus, stores) === "ceada"),
+    [view, menus, stores],
   );
   const sumOf = (list) => list.reduce((s, r) => s + Number(r.amount || 0), 0);
   const num = (n) => Number(n || 0).toLocaleString("ja-JP");
@@ -250,7 +254,7 @@ export default function ReceptionList() {
         <div className="empty">読み込み中…</div>
       ) : (
         <>
-          {renderGroupPages(bodyRecessRecords, "BODY RECESS（パレス／宙館）")}
+          {renderGroupPages(bodyRecessRecords, "BODY RECESS")}
           {renderGroupPages(ceadaRecords, "Spa the Ceada")}
         </>
       )}
