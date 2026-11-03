@@ -350,3 +350,28 @@ export function sortByOrder(list) {
     .map((x, i) => ({ ...x, _idx: i }))
     .sort((a, b) => (a.order ?? a._idx) - (b.order ?? b._idx));
 }
+
+// ---- 売上の帰属先（BODY RECESS / Spa the Ceada）----
+// 料金設定の各コースに brand を持たせ、受付一覧表・個人別日計表・給料はこの帰属先で2つに分ける。
+// コースに帰属先が未設定の場合は、従来通り「店舗の建物がCeadaならSpa the Ceada、それ以外はBODY RECESS」。
+export const BRANDS = [
+  { key: "bodyRecess", label: "BODY RECESS" },
+  { key: "ceada", label: "Spa the Ceada" },
+];
+export function brandLabel(key) {
+  return BRANDS.find((b) => b.key === key)?.label || "";
+}
+export function defaultBrandOfStore(store) {
+  return store?.building === "Ceada" ? "ceada" : "bodyRecess";
+}
+export function menuBrand(menu, stores) {
+  if (menu?.brand) return menu.brand;
+  return defaultBrandOfStore((stores || []).find((s) => s.id === menu?.storeId));
+}
+// 受付1件の帰属先：選ばれたコースの帰属先 → コース未選択（自由入力等）なら受付の店舗から判定
+export function recordBrand(r, menus, stores) {
+  const menuId = r?.course?.menuId;
+  const menu = menuId ? (menus || []).find((m) => m.id === menuId) : null;
+  if (menu) return menuBrand(menu, stores);
+  return defaultBrandOfStore((stores || []).find((s) => s.id === r?.storeId));
+}
