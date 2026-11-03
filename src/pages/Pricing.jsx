@@ -1,12 +1,22 @@
 import { useEffect, useState } from "react";
 import { useApp } from "../App.jsx";
-import { COURSE_COLORS, api, sortByOrder, yen } from "../api.js";
+import {
+  BRANDS,
+  COURSE_COLORS,
+  api,
+  brandLabel,
+  defaultBrandOfStore,
+  menuBrand,
+  sortByOrder,
+  yen,
+} from "../api.js";
 import { overlayClose } from "../modalUtils.js";
 
-function emptyMenu(storeId, isHome) {
+function emptyMenu(storeId, isHome, brand) {
   return {
     id: "",
     storeId: storeId || "",
+    brand: brand || "bodyRecess",
     name: "",
     displayName: "",
     minutes: 60,
@@ -241,7 +251,13 @@ export default function Pricing() {
             <button
               className="btn sm"
               onClick={() =>
-                setForm(emptyMenu(storeId, stores.find((s) => s.id === storeId)?.isHome))
+                setForm(
+                  emptyMenu(
+                    storeId,
+                    stores.find((s) => s.id === storeId)?.isHome,
+                    defaultBrandOfStore(stores.find((s) => s.id === storeId)),
+                  ),
+                )
               }
             >
               ＋ コース追加
@@ -262,6 +278,7 @@ export default function Pricing() {
                     <th className="num">料金</th>
                     <th className="num">インターバル</th>
                     <th>説明</th>
+                    <th>売上の帰属先</th>
                     <th />
                   </tr>
                 </thead>
@@ -286,6 +303,21 @@ export default function Pricing() {
                       <td className="num">{m.interval ?? 0}分</td>
                       <td>{m.description || <span className="muted">—</span>}</td>
                       <td>
+                        <span
+                          className="pill"
+                          style={{
+                            background: menuBrand(m, stores) === "ceada" ? "#2f6fd6" : "#a8324a",
+                          }}
+                        >
+                          {brandLabel(menuBrand(m, stores))}
+                        </span>
+                        {!m.brand && (
+                          <span className="muted" style={{ fontSize: 11, marginLeft: 4 }}>
+                            (店舗から自動)
+                          </span>
+                        )}
+                      </td>
+                      <td>
                         <button
                           className="btn sm gray"
                           style={{ padding: "2px 8px" }}
@@ -302,7 +334,10 @@ export default function Pricing() {
                         >
                           ▼
                         </button>{" "}
-                        <button className="btn sm ghost" onClick={() => setForm({ ...m })}>
+                        <button
+                          className="btn sm ghost"
+                          onClick={() => setForm({ ...m, brand: menuBrand(m, stores) })}
+                        >
                           編集
                         </button>{" "}
                         {isAdminUser && (
@@ -544,6 +579,22 @@ export default function Pricing() {
                   placeholder="空欄なら時間（例：40分）が表示されます"
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                 />
+              </div>
+            </div>
+            <div className="field">
+              <label>売上の帰属先（受付一覧表・個人別日計表・給料をこの区分で分けます）</label>
+              <div className="checks">
+                {BRANDS.map((b) => (
+                  <label className="check" key={b.key}>
+                    <input
+                      type="radio"
+                      name="menu-brand"
+                      checked={(form.brand || "bodyRecess") === b.key}
+                      onChange={() => setForm({ ...form, brand: b.key })}
+                    />
+                    {b.label}
+                  </label>
+                ))}
               </div>
             </div>
             <div className="field">
