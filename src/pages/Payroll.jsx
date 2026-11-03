@@ -1,20 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
-import { api, dateOfMonth, daysInMonth, thisMonthStr } from "../api.js";
+import { api, dateOfMonth, daysInMonth, recordBrand, thisMonthStr } from "../api.js";
 
 // 請求先は全店舗共通のため固定（店舗ごとの設定は不要）
 const BILLING_COMPANY = "株式会社 康佳";
 const BILLING_ADDRESS = "大分県別府市海観寺1杉乃井ホテル内　康楽美ボディリセ";
 
 export default function Payroll() {
-  const { role, staffSession, isAdminUser, staff, stores } = useApp();
+  const { role, staffSession, isAdminUser, staff, stores, menus } = useApp();
 
   const isLockedToSelf = role === "staff" && !isAdminUser;
   const selfStaffId = staffSession?.id || "";
 
-  // 請求書は2枚に分ける：①BODY RECESS（パレス／宙館） ②Spa the Ceada
-  const storeById = useMemo(() => Object.fromEntries(stores.map((s) => [s.id, s])), [stores]);
-  const isCeadaStore = (storeId) => storeById[storeId]?.building === "Ceada";
+  // 請求書は2枚に分ける：①BODY RECESS ②Spa the Ceada
+  // 振り分けは料金設定のコースごとの「売上の帰属先」で行う（未設定のコースは店舗から判定）。
+  const isCeadaRecord = (r) => recordBrand(r, menus, stores) === "ceada";
 
   const [month, setMonth] = useState(thisMonthStr());
   const [staffId, setStaffId] = useState(isLockedToSelf ? selfStaffId : "");
@@ -117,14 +117,14 @@ export default function Payroll() {
 
   // 店舗グループ（パレス／宙館 or Ceada）ごとに、日別の受付を絞り込んで集計する。
   // 税込累計・歩合金額などはグループごとに独立して計算し直す。
-  const buildRows = (storeFilter, commissionKey) => {
+  const buildRows = (recordFilter, commissionKey) => {
     const days = daysInMonth(month);
     let cumTaxIn = 0;
     const out = [];
     for (let day = 1; day <= days; day++) {
       const date = dateOfMonth(month, day);
       const dayRecords = (monthRecords[date] || []).filter(
-        (r) => r.staffId === staffId && storeFilter(r.storeId),
+        (r) => r.staffId === staffId && recordFilter(r),
       );
       const count = dayRecords.length;
       const taxIn = dayRecords.reduce((s, r) => s + Number(r.amount || 0), 0);
@@ -164,14 +164,14 @@ export default function Payroll() {
   };
 
   const rowsBodyRecess = useMemo(
-    () => buildRows((storeId) => !isCeadaStore(storeId), "bodyRecess"),
+    () => buildRows((r) => !isCeadaRecord(r), "bodyRecess"),
     // eslint-disable-next-line
-    [month, monthRecords, monthAttendance, staffId, rateOverrides, commissionRates, shifts, storeById],
+    [month, monthRecords, monthAttendance, staffId, rateOverrides, commissionRates, shifts, menus, stores],
   );
   const rowsCeada = useMemo(
-    () => buildRows((storeId) => isCeadaStore(storeId), "ceada"),
+    () => buildRows((r) => isCeadaRecord(r), "ceada"),
     // eslint-disable-next-line
-    [month, monthRecords, monthAttendance, staffId, rateOverrides, commissionRates, shifts, storeById],
+    [month, monthRecords, monthAttendance, staffId, rateOverrides, commissionRates, shifts, menus, stores],
   );
 
   const sumRows = (rows) =>
@@ -240,7 +240,7 @@ export default function Payroll() {
       ) : (
         <>
           {renderSheet(
-            "BODY RECESS（パレス／宙館）",
+            "BODY RECESS",
             rowsBodyRecess,
             totalsBodyRecess,
             BILLING_COMPANY,
