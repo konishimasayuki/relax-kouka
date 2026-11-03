@@ -304,11 +304,18 @@ export default function Pricing() {
                       <td>{m.description || <span className="muted">—</span>}</td>
                       <td>
                         <span
-                          className="pill"
                           style={{
-                            background: menuBrand(m, stores) === "ceada" ? "#2f6fd6" : "#a8324a",
+                            display: "inline-block",
+                            padding: "3px 10px",
+                            borderRadius: 999,
+                            fontSize: 12,
+                            fontWeight: 700,
+                            whiteSpace: "nowrap",
+                            color: "#fff",
+                            background: menuBrand(m, stores) === "ceada" ? "#0f9d8a" : "#8e2440",
                           }}
                         >
+                          {menuBrand(m, stores) === "ceada" ? "🌿 " : "💆 "}
                           {brandLabel(menuBrand(m, stores))}
                         </span>
                         {!m.brand && (
