@@ -118,6 +118,8 @@ export const api = {
   pushPublicKey: () => req("pushConfig?publicOnly=1"),
   savePushConfig: (c) => req("pushConfig", { method: "POST", body: JSON.stringify(c) }),
   subscribePush: (sub) => req("pushSubscriptions", { method: "POST", body: JSON.stringify(sub) }),
+  pushTest: (subscription) =>
+    req("pushTest", { method: "POST", body: JSON.stringify({ subscription }) }),
   unsubscribePush: (endpoint) =>
     req("pushSubscriptions", { method: "DELETE", body: JSON.stringify({ endpoint }) }),
 
