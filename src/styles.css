@@ -1502,6 +1502,23 @@ table.grid th.num {
     font-size: 6.5pt !important;
   }
 
+  /* 画面用の td{height:31px}(約8.2mm) のままだと31日分がA4縦1枚に収まらないため、印刷時は詰める */
+  .payroll-table td {
+    height: 6.6mm !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* BODY RECESS・Spa the Ceada の請求書は必ず1枚ずつ（合計2枚）にする */
+  .payroll-sheet {
+    margin: 0 !important;
+    break-inside: avoid;
+  }
+  .payroll-sheet + .payroll-sheet {
+    break-before: page;
+    page-break-before: always;
+  }
+
   .no-print {
     display: none !important;
   }
