@@ -389,6 +389,7 @@ export default function ReceptionList() {
                   return (
                     <tr
                       key={rowKey}
+                      className={i >= PAGE_SIZE ? "rec-extra-row" : undefined}
                       onContextMenu={(e) => {
                         e.preventDefault();
                         if (r) del(r.id, r.date);
