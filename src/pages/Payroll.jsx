@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../App.jsx";
 import { api, dateOfMonth, daysInMonth, recordBrand, thisMonthStr } from "../api.js";
+import { printSheets } from "../printUtil.js";
 
 // 請求先は全店舗共通のため固定（店舗ごとの設定は不要）
 const BILLING_COMPANY = "株式会社 康佳";
@@ -230,7 +231,7 @@ export default function Payroll() {
             ))}
           </select>
         )}
-        <button className="btn sm ghost" onClick={() => window.print()}>
+        <button className="btn sm ghost" onClick={() => printSheets({ selector: ".payroll-sheet", orientation: "portrait", fileName: `給料_${month}_${selectedStaff?.name || ""}.pdf` })}>
           🖨️ 印刷
         </button>
       </div>
