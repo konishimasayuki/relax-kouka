@@ -1555,9 +1555,40 @@ table.grid th.num {
     min-width: 0 !important;
     width: 100% !important;
     font-size: 7pt !important;
-    /* 21件目以降で2ページ目になった場合も、固定表示の下部集計欄と重ならないよう余白を確保 */
-    padding-bottom: 30mm !important;
+    padding: 0 !important;
     box-sizing: border-box;
+  }
+
+  /* 受付表1枚（NO.ごと・BODY RECESS／Ceadaごと）を必ず1ページにして、次の表は新しいページから始める */
+  .reception-sheet {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .reception-sheet + .reception-sheet {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  /* 1ページは必ず20行。画面だけに出している手書き用の追加行は印刷しない */
+  .reception-sheet .rec-extra-row {
+    display: none !important;
+  }
+  /* 画面用の td{height:31px}(約8.2mm) のままだと20行＋集計欄がA4横1枚に収まらないため、印刷時は詰める */
+  .reception-sheet .sheet-table td {
+    height: 6.3mm !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+  .reception-sheet .sheet-table input[type="checkbox"] {
+    width: 3mm !important;
+    height: 3mm !important;
+  }
+  .reception-sheet .sheet-table input,
+  .reception-sheet .sheet-table select {
+    height: auto !important;
+    line-height: 1.1 !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
 
   .reception-sheet .sheet-head {
@@ -1575,14 +1606,16 @@ table.grid th.num {
     font-size: 6.5pt !important;
   }
 
-  /* 下部の集計欄は全ページ共通の合計。ページ下部に固定してどのページにも同じ内容を表示する */
+  /* 下部の集計欄は、その受付表（BODY RECESS／Ceada）の最後のページの表の直下に1回だけ出す。
+     （以前はページ下部に固定していたため、2つの受付表の集計欄が同じ位置に重なり、
+       BODY RECESSのページにCeadaの集計が表示されてしまっていた） */
   .reception-sheet .sheet-foot {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    position: static !important;
+    margin-top: 2mm;
     background: #fff;
     font-size: 6.5pt !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }
 
