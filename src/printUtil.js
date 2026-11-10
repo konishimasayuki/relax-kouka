@@ -3,7 +3,10 @@
 // ・スマホ：ホーム画面に追加したアプリ表示などでは window.print() が動かないことがあるため、
 //   受付表・請求書をPDFにして「共有」から印刷・保存できるようにする
 
-const HTML2CANVAS_URL = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+// 旧版 html2canvas 1.4.1 は iPhone の Safari が返す oklab() などの新しい色形式を読めずに失敗するため、
+// それらに対応した後継版 html2canvas-pro を使う（使い方は同じ：window.html2canvas）
+const HTML2CANVAS_URL =
+  "https://cdn.jsdelivr.net/npm/html2canvas-pro@2.5.2/dist/html2canvas-pro.min.js";
 const JSPDF_URL = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
 
 function isMobileDevice() {
