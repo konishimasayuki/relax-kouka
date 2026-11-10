@@ -51,6 +51,45 @@ function closeOverlay() {
   document.getElementById("pdf-print-overlay")?.remove();
 }
 
+// 撮影用のコピーを作る。
+// 画面上の受付表はスマホだと「ページの途中にある」「枠の中で横スクロールされている」ため、
+// そのまま撮影すると位置がずれて崩れる。コピーを画面左上の幅固定の枠に置いてから撮影する。
+function makeCaptureClone(sheetEl) {
+  const src = sheetEl.querySelector(".sheet") || sheetEl;
+  const width = Math.max(src.scrollWidth, src.offsetWidth, 1080);
+  const clone = src.cloneNode(true);
+
+  // 入力欄・選択欄・チェックの「今の値」はコピーされないので移し替える
+  const from = src.querySelectorAll("input, select, textarea");
+  const to = clone.querySelectorAll("input, select, textarea");
+  from.forEach((el, i) => {
+    const t = to[i];
+    if (!t) return;
+    if (el.type === "checkbox" || el.type === "radio") {
+      t.checked = el.checked;
+      if (el.checked) t.setAttribute("checked", "");
+      else t.removeAttribute("checked");
+    } else if (el.tagName === "SELECT") {
+      [...t.options].forEach((o, j) => {
+        if (j === el.selectedIndex) o.setAttribute("selected", "");
+        else o.removeAttribute("selected");
+      });
+      t.selectedIndex = el.selectedIndex;
+    } else {
+      t.value = el.value;
+      t.setAttribute("value", el.value);
+    }
+  });
+
+  const wrap = document.createElement("div");
+  // reception-sheet / payroll-sheet のクラスは残して印刷用のCSSを効かせる（sheet-scrollの枠・横スクロールは外す）
+  wrap.className = sheetEl.className.replace("sheet-scroll", "").trim() + " pdf-capture-wrap";
+  wrap.style.cssText = `position:fixed;left:0;top:0;width:${width}px;background:#fff;z-index:-1;overflow:visible;margin:0;padding:0;border:none;box-shadow:none;`;
+  wrap.appendChild(clone);
+  document.body.appendChild(wrap);
+  return { wrap, width };
+}
+
 /**
  * @param {object} opts
  * @param {string} opts.selector     1ページにしたい要素（受付表1枚・請求書1枚）のセレクタ
@@ -79,16 +118,23 @@ export async function printSheets({ selector, orientation = "portrait", fileName
     const pageH = pdf.internal.pageSize.getHeight();
     const margin = 6;
 
+    const savedScroll = { x: window.scrollX, y: window.scrollY };
+    window.scrollTo(0, 0);
     for (let i = 0; i < sheets.length; i++) {
-      const target = sheets[i].querySelector(".sheet") || sheets[i];
-      const canvas = await window.html2canvas(target, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        windowWidth: Math.max(target.scrollWidth, 1100),
-        width: target.scrollWidth,
-        height: target.scrollHeight,
-      });
+      const { wrap, width } = makeCaptureClone(sheets[i]);
+      let canvas;
+      try {
+        canvas = await window.html2canvas(wrap, {
+          scale: 2,
+          backgroundColor: "#ffffff",
+          useCORS: true,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: width,
+        });
+      } finally {
+        wrap.remove();
+      }
       const img = canvas.toDataURL("image/jpeg", 0.92);
       // 1枚のページに収まるよう縦横比を保って縮小
       const ratio = Math.min((pageW - margin * 2) / canvas.width, (pageH - margin * 2) / canvas.height);
@@ -97,6 +143,7 @@ export async function printSheets({ selector, orientation = "portrait", fileName
       if (i > 0) pdf.addPage("a4", orientation);
       pdf.addImage(img, "JPEG", (pageW - w) / 2, margin, w, h);
     }
+    window.scrollTo(savedScroll.x, savedScroll.y);
 
     const blob = pdf.output("blob");
     const file = new File([blob], fileName, { type: "application/pdf" });
