@@ -3,6 +3,7 @@ import { useApp } from "../App.jsx";
 import { addDays, api, todayStr } from "../api.js";
 import TimeInput10 from "../components/TimeInput10.jsx";
 import { overlayClose } from "../modalUtils.js";
+import { printSheets } from "../printUtil.js";
 
 const WEEK_LABEL = ["日", "月", "火", "水", "木", "金", "土"];
 
@@ -683,7 +684,7 @@ export default function Fortune() {
         <span className="muted" style={{ fontSize: 12 }}>
           セルをクリックしてそのまま編集（チェックはスタッフの確認用です）。どちらを編集しても両方に反映されます。
         </span>
-        <button className="btn sm ghost" onClick={() => window.print()}>
+        <button className="btn sm ghost" onClick={() => printSheets({ selector: ".reception-sheet", orientation: "landscape", fileName: `杉の泉_受付表_${date}.pdf` })}>
           🖨️ 印刷
         </button>
       </div>
