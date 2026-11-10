@@ -1502,23 +1502,6 @@ table.grid th.num {
     font-size: 6.5pt !important;
   }
 
-  /* 画面用の td{height:31px}(約8.2mm) のままだと31日分がA4縦1枚に収まらないため、印刷時は詰める */
-  .payroll-table td {
-    height: 6.6mm !important;
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
-  }
-
-  /* BODY RECESS・Spa the Ceada の請求書は必ず1枚ずつ（合計2枚）にする */
-  .payroll-sheet {
-    margin: 0 !important;
-    break-inside: avoid;
-  }
-  .payroll-sheet + .payroll-sheet {
-    break-before: page;
-    page-break-before: always;
-  }
-
   .no-print {
     display: none !important;
   }
@@ -2585,4 +2568,28 @@ table.grid th.num {
   font-weight: 700;
   color: #e8822b;
   margin-top: 1px;
+}
+
+/* ---------- スマホの印刷（PDF作成）時：印刷と同じ見た目にする ---------- */
+body.pdf-capture .no-print,
+body.pdf-capture .row-del-btn,
+body.pdf-capture .reception-sheet .rec-extra-row {
+  display: none !important;
+}
+body.pdf-capture .print-only {
+  display: inline !important;
+}
+body.pdf-capture .reception-sheet,
+body.pdf-capture .payroll-sheet {
+  border: none !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+body.pdf-capture .sheet-table input,
+body.pdf-capture .sheet-table select {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  -webkit-appearance: none;
+  appearance: none;
 }
