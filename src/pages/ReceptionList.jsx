@@ -11,6 +11,7 @@ import {
 import NewReceptionModal from "../components/NewReceptionModal.jsx";
 import SignaturePad from "../components/SignaturePad.jsx";
 import TimeInput10 from "../components/TimeInput10.jsx";
+import { printSheets } from "../printUtil.js";
 
 function emptyRecord(storeId, date) {
   return {
@@ -244,7 +245,7 @@ export default function ReceptionList() {
         <span className="muted" style={{ fontSize: 12 }}>
           セルをクリックしてそのまま編集／行の削除ボタンで削除
         </span>
-        <button className="btn sm ghost" onClick={() => window.print()}>
+        <button className="btn sm ghost" onClick={() => printSheets({ selector: ".reception-sheet", orientation: "landscape", fileName: `受付一覧表_${date}.pdf` })}>
           🖨️ 印刷
         </button>
       </div>
